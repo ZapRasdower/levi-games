@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pixel Jump - Levi's Games</title>
+  <title>Levi Leap - Levi's Games</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -76,10 +76,10 @@
 </head>
 <body>
 
-  <h1>&#128056; Pixel Jump</h1>
+  <h1>&#129354; Levi Leap</h1>
   <p class="subtitle">Press SPACE or tap to jump</p>
 
-  <canvas id="gameCanvas" width="600" height="180"></canvas>
+  <canvas id="gameCanvas" width="600" height="220"></canvas>
 
   <div id="ui">
     <div>SCORE: <span id="score">0</span></div>
@@ -101,82 +101,72 @@
   const H = canvas.height;
   const GROUND = H - 40;
 
-  // Pixel palette
   const C = {
     sky:      '#111125',
     ground:   '#2a2a4a',
     groundTop:'#4a4a8a',
-    frog:     '#4cff72',
-    frogDark: '#1a8a38',
-    eye:      '#fff',
-    pupil:    '#000',
     obstacle: '#ff4444',
     obstDark: '#8a0000',
     star:     '#ffe600',
-    cloud:    '#1e1e3a',
-    score:    '#ffe600',
   };
 
-  let state = 'idle'; // idle, playing, dead
+  // Load Levi sprite
+  const leviImg = new Image();
+  leviImg.src = 'levi.png';
+  let imgLoaded = false;
+  leviImg.onload = () => { imgLoaded = true; };
+
+  let state = 'idle';
   let score = 0;
   let best = 0;
   let frame = 0;
   let speed = 4;
   let stars = [];
-  let clouds = [];
   let obstacles = [];
   let particles = [];
   let nextObstacle = 80;
   let groundOffset = 0;
 
-  // ---- FROG ----
-  const frog = {
-    x: 80, y: GROUND, w: 24, h: 20,
-    vy: 0, onGround: true, jumpCount: 0,
-    squish: 1,
+  // ---- PLAYER (Levi) ----
+  const SPRITE_W = 50;
+  const SPRITE_H = 100;
+
+  const player = {
+    x: 90, y: GROUND, vy: 0, onGround: true, jumpCount: 0,
+    squish: 1, rot: 0, targetRot: 0,
     draw() {
       const px = Math.floor(this.x);
       const py = Math.floor(this.y);
-      const sq = this.squish;
 
-      // Body
-      ctx.fillStyle = C.frog;
-      ctx.fillRect(px - 10, py - Math.round(18 * sq), 20, Math.round(18 * sq));
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      const shadowScale = this.onGround ? 1 : Math.max(0.3, 1 - (GROUND - py) / 200);
+      ctx.beginPath();
+      ctx.ellipse(px, GROUND + 2, 22 * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Head bumps (eyes)
-      ctx.fillRect(px - 10, py - Math.round(22 * sq), 8, Math.round(6 * sq));
-      ctx.fillRect(px + 2,  py - Math.round(22 * sq), 8, Math.round(6 * sq));
-
-      // Darker belly
-      ctx.fillStyle = C.frogDark;
-      ctx.fillRect(px - 6, py - Math.round(10 * sq), 12, Math.round(6 * sq));
-
-      // Eyes
-      ctx.fillStyle = C.eye;
-      ctx.fillRect(px - 9, py - Math.round(22 * sq), 6, Math.round(5 * sq));
-      ctx.fillRect(px + 3,  py - Math.round(22 * sq), 6, Math.round(5 * sq));
-
-      // Pupils
-      ctx.fillStyle = C.pupil;
-      ctx.fillRect(px - 7, py - Math.round(21 * sq), 3, Math.round(3 * sq));
-      ctx.fillRect(px + 4,  py - Math.round(21 * sq), 3, Math.round(3 * sq));
-
-      // Legs
-      ctx.fillStyle = C.frog;
-      if (this.onGround) {
-        ctx.fillRect(px - 14, py - 6, 6, 6);
-        ctx.fillRect(px + 8,  py - 6, 6, 6);
+      ctx.save();
+      ctx.translate(px, py - SPRITE_H / 2 * this.squish);
+      ctx.rotate(this.rot);
+      // Slight tilt during jump
+      const sw = SPRITE_W;
+      const sh = SPRITE_H * this.squish;
+      if (imgLoaded) {
+        ctx.drawImage(leviImg, -sw / 2, -sh / 2, sw, sh);
       } else {
-        ctx.fillRect(px - 16, py - Math.round(12 * sq), 6, 6);
-        ctx.fillRect(px + 10, py - Math.round(12 * sq), 6, 6);
+        // fallback while image loads
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
       }
+      ctx.restore();
     },
     jump() {
       if (this.jumpCount < 2) {
         this.vy = -11;
         this.onGround = false;
         this.jumpCount++;
-        this.squish = 0.7;
+        this.squish = 0.85;
+        this.targetRot = this.jumpCount === 2 ? -Math.PI * 2 : -0.3;
         spawnJumpParticles(this.x, this.y);
       }
     },
@@ -186,72 +176,72 @@
       if (this.y >= GROUND) {
         this.y = GROUND;
         this.vy = 0;
-        if (!this.onGround) this.squish = 1.3;
+        if (!this.onGround) this.squish = 1.15;
         this.onGround = true;
         this.jumpCount = 0;
+        this.targetRot = 0;
+        this.rot = 0;
       }
-      this.squish += (1 - this.squish) * 0.25;
+      this.squish += (1 - this.squish) * 0.2;
+      // Animate flip rotation
+      this.rot += (this.targetRot - this.rot) * 0.15;
     },
     getBox() {
-      return { x: this.x - 8, y: this.y - 18, w: 16, h: 18 };
+      return { x: this.x - 18, y: this.y - SPRITE_H + 8, w: 36, h: SPRITE_H - 8 };
     }
   };
 
   // ---- PARTICLES ----
   function spawnJumpParticles(x, y) {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       particles.push({
-        x, y,
+        x: x + (Math.random() - 0.5) * 20,
+        y: y - 4,
         vx: (Math.random() - 0.5) * 4,
-        vy: -Math.random() * 3 - 1,
-        life: 20,
-        maxLife: 20,
-        color: C.frog
+        vy: -Math.random() * 2,
+        life: 18,
+        maxLife: 18,
+        color: '#aaa'
       });
     }
   }
 
   function spawnDeathParticles(x, y) {
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 18; i++) {
       particles.push({
         x, y,
-        vx: (Math.random() - 0.5) * 7,
-        vy: -Math.random() * 6 - 2,
-        life: 35,
-        maxLife: 35,
-        color: i % 2 === 0 ? C.frog : C.obstacle
+        vx: (Math.random() - 0.5) * 8,
+        vy: -Math.random() * 7 - 2,
+        life: 40,
+        maxLife: 40,
+        color: i % 2 === 0 ? '#ffe600' : C.obstacle
       });
     }
   }
 
-  // ---- STARS ----
   function initStars() {
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 50; i++) {
       stars.push({ x: Math.random() * W, y: Math.random() * (GROUND - 20) });
     }
   }
 
-  // ---- OBSTACLES ----
   function spawnObstacle() {
-    const h = 20 + Math.floor(Math.random() * 25);
-    const w = 14 + Math.floor(Math.random() * 10);
+    const h = 24 + Math.floor(Math.random() * 28);
+    const w = 16 + Math.floor(Math.random() * 12);
     obstacles.push({ x: W + 20, w, h });
   }
 
-  // ---- COLLISION ----
   function rectsOverlap(a, b) {
     return a.x < b.x + b.w && a.x + a.w > b.x &&
            a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
-  // ---- DRAW GROUND ----
   function drawGround() {
     ctx.fillStyle = C.groundTop;
     ctx.fillRect(0, GROUND, W, 4);
     ctx.fillStyle = C.ground;
     ctx.fillRect(0, GROUND + 4, W, H - GROUND - 4);
 
-    // Scrolling ground dashes
     ctx.fillStyle = '#3a3a6a';
     for (let i = 0; i < 15; i++) {
       const x = ((i * 44 - groundOffset) % W + W) % W;
@@ -259,7 +249,6 @@
     }
   }
 
-  // ---- DRAW OBSTACLE ----
   function drawObstacle(obs) {
     const py = GROUND - obs.h;
     ctx.fillStyle = C.obstacle;
@@ -269,17 +258,16 @@
     ctx.fillRect(Math.floor(obs.x) + obs.w - 4, py, 4, obs.h);
   }
 
-  // ---- RESET ----
   function reset() {
-    frog.y = GROUND; frog.vy = 0; frog.onGround = true;
-    frog.jumpCount = 0; frog.squish = 1;
+    player.y = GROUND; player.vy = 0; player.onGround = true;
+    player.jumpCount = 0; player.squish = 1;
+    player.rot = 0; player.targetRot = 0;
     obstacles = []; particles = [];
     score = 0; frame = 0; speed = 4;
     nextObstacle = 80;
     groundOffset = 0;
   }
 
-  // ---- MAIN LOOP ----
   function loop() {
     requestAnimationFrame(loop);
     ctx.fillStyle = C.sky;
@@ -288,7 +276,7 @@
     // Stars
     ctx.fillStyle = C.star;
     for (const s of stars) {
-      if (Math.random() < 0.002) continue; // twinkle
+      if (Math.random() < 0.002) continue;
       ctx.fillRect(Math.floor(s.x), Math.floor(s.y), 2, 2);
     }
 
@@ -302,40 +290,35 @@
 
       groundOffset = (groundOffset + speed) % 44;
 
-      // Obstacles
       nextObstacle--;
       if (nextObstacle <= 0) {
         spawnObstacle();
-        const gap = Math.max(40, 85 - score);
+        const gap = Math.max(45, 90 - score);
         nextObstacle = gap + Math.floor(Math.random() * 30);
       }
 
       for (const obs of obstacles) obs.x -= speed;
       obstacles = obstacles.filter(o => o.x > -40);
 
-      // Collision
-      const fb = frog.getBox();
+      const fb = player.getBox();
       for (const obs of obstacles) {
         const ob = { x: obs.x + 2, y: GROUND - obs.h + 2, w: obs.w - 4, h: obs.h - 2 };
         if (rectsOverlap(fb, ob)) {
           state = 'dead';
           if (score > best) { best = score; bestEl.textContent = best; }
-          spawnDeathParticles(frog.x, frog.y - 10);
+          spawnDeathParticles(player.x, player.y - SPRITE_H / 2);
           msgEl.textContent = 'GAME OVER! Press SPACE to try again';
           break;
         }
       }
 
-      frog.update();
+      player.update();
     }
 
-    // Draw obstacles
     for (const obs of obstacles) drawObstacle(obs);
 
-    // Draw frog (don't draw if just died — particles instead)
-    if (state !== 'dead') frog.draw();
+    if (state !== 'dead') player.draw();
 
-    // Particles
     for (const p of particles) {
       p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
       const alpha = p.life / p.maxLife;
@@ -347,14 +330,13 @@
     particles = particles.filter(p => p.life > 0);
   }
 
-  // ---- INPUT ----
   function handleJump() {
     if (state === 'idle') {
       state = 'playing';
       msgEl.textContent = '';
-      frog.jump();
+      player.jump();
     } else if (state === 'playing') {
-      frog.jump();
+      player.jump();
     } else if (state === 'dead') {
       reset();
       state = 'playing';
