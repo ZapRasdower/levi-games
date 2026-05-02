@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Levi Snake - Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ffe600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    #gameCanvas {
+      border: 3px solid #333;
+      background: #111125;
+      display: block;
+      image-rendering: pixelated;
+      touch-action: none;
+    }
+
+    #ui {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+
+    #ui span { color: #ffe600; }
+
+    #message {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: #888;
+      letter-spacing: 2px;
+      min-height: 24px;
+      text-align: center;
+    }
+
+    .back-link {
+      margin-top: 24px;
+      color: #555;
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+
+    .back-link:hover { color: #ffe600; }
+  </style>
+</head>
+<body>
+
+  <h1>&#128013; Levi Snake</h1>
+  <p class="subtitle">Arrow keys / WASD / swipe &middot; P to pause</p>
+
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div id="ui">
+    <div>SCORE: <span id="score">0</span></div>
+    <div>LEN: <span id="len">3</span></div>
+    <div>BEST: <span id="best">0</span></div>
+  </div>
+
+  <div id="message">Press an arrow key to start</div>
+
+  <a class="back-link" href="../index.html">&larr; back to all games</a>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const lenEl = document.getElementById('len');
+  const bestEl = document.getElementById('best');
+  const msgEl = document.getElementById('message');
+
+  const BEST_KEY = 'leviSnake.best';
+
+  const CELL = 24;
+  const COLS = canvas.width / CELL;
+  const ROWS = canvas.height / CELL;
+
+  const C = {
+    grid:   '#1a1a2e',
+    snake:  '#ffe600',
+    head:   '#fff066',
+    food:   '#ff6b6b',
+    bonus:  '#6bffd1',
+    wall:   '#333355',
+    text:   '#aaa',
+  };
+
+  let snake, dir, nextDir, food, bonus, bonusTimer;
+  let score = 0;
+  let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let state = 'idle';
+  let tickMs = 120;
+  let lastTick = 0;
+  let pulse = 0;
+  bestEl.textContent = best;
+
+  function reset() {
+    snake = [
+      { x: 8, y: 10 },
+      { x: 7, y: 10 },
+      { x: 6, y: 10 },
+    ];
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    score = 0;
+    tickMs = 120;
+    bonus = null;
+    bonusTimer = 0;
+    placeFood();
+    scoreEl.textContent = score;
+    lenEl.textContent = snake.length;
+  }
+
+  function placeFood() {
+    while (true) {
+      const f = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+      if (!snake.some(s => s.x === f.x && s.y === f.y)) {
+        food = f;
+        return;
+      }
+    }
+  }
+
+  function maybePlaceBonus() {
+    if (bonus || Math.random() > 0.18) return;
+    let tries = 30;
+    while (tries-- > 0) {
+      const b = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+      if (!snake.some(s => s.x === b.x && s.y === b.y) &&
+          (b.x !== food.x || b.y !== food.y)) {
+        bonus = b;
+        bonusTimer = 60; // ticks until disappears
+        return;
+      }
+    }
+  }
+
+  function tick() {
+    // Apply queued direction (only if not a 180)
+    if (nextDir.x !== -dir.x || nextDir.y !== -dir.y) {
+      dir = nextDir;
+    }
+
+    const head = snake[0];
+    const nh = { x: head.x + dir.x, y: head.y + dir.y };
+
+    // Wall collision
+    if (nh.x < 0 || nh.x >= COLS || nh.y < 0 || nh.y >= ROWS) {
+      die();
+      return;
+    }
+    // Self collision (ignore tail tip since it'll move — but only when not eating)
+    const willEat = nh.x === food.x && nh.y === food.y;
+    const body = willEat ? snake : snake.slice(0, -1);
+    if (body.some(s => s.x === nh.x && s.y === nh.y)) {
+      die();
+      return;
+    }
+
+    snake.unshift(nh);
+
+    if (willEat) {
+      score += 10;
+      placeFood();
+      maybePlaceBonus();
+      tickMs = Math.max(55, tickMs - 2);
+    } else if (bonus && nh.x === bonus.x && nh.y === bonus.y) {
+      score += 50;
+      bonus = null;
+      bonusTimer = 0;
+      snake.pop(); // bonus doesn't grow
+    } else {
+      snake.pop();
+    }
+
+    if (bonus) {
+      bonusTimer--;
+      if (bonusTimer <= 0) bonus = null;
+    }
+
+    scoreEl.textContent = score;
+    lenEl.textContent = snake.length;
+  }
+
+  function die() {
+    state = 'dead';
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      localStorage.setItem(BEST_KEY, best);
+      msgEl.textContent = `NEW BEST: ${score}! Press SPACE to play again`;
+    } else {
+      msgEl.textContent = `Game over — score ${score}. SPACE to play again`;
+    }
+  }
+
+  function drawGrid() {
+    ctx.fillStyle = C.grid;
+    for (let x = 0; x < COLS; x++) {
+      for (let y = 0; y < ROWS; y++) {
+        if ((x + y) % 2 === 0) {
+          ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        }
+      }
+    }
+  }
+
+  function drawCell(x, y, color, inset = 2) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * CELL + inset, y * CELL + inset, CELL - inset * 2, CELL - inset * 2);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#111125';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+
+    // Food
+    const foodPulse = 1 + Math.sin(pulse * 0.15) * 0.1;
+    ctx.save();
+    ctx.translate(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2);
+    ctx.scale(foodPulse, foodPulse);
+    ctx.fillStyle = C.food;
+    ctx.fillRect(-CELL / 2 + 4, -CELL / 2 + 4, CELL - 8, CELL - 8);
+    ctx.fillStyle = '#a02020';
+    ctx.fillRect(-2, -CELL / 2 + 2, 4, 3);
+    ctx.restore();
+
+    // Bonus
+    if (bonus) {
+      const fade = bonusTimer < 20 ? (bonusTimer % 4 < 2 ? 1 : 0.3) : 1;
+      ctx.globalAlpha = fade;
+      drawCell(bonus.x, bonus.y, C.bonus, 3);
+      ctx.fillStyle = '#0f0f1a';
+      ctx.font = 'bold 12px Courier New';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', bonus.x * CELL + CELL / 2, bonus.y * CELL + CELL / 2 + 1);
+      ctx.globalAlpha = 1;
+    }
+
+    // Snake
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const s = snake[i];
+      const isHead = i === 0;
+      drawCell(s.x, s.y, isHead ? C.head : C.snake, isHead ? 1 : 2);
+      if (isHead) {
+        // Eyes
+        ctx.fillStyle = '#0f0f1a';
+        const cx = s.x * CELL + CELL / 2;
+        const cy = s.y * CELL + CELL / 2;
+        const ox = dir.x * 4, oy = dir.y * 4;
+        const px = dir.y !== 0 ? 5 : 0;
+        const py = dir.x !== 0 ? 5 : 0;
+        ctx.fillRect(cx + ox - px - 2, cy + oy - py - 2, 3, 3);
+        ctx.fillRect(cx + ox + px - 2, cy + oy + py - 2, 3, 3);
+      }
+    }
+
+    if (state === 'paused') {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = C.snake;
+      ctx.font = 'bold 28px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+    }
+  }
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    pulse++;
+    if (state === 'playing' && now - lastTick >= tickMs) {
+      lastTick = now;
+      tick();
+    }
+    draw();
+  }
+
+  function setDir(x, y) {
+    if (state === 'idle') {
+      state = 'playing';
+      msgEl.textContent = '';
+      lastTick = performance.now();
+    }
+    if (state !== 'playing') return;
+    // Prevent reversing on the same tick
+    if (x === -dir.x && y === -dir.y) return;
+    nextDir = { x, y };
+  }
+
+  document.addEventListener('keydown', e => {
+    switch (e.code) {
+      case 'ArrowUp': case 'KeyW': e.preventDefault(); setDir(0, -1); break;
+      case 'ArrowDown': case 'KeyS': e.preventDefault(); setDir(0, 1); break;
+      case 'ArrowLeft': case 'KeyA': e.preventDefault(); setDir(-1, 0); break;
+      case 'ArrowRight': case 'KeyD': e.preventDefault(); setDir(1, 0); break;
+      case 'KeyP':
+        e.preventDefault();
+        if (state === 'playing') { state = 'paused'; msgEl.textContent = 'Paused — P to resume'; }
+        else if (state === 'paused') { state = 'playing'; msgEl.textContent = ''; lastTick = performance.now(); }
+        break;
+      case 'Space':
+        e.preventDefault();
+        if (state === 'dead') {
+          reset();
+          state = 'idle';
+          msgEl.textContent = 'Press an arrow key to start';
+        }
+        break;
+    }
+  });
+
+  // Touch swipe
+  let touchStart = null;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (state === 'dead') {
+      reset();
+      state = 'idle';
+      msgEl.textContent = 'Swipe to start';
+      return;
+    }
+    const t = e.touches[0];
+    touchStart = { x: t.clientX, y: t.clientY };
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!touchStart) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStart.x;
+    const dy = t.clientY - touchStart.y;
+    if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDir(dx > 0 ? 1 : -1, 0);
+    } else {
+      setDir(0, dy > 0 ? 1 : -1);
+    }
+    touchStart = { x: t.clientX, y: t.clientY };
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => { touchStart = null; });
+
+  reset();
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>

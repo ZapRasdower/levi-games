@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atom Builder - Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ffe600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #gameCanvas {
+      border: 3px solid #333;
+      background: #111125;
+      display: block;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 14px;
+      background: #1a1a2e;
+      border: 2px solid #333;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      color: #ccc;
+    }
+
+    .panel .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .panel .big {
+      font-size: 1.1rem;
+      color: #ffe600;
+      letter-spacing: 2px;
+    }
+
+    .controls {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .pgroup {
+      background: #1a1a2e;
+      border: 2px solid #333;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .pgroup .label {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .pgroup .count {
+      font-size: 1.4rem;
+      color: #ffe600;
+      margin-bottom: 6px;
+    }
+
+    .pgroup .btns { display: flex; gap: 6px; justify-content: center; }
+
+    button {
+      background: #2a2a4a;
+      color: #ffe600;
+      border: 2px solid #444;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    button:hover { border-color: #ffe600; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .row-tools {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .challenge {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 12px;
+      padding: 14px;
+      background: #1a1a2e;
+      border: 2px solid #ffe60055;
+      text-align: center;
+      letter-spacing: 1px;
+      font-size: 0.9rem;
+    }
+
+    .challenge.hidden { display: none; }
+    .challenge .target { color: #ffe600; font-size: 1.05rem; margin: 6px 0; }
+    .challenge .status { margin-top: 6px; min-height: 20px; }
+    .challenge .status.success { color: #6bffd1; }
+    .challenge .status.tip { color: #aaa; }
+
+    .legend {
+      width: 100%;
+      max-width: 640px;
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #666;
+      letter-spacing: 1px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .legend .dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    .back-link {
+      margin-top: 28px;
+      color: #555;
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+
+    .back-link:hover { color: #ffe600; }
+
+    [data-tip] { cursor: help; border-bottom: 1px dotted #555; }
+    .pgroup .label[data-tip],
+    .panel [data-tip] { display: inline-block; }
+
+    #tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #1a1a2e;
+      border: 2px solid #ffe600;
+      color: #fff;
+      padding: 8px 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.5px;
+      max-width: 260px;
+      line-height: 1.45;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.12s, transform 0.12s;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    }
+
+    #tooltip.show { opacity: 1; transform: translateY(0); }
+    #tooltip strong { color: #ffe600; }
+
+    #gameCanvas { cursor: crosshair; }
+  </style>
+</head>
+<body>
+
+  <h1>&#9883; Atom Builder</h1>
+  <p class="subtitle">Build atoms, learn the elements &middot; zoom in to see quarks</p>
+
+  <canvas id="gameCanvas" width="640" height="420"></canvas>
+
+  <div class="panel">
+    <div class="row">
+      <div><span data-tip="element">ELEMENT</span>: <span class="big" id="elName">—</span></div>
+      <div><span data-tip="symbol">SYMBOL</span>: <span class="big" id="elSym">—</span></div>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <div><span data-tip="mass">MASS #</span>: <span id="mass">0</span></div>
+      <div><span data-tip="charge">CHARGE</span>: <span id="charge">0</span></div>
+      <div><span data-tip="kind">TYPE</span>: <span id="kind">empty</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="pgroup">
+      <div class="label" data-tip="proton">PROTONS (+)</div>
+      <div class="count"><span id="cP">0</span></div>
+      <div class="btns">
+        <button data-act="p-" data-tip="removeProton">&minus;</button>
+        <button data-act="p+" data-tip="addProton">+</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <div class="label" data-tip="neutron">NEUTRONS (n)</div>
+      <div class="count"><span id="cN">0</span></div>
+      <div class="btns">
+        <button data-act="n-" data-tip="removeNeutron">&minus;</button>
+        <button data-act="n+" data-tip="addNeutron">+</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <div class="label" data-tip="electron">ELECTRONS (&minus;)</div>
+      <div class="count"><span id="cE">0</span></div>
+      <div class="btns">
+        <button data-act="e-" data-tip="removeElectron">&minus;</button>
+        <button data-act="e+" data-tip="addElectron">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row-tools">
+    <button id="resetBtn" data-tip="reset">RESET</button>
+    <button id="zoomBtn" data-tip="zoom">ZOOM IN ON QUARKS</button>
+    <button id="challengeBtn" data-tip="challenge">NEW CHALLENGE</button>
+  </div>
+
+  <div class="challenge hidden" id="challenge">
+    <div>CHALLENGE</div>
+    <div class="target" id="challengeTarget"></div>
+    <div class="status tip" id="challengeStatus">Build the atom above using the buttons.</div>
+  </div>
+
+  <div class="legend">
+    <span data-tip="proton"><span class="dot" style="background:#ff4444"></span>proton</span>
+    <span data-tip="neutron"><span class="dot" style="background:#aaa"></span>neutron</span>
+    <span data-tip="electron"><span class="dot" style="background:#6bd1ff"></span>electron</span>
+    <span>shortcuts: P / N / E (shift to remove) &middot; Q zoom &middot; R reset</span>
+  </div>
+
+  <a class="back-link" href="../index.html">&larr; back to all games</a>
+
+  <div id="tooltip"></div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Elements 1-20 (atomic number, symbol, name, most common neutron count for stable isotope)
+  const ELEMENTS = [
+    null, // index 0 unused
+    { sym: 'H',  name: 'Hydrogen',   neutrons: 0 },
+    { sym: 'He', name: 'Helium',     neutrons: 2 },
+    { sym: 'Li', name: 'Lithium',    neutrons: 4 },
+    { sym: 'Be', name: 'Beryllium',  neutrons: 5 },
+    { sym: 'B',  name: 'Boron',      neutrons: 6 },
+    { sym: 'C',  name: 'Carbon',     neutrons: 6 },
+    { sym: 'N',  name: 'Nitrogen',   neutrons: 7 },
+    { sym: 'O',  name: 'Oxygen',     neutrons: 8 },
+    { sym: 'F',  name: 'Fluorine',   neutrons: 10 },
+    { sym: 'Ne', name: 'Neon',       neutrons: 10 },
+    { sym: 'Na', name: 'Sodium',     neutrons: 12 },
+    { sym: 'Mg', name: 'Magnesium',  neutrons: 12 },
+    { sym: 'Al', name: 'Aluminum',   neutrons: 14 },
+    { sym: 'Si', name: 'Silicon',    neutrons: 14 },
+    { sym: 'P',  name: 'Phosphorus', neutrons: 16 },
+    { sym: 'S',  name: 'Sulfur',     neutrons: 16 },
+    { sym: 'Cl', name: 'Chlorine',   neutrons: 18 },
+    { sym: 'Ar', name: 'Argon',      neutrons: 22 },
+    { sym: 'K',  name: 'Potassium',  neutrons: 20 },
+    { sym: 'Ca', name: 'Calcium',    neutrons: 20 },
+  ];
+
+  const SHELL_CAPS = [2, 8, 8, 2]; // simplified Bohr shells, K L M N
+  const MAX_P = 20, MAX_N = 30, MAX_E = 20;
+
+  let protons = 0, neutrons = 0, electrons = 0;
+  let zoomMode = false;
+  let challenge = null;
+  let t = 0;
+  // jitter offsets for nucleon positions (re-seeded each change)
+  let nucleonSeed = [];
+  // hit targets recomputed each frame: { x, y, r, tip }
+  let hitTargets = [];
+
+  // ---- Tooltips ----
+  const TIPS = {
+    proton: '<strong>Proton</strong><br>A particle in the nucleus with a +1 electric charge. The number of protons decides which element you have (the atomic number).',
+    neutron: '<strong>Neutron</strong><br>A particle in the nucleus with no charge. Adding/removing neutrons makes <em>isotopes</em> of the same element.',
+    electron: '<strong>Electron</strong><br>A tiny particle with a −1 charge that orbits the nucleus in shells. Equal protons and electrons make a neutral atom.',
+    element: '<strong>Element</strong><br>What kind of atom you have. Decided by the number of protons. 6 protons = Carbon, no matter how many neutrons or electrons.',
+    symbol: '<strong>Symbol</strong><br>The 1–2 letter shorthand for the element (H, He, Li, …).',
+    mass: '<strong>Mass number</strong><br>Protons + neutrons. The total number of "heavy" particles in the nucleus. Electrons are way too light to count.',
+    charge: '<strong>Charge</strong><br>Protons (+) minus electrons (−). 0 = neutral atom. Positive = lost electrons (cation). Negative = gained electrons (anion).',
+    kind: '<strong>Type</strong><br>Tells you if your atom is the common stable version, an isotope (different neutron count), or an ion (different electron count).',
+    addProton: 'Add a proton. Changes the element!',
+    removeProton: 'Remove a proton. Changes the element!',
+    addNeutron: 'Add a neutron. Makes a heavier isotope, but same element.',
+    removeNeutron: 'Remove a neutron. Lighter isotope, same element.',
+    addElectron: 'Add an electron. Makes the atom more negative (anion).',
+    removeElectron: 'Remove an electron. Makes the atom more positive (cation).',
+    reset: 'Clear all particles and start over.',
+    zoom: 'Look <em>inside</em> a proton and a neutron to see the quarks.',
+    challenge: 'Get a new build challenge to solve.',
+    nucleus: '<strong>Nucleus</strong><br>The dense center of the atom. Protons and neutrons live here, packed together.',
+    shell: '<strong>Electron shell</strong><br>An "orbit" where electrons live. Inner shells fill first. Capacities (simple model): 2, 8, 8, 2.',
+    quarkU: '<strong>Up quark (u)</strong><br>Charge +2/3. A proton has 2 ups + 1 down; a neutron has 1 up + 2 downs.',
+    quarkD: '<strong>Down quark (d)</strong><br>Charge −1/3. Combined with up quarks they make protons and neutrons.',
+    gluon: '<strong>Gluon</strong><br>The "glue" that holds quarks together. The strongest force in nature — about 100× stronger than electric force.',
+    protonZoom: '<strong>Proton</strong><br>Made of 2 up quarks and 1 down quark. Charges add: +2/3 + 2/3 − 1/3 = +1.',
+    neutronZoom: '<strong>Neutron</strong><br>Made of 1 up quark and 2 down quarks. Charges add: +2/3 − 1/3 − 1/3 = 0.',
+  };
+
+  const tooltip = document.getElementById('tooltip');
+  let currentTip = null;
+
+  function showTip(key, x, y) {
+    const text = TIPS[key];
+    if (!text) { hideTip(); return; }
+    if (currentTip !== key) {
+      tooltip.innerHTML = text;
+      currentTip = key;
+    }
+    // Position: prefer above-right of cursor, flip if off-screen
+    const pad = 14;
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    let nx = x + pad;
+    let ny = y + pad;
+    if (nx + tw > window.innerWidth - 4) nx = x - tw - pad;
+    if (ny + th > window.innerHeight - 4) ny = y - th - pad;
+    if (nx < 4) nx = 4;
+    if (ny < 4) ny = 4;
+    tooltip.style.left = nx + 'px';
+    tooltip.style.top = ny + 'px';
+    tooltip.classList.add('show');
+  }
+
+  function hideTip() {
+    tooltip.classList.remove('show');
+    currentTip = null;
+  }
+
+  document.addEventListener('mousemove', e => {
+    const t = e.target.closest('[data-tip]');
+    if (t && t.dataset.tip) {
+      showTip(t.dataset.tip, e.clientX, e.clientY);
+    } else if (e.target !== canvas) {
+      // canvas has its own handler; ignore here
+      hideTip();
+    }
+  });
+
+  document.addEventListener('mouseleave', hideTip);
+
+  const els = {
+    name: document.getElementById('elName'),
+    sym:  document.getElementById('elSym'),
+    mass: document.getElementById('mass'),
+    charge: document.getElementById('charge'),
+    kind: document.getElementById('kind'),
+    cP: document.getElementById('cP'),
+    cN: document.getElementById('cN'),
+    cE: document.getElementById('cE'),
+    challenge: document.getElementById('challenge'),
+    challengeTarget: document.getElementById('challengeTarget'),
+    challengeStatus: document.getElementById('challengeStatus'),
+  };
+
+  function reseed() {
+    nucleonSeed = [];
+    for (let i = 0; i < MAX_P + MAX_N; i++) {
+      nucleonSeed.push({
+        a: Math.random() * Math.PI * 2,
+        r: Math.random(),
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+  reseed();
+
+  function updateInfo() {
+    els.cP.textContent = protons;
+    els.cN.textContent = neutrons;
+    els.cE.textContent = electrons;
+
+    const el = ELEMENTS[protons];
+    if (protons === 0) {
+      els.name.textContent = '—';
+      els.sym.textContent = '—';
+      els.mass.textContent = '0';
+      els.charge.textContent = '0';
+      els.kind.textContent = 'empty';
+    } else if (!el) {
+      els.name.textContent = `Element ${protons}`;
+      els.sym.textContent = '?';
+      els.mass.textContent = protons + neutrons;
+      const charge = protons - electrons;
+      els.charge.textContent = (charge > 0 ? '+' : '') + charge;
+      els.kind.textContent = 'beyond Calcium — try 1–20';
+    } else {
+      const A = protons + neutrons;
+      els.name.textContent = `${el.name}-${A}`;
+      els.sym.textContent = el.sym;
+      els.mass.textContent = A;
+      const charge = protons - electrons;
+      els.charge.textContent = (charge > 0 ? '+' : '') + charge;
+
+      const isStable = neutrons === el.neutrons;
+      const isNeutral = charge === 0;
+      let parts = [];
+      if (!isNeutral) parts.push(charge > 0 ? `cation (${charge}+)` : `anion (${charge})`);
+      if (!isStable && neutrons > 0) parts.push(`isotope`);
+      else if (neutrons === 0 && protons > 1) parts.push('no neutrons (unstable)');
+      if (parts.length === 0) parts.push('neutral, common isotope');
+      els.kind.textContent = parts.join(', ');
+    }
+
+    checkChallenge();
+  }
+
+  function checkChallenge() {
+    if (!challenge) return;
+    if (protons === challenge.p && neutrons === challenge.n && electrons === challenge.e) {
+      els.challengeStatus.textContent = '✓ Built! Try a new challenge.';
+      els.challengeStatus.className = 'status success';
+    } else {
+      const diffs = [];
+      if (protons !== challenge.p) diffs.push(`${challenge.p - protons > 0 ? '+' : ''}${challenge.p - protons} proton`);
+      if (neutrons !== challenge.n) diffs.push(`${challenge.n - neutrons > 0 ? '+' : ''}${challenge.n - neutrons} neutron`);
+      if (electrons !== challenge.e) diffs.push(`${challenge.e - electrons > 0 ? '+' : ''}${challenge.e - electrons} electron`);
+      els.challengeStatus.textContent = 'Need: ' + diffs.join(', ');
+      els.challengeStatus.className = 'status tip';
+    }
+  }
+
+  function newChallenge() {
+    const variants = [
+      () => { // neutral common isotope
+        const z = 1 + Math.floor(Math.random() * 20);
+        const el = ELEMENTS[z];
+        return { p: z, n: el.neutrons, e: z, label: `Build neutral ${el.name} (${el.sym}-${z + el.neutrons})` };
+      },
+      () => { // ion
+        const z = 1 + Math.floor(Math.random() * 20);
+        const el = ELEMENTS[z];
+        const charge = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 2));
+        const e = Math.max(0, z - charge);
+        return { p: z, n: el.neutrons, e, label: `Build ${el.name} with charge ${charge > 0 ? '+' + charge : charge}` };
+      },
+      () => { // specific isotope
+        const z = 1 + Math.floor(Math.random() * 8); // simpler isotopes
+        const el = ELEMENTS[z];
+        const n = Math.max(0, el.neutrons + (Math.random() < 0.5 ? -1 : 1));
+        return { p: z, n, e: z, label: `Build ${el.name}-${z + n} (an isotope)` };
+      },
+    ];
+    challenge = variants[Math.floor(Math.random() * variants.length)]();
+    els.challenge.classList.remove('hidden');
+    els.challengeTarget.textContent = challenge.label;
+    checkChallenge();
+  }
+
+  // ---- Drawing ----
+  function drawAtomView() {
+    hitTargets = [];
+    const cx = W / 2;
+    const cy = H / 2;
+    const nucleusR = Math.min(50, 14 + Math.sqrt(protons + neutrons) * 5);
+
+    // shells
+    ctx.lineWidth = 1;
+    let cumulative = 0;
+    for (let s = 0; s < SHELL_CAPS.length; s++) {
+      const r = nucleusR + 35 + s * 38;
+      const electronsHere = Math.max(0, Math.min(SHELL_CAPS[s], electrons - cumulative));
+      ctx.strokeStyle = electronsHere > 0 ? '#444' : '#222';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // electrons on this shell
+      for (let i = 0; i < electronsHere; i++) {
+        const speed = 0.0006 + s * 0.0001;
+        const angle = (i / SHELL_CAPS[s]) * Math.PI * 2 + t * speed;
+        const ex = cx + Math.cos(angle) * r;
+        const ey = cy + Math.sin(angle) * r;
+        // glow
+        ctx.fillStyle = 'rgba(107,209,255,0.25)';
+        ctx.beginPath(); ctx.arc(ex, ey, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#6bd1ff';
+        ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI * 2); ctx.fill();
+        hitTargets.push({ x: ex, y: ey, r: 8, tip: 'electron' });
+      }
+      cumulative += SHELL_CAPS[s];
+    }
+
+    // nucleus boundary glow
+    ctx.fillStyle = 'rgba(255,230,0,0.05)';
+    ctx.beginPath(); ctx.arc(cx, cy, nucleusR + 6, 0, Math.PI * 2); ctx.fill();
+
+    // nucleons (interleaved for visual mix)
+    const total = protons + neutrons;
+    const order = [];
+    let pi = 0, ni = 0;
+    for (let i = 0; i < total; i++) {
+      // alternate but bias toward whichever has more remaining
+      if (pi < protons && (ni >= neutrons || (i % 2 === 0))) { order.push('p'); pi++; }
+      else { order.push('n'); ni++; }
+    }
+    for (let i = 0; i < total; i++) {
+      const seed = nucleonSeed[i];
+      const wobble = Math.sin(t * 0.003 + seed.phase) * 1.5;
+      const r = Math.sqrt(seed.r) * (nucleusR - 6) + wobble;
+      const a = seed.a + t * 0.0004;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      const isP = order[i] === 'p';
+      ctx.fillStyle = isP ? '#ff4444' : '#aaaaaa';
+      ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = isP ? '#8a0000' : '#666';
+      ctx.beginPath(); ctx.arc(x - 2, y - 2, 2, 0, Math.PI * 2); ctx.fill();
+      // labels
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 8px Courier New';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isP ? '+' : 'n', x, y + 1);
+      hitTargets.push({ x, y, r: 8, tip: isP ? 'proton' : 'neutron' });
+    }
+    // nucleus area itself (lower priority — pushed last so individual nucleons win)
+    if (total > 0) {
+      hitTargets.push({ x: cx, y: cy, r: nucleusR, tip: 'nucleus' });
+    }
+
+    // central label if empty
+    if (total === 0 && electrons === 0) {
+      ctx.fillStyle = '#444';
+      ctx.font = '14px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('add particles to build an atom', cx, cy);
+    }
+  }
+
+  function drawQuarkView() {
+    hitTargets = [];
+    const cx = W / 2, cy = H / 2;
+
+    ctx.fillStyle = '#888';
+    ctx.font = '14px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('zoomed into the nucleus', cx, 30);
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 16px Courier New';
+    ctx.fillText('Inside a Proton & Neutron: Quarks', cx, 55);
+
+    // Proton on the left (uud), Neutron on the right (udd)
+    drawNucleon(cx - 150, cy + 10, 'proton', ['u', 'u', 'd']);
+    drawNucleon(cx + 150, cy + 10, 'neutron', ['u', 'd', 'd']);
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px Courier New';
+    ctx.fillText('charge:  +2/3 +2/3 -1/3 = +1', cx - 150, cy + 130);
+    ctx.fillText('charge:  +2/3 -1/3 -1/3 =  0', cx + 150, cy + 130);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Courier New';
+    ctx.fillText('u = up quark (+2/3)    d = down quark (-1/3)', cx, H - 30);
+    ctx.fillText('held together by gluons (the squiggly springs)', cx, H - 14);
+  }
+
+  function drawNucleon(cx, cy, kind, quarks) {
+    const r = 80;
+    ctx.fillStyle = kind === 'proton' ? 'rgba(255,68,68,0.18)' : 'rgba(170,170,170,0.18)';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = kind === 'proton' ? '#ff4444' : '#aaa';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+
+    ctx.fillStyle = kind === 'proton' ? '#ff4444' : '#aaa';
+    ctx.font = 'bold 14px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(kind.toUpperCase(), cx, cy - r - 8);
+
+    // three quarks
+    const colors = ['#ff6b6b', '#6bff8e', '#6bb6ff']; // QCD-style "colors"
+    const positions = [];
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + t * 0.001 + (kind === 'neutron' ? Math.PI : 0);
+      const qx = cx + Math.cos(a) * 32;
+      const qy = cy + Math.sin(a) * 32;
+      positions.push({ x: qx, y: qy });
+    }
+
+    // gluons (squiggly lines between each pair)
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const a = positions[i], b = positions[(i + 1) % 3];
+      drawSquiggle(a.x, a.y, b.x, b.y, 4, 3);
+      // hit target at the midpoint of each gluon
+      hitTargets.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, r: 10, tip: 'gluon' });
+    }
+
+    for (let i = 0; i < 3; i++) {
+      const p = positions[i];
+      ctx.fillStyle = colors[i];
+      ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0f0f1a';
+      ctx.font = 'bold 14px Courier New';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(quarks[i], p.x, p.y + 1);
+      hitTargets.push({ x: p.x, y: p.y, r: 16, tip: quarks[i] === 'u' ? 'quarkU' : 'quarkD' });
+    }
+    ctx.textBaseline = 'alphabetic';
+
+    // whole-nucleon hit (bigger, lower priority — pushed last)
+    hitTargets.push({ x: cx, y: cy, r: r, tip: kind === 'proton' ? 'protonZoom' : 'neutronZoom' });
+  }
+
+  function drawSquiggle(x1, y1, x2, y2, amp, waves) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    const nx = -dy / len, ny = dx / len;
+    ctx.beginPath();
+    const steps = 24;
+    for (let i = 0; i <= steps; i++) {
+      const tt = i / steps;
+      const off = Math.sin(tt * Math.PI * 2 * waves + t * 0.005) * amp;
+      const px = x1 + dx * tt + nx * off;
+      const py = y1 + dy * tt + ny * off;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  function loop() {
+    requestAnimationFrame(loop);
+    t += 16;
+    ctx.fillStyle = '#111125';
+    ctx.fillRect(0, 0, W, H);
+    if (zoomMode && (protons > 0 || neutrons > 0)) {
+      drawQuarkView();
+    } else {
+      drawAtomView();
+    }
+  }
+
+  // ---- Controls ----
+  function add(type, delta) {
+    if (type === 'p') protons = Math.max(0, Math.min(MAX_P, protons + delta));
+    if (type === 'n') neutrons = Math.max(0, Math.min(MAX_N, neutrons + delta));
+    if (type === 'e') electrons = Math.max(0, Math.min(MAX_E, electrons + delta));
+    if (delta > 0) reseed();
+    updateInfo();
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+    for (const h of hitTargets) {
+      const dx = mx - h.x, dy = my - h.y;
+      if (dx * dx + dy * dy <= h.r * h.r) {
+        showTip(h.tip, e.clientX, e.clientY);
+        return;
+      }
+    }
+    hideTip();
+  });
+
+  canvas.addEventListener('mouseleave', hideTip);
+
+  document.querySelectorAll('button[data-act]').forEach(b => {
+    b.addEventListener('click', () => {
+      const a = b.dataset.act;
+      const type = a[0];
+      const sign = a[1] === '+' ? 1 : -1;
+      add(type, sign);
+    });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    protons = neutrons = electrons = 0;
+    reseed();
+    updateInfo();
+  });
+
+  document.getElementById('zoomBtn').addEventListener('click', () => {
+    zoomMode = !zoomMode;
+    document.getElementById('zoomBtn').textContent = zoomMode ? 'BACK TO ATOM' : 'ZOOM IN ON QUARKS';
+  });
+
+  document.getElementById('challengeBtn').addEventListener('click', newChallenge);
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    const shift = e.shiftKey;
+    switch (e.code) {
+      case 'KeyP': e.preventDefault(); add('p', shift ? -1 : 1); break;
+      case 'KeyN': e.preventDefault(); add('n', shift ? -1 : 1); break;
+      case 'KeyE': e.preventDefault(); add('e', shift ? -1 : 1); break;
+      case 'KeyQ': e.preventDefault(); document.getElementById('zoomBtn').click(); break;
+      case 'KeyR': e.preventDefault(); document.getElementById('resetBtn').click(); break;
+      case 'KeyC': e.preventDefault(); newChallenge(); break;
+    }
+  });
+
+  updateInfo();
+  loop();
+</script>
+</body>
+</html>
