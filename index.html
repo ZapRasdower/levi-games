@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+
+    header h1 {
+      font-size: 3rem;
+      color: #ffe600;
+      text-shadow: 4px 4px 0px #b8a800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    header p {
+      margin-top: 12px;
+      font-size: 1.1rem;
+      color: #aaa;
+      letter-spacing: 2px;
+    }
+
+    .pixel-divider {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin: 10px 0 50px;
+    }
+
+    .pixel-divider span {
+      width: 12px;
+      height: 12px;
+      background: #ffe600;
+      display: inline-block;
+    }
+
+    .pixel-divider span:nth-child(even) {
+      background: #ff6b6b;
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 30px;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 30px 80px;
+    }
+
+    .game-card {
+      background: #1a1a2e;
+      border: 3px solid #333;
+      border-radius: 4px;
+      overflow: hidden;
+      transition: transform 0.15s, border-color 0.15s;
+      text-decoration: none;
+      display: block;
+    }
+
+    .game-card:hover {
+      transform: translateY(-6px);
+      border-color: #ffe600;
+    }
+
+    .game-card .thumbnail {
+      width: 100%;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      background: #111125;
+    }
+
+    .game-card .info {
+      padding: 16px;
+    }
+
+    .game-card .info h2 {
+      font-size: 1.1rem;
+      color: #ffe600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .game-card .info p {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    .tag {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 3px 8px;
+      background: #ffe60022;
+      color: #ffe600;
+      border: 1px solid #ffe60055;
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      border-radius: 2px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #444;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>&#127918; Levi's Games</h1>
+    <p>Games made by Levi</p>
+  </header>
+
+  <div class="pixel-divider">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="games-grid">
+
+    <a class="game-card" href="pixel-jump/index.html">
+      <div class="thumbnail">&#128056;</div>
+      <div class="info">
+        <h2>Pixel Jump</h2>
+        <p>A little frog jumps over obstacles. How far can you go?</p>
+        <span class="tag">ENDLESS RUNNER</span>
+      </div>
+    </a>
+
+  </div>
+
+  <footer>made with &#10084; by levi &mdash; levi.games</footer>
+
+</body>
+</html>
