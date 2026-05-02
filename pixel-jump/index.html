@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixel Jump - Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ffe600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+    }
+
+    #gameCanvas {
+      border: 3px solid #333;
+      background: #111125;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    #ui {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 600px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #aaa;
+      letter-spacing: 1px;
+    }
+
+    #ui span { color: #ffe600; }
+
+    #message {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #888;
+      letter-spacing: 2px;
+      min-height: 24px;
+      text-align: center;
+    }
+
+    .back-link {
+      margin-top: 28px;
+      color: #555;
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+
+    .back-link:hover { color: #ffe600; }
+  </style>
+</head>
+<body>
+
+  <h1>&#128056; Pixel Jump</h1>
+  <p class="subtitle">Press SPACE or tap to jump</p>
+
+  <canvas id="gameCanvas" width="600" height="180"></canvas>
+
+  <div id="ui">
+    <div>SCORE: <span id="score">0</span></div>
+    <div>BEST: <span id="best">0</span></div>
+  </div>
+
+  <div id="message">Press SPACE or tap to start</div>
+
+  <a class="back-link" href="../index.html">&larr; back to all games</a>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const msgEl = document.getElementById('message');
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const GROUND = H - 40;
+
+  // Pixel palette
+  const C = {
+    sky:      '#111125',
+    ground:   '#2a2a4a',
+    groundTop:'#4a4a8a',
+    frog:     '#4cff72',
+    frogDark: '#1a8a38',
+    eye:      '#fff',
+    pupil:    '#000',
+    obstacle: '#ff4444',
+    obstDark: '#8a0000',
+    star:     '#ffe600',
+    cloud:    '#1e1e3a',
+    score:    '#ffe600',
+  };
+
+  let state = 'idle'; // idle, playing, dead
+  let score = 0;
+  let best = 0;
+  let frame = 0;
+  let speed = 4;
+  let stars = [];
+  let clouds = [];
+  let obstacles = [];
+  let particles = [];
+  let nextObstacle = 80;
+  let groundOffset = 0;
+
+  // ---- FROG ----
+  const frog = {
+    x: 80, y: GROUND, w: 24, h: 20,
+    vy: 0, onGround: true, jumpCount: 0,
+    squish: 1,
+    draw() {
+      const px = Math.floor(this.x);
+      const py = Math.floor(this.y);
+      const sq = this.squish;
+
+      // Body
+      ctx.fillStyle = C.frog;
+      ctx.fillRect(px - 10, py - Math.round(18 * sq), 20, Math.round(18 * sq));
+
+      // Head bumps (eyes)
+      ctx.fillRect(px - 10, py - Math.round(22 * sq), 8, Math.round(6 * sq));
+      ctx.fillRect(px + 2,  py - Math.round(22 * sq), 8, Math.round(6 * sq));
+
+      // Darker belly
+      ctx.fillStyle = C.frogDark;
+      ctx.fillRect(px - 6, py - Math.round(10 * sq), 12, Math.round(6 * sq));
+
+      // Eyes
+      ctx.fillStyle = C.eye;
+      ctx.fillRect(px - 9, py - Math.round(22 * sq), 6, Math.round(5 * sq));
+      ctx.fillRect(px + 3,  py - Math.round(22 * sq), 6, Math.round(5 * sq));
+
+      // Pupils
+      ctx.fillStyle = C.pupil;
+      ctx.fillRect(px - 7, py - Math.round(21 * sq), 3, Math.round(3 * sq));
+      ctx.fillRect(px + 4,  py - Math.round(21 * sq), 3, Math.round(3 * sq));
+
+      // Legs
+      ctx.fillStyle = C.frog;
+      if (this.onGround) {
+        ctx.fillRect(px - 14, py - 6, 6, 6);
+        ctx.fillRect(px + 8,  py - 6, 6, 6);
+      } else {
+        ctx.fillRect(px - 16, py - Math.round(12 * sq), 6, 6);
+        ctx.fillRect(px + 10, py - Math.round(12 * sq), 6, 6);
+      }
+    },
+    jump() {
+      if (this.jumpCount < 2) {
+        this.vy = -11;
+        this.onGround = false;
+        this.jumpCount++;
+        this.squish = 0.7;
+        spawnJumpParticles(this.x, this.y);
+      }
+    },
+    update() {
+      this.vy += 0.55;
+      this.y += this.vy;
+      if (this.y >= GROUND) {
+        this.y = GROUND;
+        this.vy = 0;
+        if (!this.onGround) this.squish = 1.3;
+        this.onGround = true;
+        this.jumpCount = 0;
+      }
+      this.squish += (1 - this.squish) * 0.25;
+    },
+    getBox() {
+      return { x: this.x - 8, y: this.y - 18, w: 16, h: 18 };
+    }
+  };
+
+  // ---- PARTICLES ----
+  function spawnJumpParticles(x, y) {
+    for (let i = 0; i < 5; i++) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: -Math.random() * 3 - 1,
+        life: 20,
+        maxLife: 20,
+        color: C.frog
+      });
+    }
+  }
+
+  function spawnDeathParticles(x, y) {
+    for (let i = 0; i < 14; i++) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 7,
+        vy: -Math.random() * 6 - 2,
+        life: 35,
+        maxLife: 35,
+        color: i % 2 === 0 ? C.frog : C.obstacle
+      });
+    }
+  }
+
+  // ---- STARS ----
+  function initStars() {
+    for (let i = 0; i < 40; i++) {
+      stars.push({ x: Math.random() * W, y: Math.random() * (GROUND - 20) });
+    }
+  }
+
+  // ---- OBSTACLES ----
+  function spawnObstacle() {
+    const h = 20 + Math.floor(Math.random() * 25);
+    const w = 14 + Math.floor(Math.random() * 10);
+    obstacles.push({ x: W + 20, w, h });
+  }
+
+  // ---- COLLISION ----
+  function rectsOverlap(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x &&
+           a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // ---- DRAW GROUND ----
+  function drawGround() {
+    ctx.fillStyle = C.groundTop;
+    ctx.fillRect(0, GROUND, W, 4);
+    ctx.fillStyle = C.ground;
+    ctx.fillRect(0, GROUND + 4, W, H - GROUND - 4);
+
+    // Scrolling ground dashes
+    ctx.fillStyle = '#3a3a6a';
+    for (let i = 0; i < 15; i++) {
+      const x = ((i * 44 - groundOffset) % W + W) % W;
+      ctx.fillRect(x, GROUND + 10, 28, 3);
+    }
+  }
+
+  // ---- DRAW OBSTACLE ----
+  function drawObstacle(obs) {
+    const py = GROUND - obs.h;
+    ctx.fillStyle = C.obstacle;
+    ctx.fillRect(Math.floor(obs.x), py, obs.w, obs.h);
+    ctx.fillStyle = C.obstDark;
+    ctx.fillRect(Math.floor(obs.x), py, obs.w, 5);
+    ctx.fillRect(Math.floor(obs.x) + obs.w - 4, py, 4, obs.h);
+  }
+
+  // ---- RESET ----
+  function reset() {
+    frog.y = GROUND; frog.vy = 0; frog.onGround = true;
+    frog.jumpCount = 0; frog.squish = 1;
+    obstacles = []; particles = [];
+    score = 0; frame = 0; speed = 4;
+    nextObstacle = 80;
+    groundOffset = 0;
+  }
+
+  // ---- MAIN LOOP ----
+  function loop() {
+    requestAnimationFrame(loop);
+    ctx.fillStyle = C.sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    ctx.fillStyle = C.star;
+    for (const s of stars) {
+      if (Math.random() < 0.002) continue; // twinkle
+      ctx.fillRect(Math.floor(s.x), Math.floor(s.y), 2, 2);
+    }
+
+    drawGround();
+
+    if (state === 'playing') {
+      frame++;
+      score = Math.floor(frame / 6);
+      scoreEl.textContent = score;
+      speed = 4 + Math.floor(score / 10) * 0.5;
+
+      groundOffset = (groundOffset + speed) % 44;
+
+      // Obstacles
+      nextObstacle--;
+      if (nextObstacle <= 0) {
+        spawnObstacle();
+        const gap = Math.max(40, 85 - score);
+        nextObstacle = gap + Math.floor(Math.random() * 30);
+      }
+
+      for (const obs of obstacles) obs.x -= speed;
+      obstacles = obstacles.filter(o => o.x > -40);
+
+      // Collision
+      const fb = frog.getBox();
+      for (const obs of obstacles) {
+        const ob = { x: obs.x + 2, y: GROUND - obs.h + 2, w: obs.w - 4, h: obs.h - 2 };
+        if (rectsOverlap(fb, ob)) {
+          state = 'dead';
+          if (score > best) { best = score; bestEl.textContent = best; }
+          spawnDeathParticles(frog.x, frog.y - 10);
+          msgEl.textContent = 'GAME OVER! Press SPACE to try again';
+          break;
+        }
+      }
+
+      frog.update();
+    }
+
+    // Draw obstacles
+    for (const obs of obstacles) drawObstacle(obs);
+
+    // Draw frog (don't draw if just died — particles instead)
+    if (state !== 'dead') frog.draw();
+
+    // Particles
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
+      const alpha = p.life / p.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 4, 4);
+    }
+    ctx.globalAlpha = 1;
+    particles = particles.filter(p => p.life > 0);
+  }
+
+  // ---- INPUT ----
+  function handleJump() {
+    if (state === 'idle') {
+      state = 'playing';
+      msgEl.textContent = '';
+      frog.jump();
+    } else if (state === 'playing') {
+      frog.jump();
+    } else if (state === 'dead') {
+      reset();
+      state = 'playing';
+      msgEl.textContent = '';
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      handleJump();
+    }
+  });
+  canvas.addEventListener('click', handleJump);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); handleJump(); }, { passive: false });
+
+  initStars();
+  loop();
+</script>
+</body>
+</html>
