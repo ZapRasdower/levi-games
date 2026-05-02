@@ -44,6 +44,7 @@
     #ui {
       display: flex;
       justify-content: space-between;
+      gap: 20px;
       width: 100%;
       max-width: 600px;
       margin-top: 12px;
@@ -77,12 +78,13 @@
 <body>
 
   <h1>&#129354; Levi Leap</h1>
-  <p class="subtitle">Press SPACE or tap to jump</p>
+  <p class="subtitle">SPACE / TAP to jump &middot; double-jump &middot; P to pause</p>
 
   <canvas id="gameCanvas" width="600" height="220"></canvas>
 
   <div id="ui">
     <div>SCORE: <span id="score">0</span></div>
+    <div>COINS: <span id="coins">0</span></div>
     <div>BEST: <span id="best">0</span></div>
   </div>
 
@@ -95,7 +97,11 @@
   const ctx = canvas.getContext('2d');
   const scoreEl = document.getElementById('score');
   const bestEl = document.getElementById('best');
+  const coinsEl = document.getElementById('coins');
   const msgEl = document.getElementById('message');
+
+  const BEST_KEY = 'leviLeap.best';
+  const COINS_KEY = 'leviLeap.totalCoins';
 
   const W = canvas.width;
   const H = canvas.height;
@@ -118,14 +124,21 @@
 
   let state = 'idle';
   let score = 0;
-  let best = 0;
+  let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let totalCoins = parseInt(localStorage.getItem(COINS_KEY) || '0', 10);
+  let runCoins = 0;
   let frame = 0;
   let speed = 4;
   let stars = [];
   let obstacles = [];
+  let coins = [];
   let particles = [];
+  let floaters = [];
   let nextObstacle = 80;
+  let nextCoin = 140;
   let groundOffset = 0;
+  bestEl.textContent = best;
+  coinsEl.textContent = totalCoins;
 
   // ---- PLAYER (Levi) ----
   const SPRITE_W = 50;
@@ -226,9 +239,41 @@
   }
 
   function spawnObstacle() {
-    const h = 24 + Math.floor(Math.random() * 28);
-    const w = 16 + Math.floor(Math.random() * 12);
-    obstacles.push({ x: W + 20, w, h });
+    // Occasionally spawn a tall thin spike pair, otherwise a block
+    if (score > 30 && Math.random() < 0.25) {
+      const h1 = 28 + Math.floor(Math.random() * 20);
+      const h2 = 24 + Math.floor(Math.random() * 24);
+      obstacles.push({ x: W + 20, w: 14, h: h1 });
+      obstacles.push({ x: W + 20 + 36, w: 14, h: h2 });
+    } else {
+      const h = 24 + Math.floor(Math.random() * 32);
+      const w = 16 + Math.floor(Math.random() * 14);
+      obstacles.push({ x: W + 20, w, h });
+    }
+  }
+
+  function spawnCoin() {
+    // Place coin at a height reachable by jump (single or double)
+    const heights = [GROUND - 30, GROUND - 60, GROUND - 95];
+    const y = heights[Math.floor(Math.random() * heights.length)];
+    const count = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+      coins.push({ x: W + 20 + i * 22, y, r: 6, taken: false, spin: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  function drawCoin(c) {
+    const sx = Math.cos(c.spin) * c.r;
+    ctx.fillStyle = C.star;
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, Math.max(1.5, Math.abs(sx)), c.r, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#b8a800';
+    ctx.fillRect(c.x - 1, c.y - 2, 2, 4);
+  }
+
+  function spawnFloater(x, y, text, color) {
+    floaters.push({ x, y, text, color, life: 40, maxLife: 40 });
   }
 
   function rectsOverlap(a, b) {
@@ -262,15 +307,32 @@
     player.y = GROUND; player.vy = 0; player.onGround = true;
     player.jumpCount = 0; player.squish = 1;
     player.rot = 0; player.targetRot = 0;
-    obstacles = []; particles = [];
+    obstacles = []; particles = []; coins = []; floaters = [];
     score = 0; frame = 0; speed = 4;
+    runCoins = 0;
+    coinsEl.textContent = totalCoins;
     nextObstacle = 80;
+    nextCoin = 140;
     groundOffset = 0;
+  }
+
+  function lerpColor(a, b, t) {
+    const ai = parseInt(a.slice(1), 16), bi = parseInt(b.slice(1), 16);
+    const ar = (ai >> 16) & 255, ag = (ai >> 8) & 255, ab = ai & 255;
+    const br = (bi >> 16) & 255, bg = (bi >> 8) & 255, bb = bi & 255;
+    const r = Math.round(ar + (br - ar) * t);
+    const g = Math.round(ag + (bg - ag) * t);
+    const bl = Math.round(ab + (bb - ab) * t);
+    return `rgb(${r},${g},${bl})`;
   }
 
   function loop() {
     requestAnimationFrame(loop);
-    ctx.fillStyle = C.sky;
+
+    // Day/night cycle based on score
+    const t = (Math.sin(frame / 600) + 1) / 2;
+    const sky = lerpColor('#111125', '#3a2a55', t);
+    ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
     // Stars
@@ -286,36 +348,73 @@
       frame++;
       score = Math.floor(frame / 6);
       scoreEl.textContent = score;
-      speed = 4 + Math.floor(score / 10) * 0.5;
+      speed = 4 + Math.min(6, score / 25);
 
       groundOffset = (groundOffset + speed) % 44;
 
       nextObstacle--;
       if (nextObstacle <= 0) {
         spawnObstacle();
-        const gap = Math.max(45, 90 - score);
-        nextObstacle = gap + Math.floor(Math.random() * 30);
+        const gap = Math.max(50, 100 - score / 2);
+        nextObstacle = gap + Math.floor(Math.random() * 40);
+      }
+
+      nextCoin--;
+      if (nextCoin <= 0) {
+        spawnCoin();
+        nextCoin = 90 + Math.floor(Math.random() * 120);
       }
 
       for (const obs of obstacles) obs.x -= speed;
       obstacles = obstacles.filter(o => o.x > -40);
 
+      for (const c of coins) { c.x -= speed; c.spin += 0.18; }
+      coins = coins.filter(c => c.x > -20 && !c.taken);
+
       const fb = player.getBox();
+
+      // Coin pickup
+      for (const c of coins) {
+        if (c.taken) continue;
+        if (c.x > fb.x - 8 && c.x < fb.x + fb.w + 8 &&
+            c.y > fb.y - 8 && c.y < fb.y + fb.h + 8) {
+          c.taken = true;
+          runCoins++;
+          totalCoins++;
+          localStorage.setItem(COINS_KEY, totalCoins);
+          coinsEl.textContent = totalCoins;
+          spawnFloater(c.x, c.y - 6, '+1', C.star);
+        }
+      }
+
       for (const obs of obstacles) {
         const ob = { x: obs.x + 2, y: GROUND - obs.h + 2, w: obs.w - 4, h: obs.h - 2 };
         if (rectsOverlap(fb, ob)) {
           state = 'dead';
-          if (score > best) { best = score; bestEl.textContent = best; }
+          if (score > best) {
+            best = score;
+            bestEl.textContent = best;
+            localStorage.setItem(BEST_KEY, best);
+            spawnFloater(player.x, player.y - SPRITE_H, 'NEW BEST!', C.star);
+          }
           spawnDeathParticles(player.x, player.y - SPRITE_H / 2);
-          msgEl.textContent = 'GAME OVER! Press SPACE to try again';
+          msgEl.textContent = `GAME OVER! Score ${score} (+${runCoins} coins) — SPACE to retry`;
           break;
         }
       }
 
       player.update();
+    } else if (state === 'paused') {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = C.star;
+      ctx.font = 'bold 24px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', W / 2, H / 2);
     }
 
     for (const obs of obstacles) drawObstacle(obs);
+    for (const c of coins) if (!c.taken) drawCoin(c);
 
     if (state !== 'dead') player.draw();
 
@@ -328,6 +427,17 @@
     }
     ctx.globalAlpha = 1;
     particles = particles.filter(p => p.life > 0);
+
+    for (const f of floaters) {
+      f.y -= 0.6; f.life--;
+      ctx.globalAlpha = f.life / f.maxLife;
+      ctx.fillStyle = f.color;
+      ctx.font = 'bold 12px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
+    floaters = floaters.filter(f => f.life > 0);
   }
 
   function handleJump() {
@@ -337,8 +447,21 @@
       player.jump();
     } else if (state === 'playing') {
       player.jump();
+    } else if (state === 'paused') {
+      state = 'playing';
+      msgEl.textContent = '';
     } else if (state === 'dead') {
       reset();
+      state = 'playing';
+      msgEl.textContent = '';
+    }
+  }
+
+  function togglePause() {
+    if (state === 'playing') {
+      state = 'paused';
+      msgEl.textContent = 'Paused — press P or SPACE to resume';
+    } else if (state === 'paused') {
       state = 'playing';
       msgEl.textContent = '';
     }
@@ -348,6 +471,9 @@
     if (e.code === 'Space' || e.code === 'ArrowUp') {
       e.preventDefault();
       handleJump();
+    } else if (e.code === 'KeyP') {
+      e.preventDefault();
+      togglePause();
     }
   });
   canvas.addEventListener('click', handleJump);
