@@ -326,24 +326,7 @@
     return `rgb(${r},${g},${bl})`;
   }
 
-  function loop() {
-    requestAnimationFrame(loop);
-
-    // Day/night cycle based on score
-    const t = (Math.sin(frame / 600) + 1) / 2;
-    const sky = lerpColor('#111125', '#3a2a55', t);
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
-
-    // Stars
-    ctx.fillStyle = C.star;
-    for (const s of stars) {
-      if (Math.random() < 0.002) continue;
-      ctx.fillRect(Math.floor(s.x), Math.floor(s.y), 2, 2);
-    }
-
-    drawGround();
-
+  function update() {
     if (state === 'playing') {
       frame++;
       score = Math.floor(frame / 6);
@@ -404,7 +387,37 @@
       }
 
       player.update();
-    } else if (state === 'paused') {
+    }
+
+    // Particles and floaters animate even when dead
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    for (const f of floaters) {
+      f.y -= 0.6; f.life--;
+    }
+    floaters = floaters.filter(f => f.life > 0);
+  }
+
+  function render() {
+    // Day/night cycle based on score
+    const t = (Math.sin(frame / 600) + 1) / 2;
+    const sky = lerpColor('#111125', '#3a2a55', t);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    ctx.fillStyle = C.star;
+    for (const s of stars) {
+      if (Math.random() < 0.002) continue;
+      ctx.fillRect(Math.floor(s.x), Math.floor(s.y), 2, 2);
+    }
+
+    drawGround();
+
+    if (state === 'paused') {
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = C.star;
@@ -419,17 +432,14 @@
     if (state !== 'dead') player.draw();
 
     for (const p of particles) {
-      p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
       const alpha = p.life / p.maxLife;
       ctx.globalAlpha = alpha;
       ctx.fillStyle = p.color;
       ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 4, 4);
     }
     ctx.globalAlpha = 1;
-    particles = particles.filter(p => p.life > 0);
 
     for (const f of floaters) {
-      f.y -= 0.6; f.life--;
       ctx.globalAlpha = f.life / f.maxLife;
       ctx.fillStyle = f.color;
       ctx.font = 'bold 12px Courier New';
@@ -437,7 +447,26 @@
       ctx.fillText(f.text, f.x, f.y);
     }
     ctx.globalAlpha = 1;
-    floaters = floaters.filter(f => f.life > 0);
+  }
+
+  // Fixed timestep so the game plays at the same speed on 60/120/144Hz displays.
+  const TICK_MS = 1000 / 60;
+  let lastTime = 0;
+  let acc = 0;
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (!lastTime) lastTime = now;
+    let dt = now - lastTime;
+    lastTime = now;
+    // Cap dt so a tabbed-out window doesn't dump hundreds of ticks at once
+    if (dt > 250) dt = 250;
+    acc += dt;
+    let safety = 8;
+    while (acc >= TICK_MS && safety-- > 0) {
+      update();
+      acc -= TICK_MS;
+    }
+    render();
   }
 
   function handleJump() {
