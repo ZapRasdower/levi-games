@@ -8,6 +8,7 @@ A static collection of small browser games made for/by Levi. Hosted via GitHub P
 
 - **Levi Leap** (`pixel-jump/`) — endless runner. Jump (and double-jump) over obstacles, collect coins.
 - **Levi Snake** (`snake/`) — classic snake with bonus snacks worth extra points.
+- **Atom Builder** (`atom-builder/`) — educational sandbox. Add protons, neutrons, and electrons to build atoms; the game identifies the element, isotope, and ion charge. Zoom in on the nucleus to see the quarks (uud / udd) inside protons and neutrons.
 
 ## Run locally
 
