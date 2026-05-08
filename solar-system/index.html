@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar System Explorer - Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #04040c;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ffe600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #questionBar {
+      width: 100%;
+      max-width: 720px;
+      min-height: 28px;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      background: #1a1a2e;
+      border: 2px solid #ffe60055;
+      color: #ffe600;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      text-align: center;
+      display: none;
+    }
+
+    #questionBar.show { display: block; }
+    #questionBar.right { border-color: #6bffd1; color: #6bffd1; }
+    #questionBar.wrong { border-color: #ff6b6b; color: #ff6b6b; }
+
+    #gameCanvas {
+      border: 3px solid #1a1a2e;
+      background: #04040c;
+      display: block;
+      cursor: pointer;
+    }
+
+    .controls {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      background: #1a1a2e;
+      color: #ffe600;
+      border: 2px solid #333;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    button:hover { border-color: #ffe600; }
+    button.active { background: #2a2a4a; border-color: #ffe600; }
+
+    .panel {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 14px;
+      background: #0e0e1c;
+      border: 2px solid #222;
+      padding: 16px;
+      min-height: 140px;
+    }
+
+    .panel h2 {
+      color: #ffe600;
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .panel .ptype {
+      color: #888;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    .panel .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px 16px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    .panel .stats .k { color: #888; letter-spacing: 1px; }
+    .panel .stats .v { color: #fff; }
+
+    .panel .fact {
+      color: #ccc;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      border-left: 3px solid #ffe600;
+      padding-left: 10px;
+      margin-top: 10px;
+    }
+
+    .placeholder {
+      color: #666;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .back-link {
+      margin-top: 28px;
+      color: #555;
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+
+    .back-link:hover { color: #ffe600; }
+
+    #tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #1a1a2e;
+      border: 2px solid #ffe600;
+      color: #ffe600;
+      padding: 4px 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+
+    #tooltip.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <h1>&#128640; Solar System</h1>
+  <p class="subtitle">Click a planet to learn about it &middot; speed up time to watch them orbit</p>
+
+  <div id="questionBar"></div>
+
+  <canvas id="gameCanvas" width="720" height="440"></canvas>
+
+  <div class="controls">
+    <button id="pauseBtn">PAUSE</button>
+    <button data-speed="0.5">0.5×</button>
+    <button data-speed="1" class="active">1×</button>
+    <button data-speed="5">5×</button>
+    <button data-speed="20">20×</button>
+    <button id="scaleBtn">SHOW REAL DISTANCES</button>
+    <button id="quizBtn">QUIZ ME</button>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="placeholder">Click a planet to see its info, or hit <strong style="color:#ffe600">QUIZ ME</strong> to test yourself.</div>
+  </div>
+
+  <a class="back-link" href="../index.html">&larr; back to all games</a>
+
+  <div id="tooltip"></div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const tooltip = document.getElementById('tooltip');
+  const panel = document.getElementById('panel');
+  const questionBar = document.getElementById('questionBar');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const scaleBtn = document.getElementById('scaleBtn');
+  const quizBtn = document.getElementById('quizBtn');
+
+  const QUIZ_BEST_KEY = 'solarSystem.quizBest';
+
+  // Real-ish data; orbit radius & display radius are tuned for visibility.
+  // periodDays = real Earth days for one orbit.
+  // orbitAU = real semi-major axis (used in real-scale mode).
+  // compressedR = pixels in compressed mode.
+  const PLANETS = [
+    {
+      name: 'Mercury', type: 'Terrestrial planet',
+      color: '#a89074', accent: '#7a6452',
+      r: 4, compressedR: 60, orbitAU: 0.39, periodDays: 88,
+      diameterKm: 4879, gravityG: 0.38, moons: 0, dayHours: 4222.6,
+      fact: 'Mercury is the smallest planet and the closest to the Sun. Days are longer than years here — one Mercury day takes about 176 Earth days, but a year is just 88!'
+    },
+    {
+      name: 'Venus', type: 'Terrestrial planet',
+      color: '#e6c074', accent: '#a88a40',
+      r: 7, compressedR: 90, orbitAU: 0.72, periodDays: 225,
+      diameterKm: 12104, gravityG: 0.91, moons: 0, dayHours: 2802,
+      fact: 'Venus is the hottest planet (about 465°C / 870°F) because of a thick CO₂ atmosphere — even though Mercury is closer to the Sun. It also spins backward!'
+    },
+    {
+      name: 'Earth', type: 'Our home planet',
+      color: '#5aa0e6', accent: '#3a6da0',
+      r: 7, compressedR: 125, orbitAU: 1.00, periodDays: 365,
+      diameterKm: 12742, gravityG: 1.00, moons: 1, dayHours: 24,
+      fact: "Earth is the only place we've ever found life. About 71% of its surface is covered in liquid water, and its magnetic field protects us from harmful solar radiation.",
+      hasMoon: true
+    },
+    {
+      name: 'Mars', type: 'Terrestrial planet',
+      color: '#d76b3a', accent: '#8a3a1a',
+      r: 5, compressedR: 160, orbitAU: 1.52, periodDays: 687,
+      diameterKm: 6779, gravityG: 0.38, moons: 2, dayHours: 24.6,
+      fact: 'Mars has the largest volcano in the solar system — Olympus Mons — about 22 km tall, almost 3× higher than Mount Everest. Its red color comes from rusty iron in the soil.'
+    },
+    {
+      name: 'Jupiter', type: 'Gas giant',
+      color: '#d4a06a', accent: '#8a6038',
+      r: 22, compressedR: 220, orbitAU: 5.20, periodDays: 4333,
+      diameterKm: 139820, gravityG: 2.53, moons: 95, dayHours: 9.9,
+      fact: 'Jupiter is so big that more than 1,300 Earths could fit inside it. The Great Red Spot is a giant storm that has been raging for at least 400 years.',
+      bands: true
+    },
+    {
+      name: 'Saturn', type: 'Gas giant',
+      color: '#e6d39a', accent: '#a8945a',
+      r: 18, compressedR: 280, orbitAU: 9.58, periodDays: 10759,
+      diameterKm: 116460, gravityG: 1.07, moons: 146, dayHours: 10.7,
+      fact: "Saturn's rings are made of billions of chunks of ice and rock, some as small as dust grains and others as big as a house. Saturn is so light it would float in water!",
+      rings: true
+    },
+    {
+      name: 'Uranus', type: 'Ice giant',
+      color: '#9adfe6', accent: '#5a96a0',
+      r: 12, compressedR: 330, orbitAU: 19.22, periodDays: 30687,
+      diameterKm: 50724, gravityG: 0.89, moons: 27, dayHours: 17.2,
+      fact: 'Uranus is tipped on its side! It rotates almost completely sideways compared to other planets, so its poles take turns facing the Sun for 42 years at a time.'
+    },
+    {
+      name: 'Neptune', type: 'Ice giant',
+      color: '#3a6dd0', accent: '#1a3a8a',
+      r: 12, compressedR: 380, orbitAU: 30.05, periodDays: 60190,
+      diameterKm: 49244, gravityG: 1.14, moons: 14, dayHours: 16.1,
+      fact: 'Neptune has the fastest winds in the solar system — over 2,000 km/h, faster than the speed of sound on Earth. It was the first planet found by math before being seen.'
+    }
+  ];
+
+  const SUN = {
+    name: 'Sun', type: 'Yellow dwarf star',
+    color: '#ffe066', accent: '#ff8a00',
+    r: 26,
+    diameterKm: 1391000, gravityG: 28, moons: 0, ageBy: 4.6,
+    fact: "The Sun is a star — a giant ball of mostly hydrogen and helium. It contains 99.86% of all the mass in the solar system, and every second it converts about 600 million tonnes of hydrogen into helium."
+  };
+
+  // State
+  let simDays = 0;
+  let speed = 1;          // multiplier
+  let timePerSec = 30;    // sim days per real second at speed=1
+  let paused = false;
+  let realScale = false;
+  let selected = null;
+  let hoverIndex = -1;
+  let hoverSun = false;
+  let stars = [];
+  let quiz = null;        // { target: planet, score, best }
+  let quizFlash = 0;      // 0=none, +ve=correct, -ve=wrong (counts down)
+
+  for (let i = 0; i < 200; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      brightness: Math.random() * 0.6 + 0.2,
+      twinkle: Math.random() * Math.PI * 2,
+    });
+  }
+
+  // ---- Coordinates ----
+  function orbitRadius(p) {
+    if (realScale) {
+      // Map 0..30 AU to 30..(min(W,H)/2 - 12)
+      const maxR = Math.min(W, H) / 2 - 14;
+      return 30 + (p.orbitAU / 30) * (maxR - 30);
+    }
+    return p.compressedR;
+  }
+
+  function planetPos(p, i) {
+    const r = orbitRadius(p);
+    // give each planet a phase offset so they don't all start aligned
+    const phase = i * 0.7;
+    const angle = phase + (simDays / p.periodDays) * Math.PI * 2;
+    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, angle, r };
+  }
+
+  // ---- Drawing ----
+  function drawStars(t) {
+    for (const s of stars) {
+      const b = s.brightness * (0.7 + 0.3 * Math.sin(t * 0.001 + s.twinkle));
+      ctx.fillStyle = `rgba(255,255,255,${b})`;
+      ctx.fillRect(s.x, s.y, 1, 1);
+    }
+  }
+
+  function drawSun(t) {
+    // Glow
+    const glow = ctx.createRadialGradient(cx, cy, SUN.r * 0.5, cx, cy, SUN.r * 3);
+    glow.addColorStop(0, 'rgba(255,200,40,0.55)');
+    glow.addColorStop(1, 'rgba(255,200,40,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, SUN.r * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = SUN.color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, SUN.r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sun spots / surface noise
+    ctx.fillStyle = SUN.accent;
+    for (let i = 0; i < 4; i++) {
+      const a = i * 1.7 + t * 0.0003;
+      const sx = cx + Math.cos(a) * SUN.r * 0.55;
+      const sy = cy + Math.sin(a) * SUN.r * 0.45;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3 + Math.sin(t * 0.002 + i), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (hoverSun) {
+      ctx.strokeStyle = '#ffe600';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, SUN.r + 5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function drawAsteroidBelt() {
+    // Between Mars and Jupiter
+    const r1 = realScale ? orbitRadius({ orbitAU: 2.2 }) : (PLANETS[3].compressedR + 18);
+    const r2 = realScale ? orbitRadius({ orbitAU: 3.2 }) : (PLANETS[3].compressedR + 30);
+    ctx.fillStyle = 'rgba(170,170,170,0.45)';
+    // Deterministic dots so they don't shimmer
+    for (let i = 0; i < 220; i++) {
+      const a = (i * 137.5 * Math.PI / 180) + simDays * 0.0008;
+      const r = r1 + ((i * 73) % 1000) / 1000 * (r2 - r1);
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  function drawOrbit(p, highlight) {
+    const r = orbitRadius(p);
+    ctx.strokeStyle = highlight ? '#ffe60055' : '#ffffff10';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawPlanet(p, i, t) {
+    const pos = planetPos(p, i);
+    const isHover = hoverIndex === i;
+    const isSel = selected === p;
+
+    // Saturn rings (drawn behind)
+    if (p.rings) {
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.rotate(-0.4);
+      ctx.scale(1, 0.35);
+      ctx.strokeStyle = '#d4c89a';
+      ctx.lineWidth = 2;
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r + 6 + k * 4, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Body
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Shading (sun-side highlight)
+    const lightAng = Math.atan2(cy - pos.y, cx - pos.x);
+    const lx = pos.x + Math.cos(lightAng) * p.r * 0.35;
+    const ly = pos.y + Math.sin(lightAng) * p.r * 0.35;
+    const grad = ctx.createRadialGradient(lx, ly, 0, pos.x, pos.y, p.r);
+    grad.addColorStop(0, 'rgba(255,255,255,0.25)');
+    grad.addColorStop(0.6, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Jupiter bands
+    if (p.bands) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, p.r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = p.accent;
+      for (let k = -2; k <= 2; k++) {
+        ctx.fillRect(pos.x - p.r, pos.y + k * 5 - 1, p.r * 2, 2);
+      }
+      // Great red spot
+      ctx.fillStyle = '#c44a3a';
+      ctx.beginPath();
+      ctx.ellipse(pos.x + p.r * 0.3, pos.y + p.r * 0.2, 4, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Earth's moon
+    if (p.hasMoon) {
+      const ma = simDays * 0.22 + i;
+      const mr = p.r + 9;
+      const mx = pos.x + Math.cos(ma) * mr;
+      const my = pos.y + Math.sin(ma) * mr;
+      ctx.fillStyle = '#bbbbbb';
+      ctx.beginPath();
+      ctx.arc(mx, my, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Highlight ring
+    if (isHover || isSel) {
+      ctx.strokeStyle = '#ffe600';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, p.r + 5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (quizFlash !== 0 && quiz && quiz.targetIndex === i) {
+      const c = quizFlash > 0 ? '#6bffd1' : '#ff6b6b';
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, p.r + 8 + (Math.abs(quizFlash) % 10), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function render(t) {
+    ctx.fillStyle = '#04040c';
+    ctx.fillRect(0, 0, W, H);
+    drawStars(t);
+
+    // Orbits
+    for (let i = 0; i < PLANETS.length; i++) {
+      drawOrbit(PLANETS[i], hoverIndex === i || selected === PLANETS[i]);
+    }
+    drawAsteroidBelt();
+    drawSun(t);
+    for (let i = 0; i < PLANETS.length; i++) drawPlanet(PLANETS[i], i, t);
+
+    if (quizFlash > 0) quizFlash--;
+    else if (quizFlash < 0) quizFlash++;
+  }
+
+  // ---- Loop ----
+  let lastTime = 0;
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = lastTime ? Math.min(100, now - lastTime) : 16;
+    lastTime = now;
+    if (!paused) {
+      simDays += (dt / 1000) * timePerSec * speed;
+    }
+    render(now);
+  }
+
+  // ---- Interaction ----
+  function getPlanetAt(mx, my) {
+    // Sun first
+    const dx0 = mx - cx, dy0 = my - cy;
+    if (dx0 * dx0 + dy0 * dy0 <= (SUN.r + 4) * (SUN.r + 4)) {
+      return { type: 'sun' };
+    }
+    // Then planets — search in reverse so larger outer ones don't beat inner overlap
+    for (let i = 0; i < PLANETS.length; i++) {
+      const p = PLANETS[i];
+      const pos = planetPos(p, i);
+      const dx = mx - pos.x, dy = my - pos.y;
+      const hit = p.r + 5;
+      if (dx * dx + dy * dy <= hit * hit) {
+        return { type: 'planet', index: i, planet: p, pos };
+      }
+    }
+    return null;
+  }
+
+  function selectBody(body) {
+    if (!body) {
+      selected = null;
+      panel.innerHTML = '<div class="placeholder">Click a planet to see its info.</div>';
+      return;
+    }
+    if (body.type === 'sun') {
+      selected = SUN;
+      renderPanel(SUN, true);
+    } else {
+      selected = body.planet;
+      renderPanel(body.planet, false);
+    }
+  }
+
+  function renderPanel(p, isSun) {
+    let stats;
+    if (isSun) {
+      stats = [
+        ['DIAMETER',  formatNum(p.diameterKm) + ' km'],
+        ['GRAVITY',   p.gravityG + '× Earth'],
+        ['AGE',       p.ageBy + ' billion yrs'],
+        ['TYPE',      p.type],
+      ];
+    } else {
+      const yearText = p.periodDays < 1000 ? `${p.periodDays} Earth days`
+                                           : `${(p.periodDays / 365).toFixed(1)} Earth years`;
+      const dayText = p.dayHours < 100 ? `${p.dayHours} hrs`
+                                       : `${(p.dayHours / 24).toFixed(0)} Earth days`;
+      stats = [
+        ['DISTANCE FROM SUN', `${p.orbitAU} AU (${formatNum(Math.round(p.orbitAU * 149.6))} mil km)`],
+        ['YEAR LENGTH',       yearText],
+        ['DAY LENGTH',        dayText],
+        ['DIAMETER',          formatNum(p.diameterKm) + ' km'],
+        ['GRAVITY',           p.gravityG + '× Earth'],
+        ['MOONS',             p.moons],
+      ];
+    }
+    panel.innerHTML = `
+      <h2>${p.name}</h2>
+      <div class="ptype">${p.type.toUpperCase()}</div>
+      <div class="stats">
+        ${stats.map(s => `<div><span class="k">${s[0]}:</span> <span class="v">${s[1]}</span></div>`).join('')}
+      </div>
+      <div class="fact">${p.fact}</div>
+    `;
+  }
+
+  function formatNum(n) {
+    return n.toLocaleString('en-US');
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+    const hit = getPlanetAt(mx, my);
+    hoverIndex = -1;
+    hoverSun = false;
+    if (hit) {
+      if (hit.type === 'sun') {
+        hoverSun = true;
+        showTip('Sun', e.clientX, e.clientY);
+      } else {
+        hoverIndex = hit.index;
+        showTip(hit.planet.name, e.clientX, e.clientY);
+      }
+      canvas.style.cursor = 'pointer';
+    } else {
+      hideTip();
+      canvas.style.cursor = 'default';
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    hoverIndex = -1;
+    hoverSun = false;
+    hideTip();
+  });
+
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (W / rect.width);
+    const my = (e.clientY - rect.top) * (H / rect.height);
+    const hit = getPlanetAt(mx, my);
+
+    if (quiz && hit && hit.type === 'planet') {
+      handleQuizAnswer(hit.index);
+      // also show the info for the selected planet
+      selectBody(hit);
+      return;
+    }
+    if (hit) selectBody(hit);
+  });
+
+  function showTip(text, x, y) {
+    tooltip.textContent = text;
+    tooltip.style.left = (x + 14) + 'px';
+    tooltip.style.top  = (y + 14) + 'px';
+    tooltip.classList.add('show');
+  }
+  function hideTip() { tooltip.classList.remove('show'); }
+
+  // ---- Controls ----
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'PLAY' : 'PAUSE';
+    pauseBtn.classList.toggle('active', paused);
+  });
+
+  document.querySelectorAll('button[data-speed]').forEach(b => {
+    b.addEventListener('click', () => {
+      speed = parseFloat(b.dataset.speed);
+      document.querySelectorAll('button[data-speed]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  scaleBtn.addEventListener('click', () => {
+    realScale = !realScale;
+    scaleBtn.textContent = realScale ? 'SHOW COMPRESSED' : 'SHOW REAL DISTANCES';
+    scaleBtn.classList.toggle('active', realScale);
+  });
+
+  // ---- Quiz ----
+  const QUIZ_QUESTIONS = [
+    { test: p => p.name === 'Jupiter',  q: 'Click the largest planet in the solar system' },
+    { test: p => p.name === 'Mercury',  q: 'Click the planet closest to the Sun' },
+    { test: p => p.name === 'Saturn',   q: 'Click the planet famous for its rings' },
+    { test: p => p.name === 'Mars',     q: 'Click the Red Planet' },
+    { test: p => p.name === 'Venus',    q: 'Click the hottest planet' },
+    { test: p => p.name === 'Earth',    q: 'Click the only planet known to have life' },
+    { test: p => p.name === 'Neptune',  q: 'Click the farthest planet from the Sun' },
+    { test: p => p.name === 'Uranus',   q: 'Click the planet that is tipped on its side' },
+    { test: p => p.name === 'Mercury',  q: 'Click the smallest planet' },
+    { test: p => p.name === 'Jupiter',  q: 'Click the planet with the Great Red Spot' },
+    { test: p => p.moons === 1,         q: 'Click the planet with exactly one moon' },
+    { test: p => p.name === 'Mars',     q: 'Click the planet with Olympus Mons (the biggest volcano)' },
+  ];
+
+  function startQuiz() {
+    quiz = {
+      score: 0,
+      best: parseInt(localStorage.getItem(QUIZ_BEST_KEY) || '0', 10),
+      asked: [],
+    };
+    nextQuestion();
+    quizBtn.textContent = 'STOP QUIZ';
+    quizBtn.classList.add('active');
+  }
+
+  function stopQuiz() {
+    quiz = null;
+    questionBar.classList.remove('show', 'right', 'wrong');
+    questionBar.textContent = '';
+    quizBtn.textContent = 'QUIZ ME';
+    quizBtn.classList.remove('active');
+  }
+
+  function nextQuestion() {
+    // Pick a question we haven't just asked
+    let pool = QUIZ_QUESTIONS.filter(q => !quiz.asked.slice(-4).includes(q));
+    if (pool.length === 0) pool = QUIZ_QUESTIONS;
+    const q = pool[Math.floor(Math.random() * pool.length)];
+    quiz.asked.push(q);
+    quiz.current = q;
+    quiz.targetIndex = PLANETS.findIndex(p => q.test(p));
+    questionBar.className = 'show';
+    questionBar.textContent = `${q.q}  —  Score: ${quiz.score}  Best: ${quiz.best}`;
+  }
+
+  function handleQuizAnswer(planetIndex) {
+    if (!quiz) return;
+    const correct = quiz.current.test(PLANETS[planetIndex]);
+    if (correct) {
+      quiz.score++;
+      if (quiz.score > quiz.best) {
+        quiz.best = quiz.score;
+        localStorage.setItem(QUIZ_BEST_KEY, quiz.best);
+      }
+      quizFlash = 30;
+      questionBar.className = 'show right';
+      questionBar.textContent = `✓ Correct!  Score: ${quiz.score}  Best: ${quiz.best}`;
+      setTimeout(nextQuestion, 1100);
+    } else {
+      quizFlash = -30;
+      questionBar.className = 'show wrong';
+      const correctName = PLANETS[quiz.targetIndex].name;
+      questionBar.textContent = `✗ Nope — that was ${PLANETS[planetIndex].name}. Answer: ${correctName}.  Score reset.`;
+      quiz.score = 0;
+      setTimeout(nextQuestion, 1800);
+    }
+  }
+
+  quizBtn.addEventListener('click', () => {
+    if (quiz) stopQuiz();
+    else startQuiz();
+  });
+
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>
