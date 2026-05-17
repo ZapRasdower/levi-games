@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Periodic Table - Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #04040c;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 10px 40px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ffe600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 14px;
+      max-width: 960px;
+      width: 100%;
+    }
+
+    .controls input {
+      background: #1a1a2e;
+      color: #ffe600;
+      border: 2px solid #333;
+      padding: 6px 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      width: 180px;
+    }
+
+    .controls input::placeholder { color: #555; }
+    .controls input:focus { outline: none; border-color: #ffe600; }
+
+    button {
+      background: #1a1a2e;
+      color: #ffe600;
+      border: 2px solid #333;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+    button:hover { border-color: #ffe600; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+      max-width: 1000px;
+    }
+
+    .legend span {
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border: 1px solid #333;
+      border-radius: 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .legend span.dim { opacity: 0.35; }
+
+    .table-wrap {
+      width: 100%;
+      max-width: 1100px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .ptable {
+      display: grid;
+      grid-template-columns: repeat(18, minmax(48px, 1fr));
+      grid-template-rows: repeat(10, auto);
+      gap: 3px;
+      min-width: 900px;
+    }
+
+    .cell {
+      aspect-ratio: 1 / 1;
+      border: 2px solid #222;
+      background: #1a1a2e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3px 4px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s, border-color 0.1s;
+      overflow: hidden;
+    }
+
+    .cell:hover {
+      transform: scale(1.08);
+      z-index: 2;
+      border-color: #ffe600;
+    }
+
+    .cell.dim { opacity: 0.15; pointer-events: none; }
+    .cell.match { box-shadow: 0 0 0 2px #ffe600 inset; }
+
+    .cell .num {
+      font-size: 0.55rem;
+      opacity: 0.75;
+      line-height: 1;
+    }
+    .cell .sym {
+      font-size: 1.05rem;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+    .cell .name {
+      font-size: 0.5rem;
+      text-align: center;
+      letter-spacing: 0;
+      opacity: 0.85;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cell .mass {
+      font-size: 0.5rem;
+      text-align: center;
+      opacity: 0.55;
+      line-height: 1;
+    }
+
+    /* Category colors */
+    .c-alkali       { background: #5a1820; border-color: #ff6b6b; }
+    .c-alkaline     { background: #5a3618; border-color: #ffaf6b; }
+    .c-transition   { background: #4a3a14; border-color: #ffd96b; }
+    .c-post         { background: #20384a; border-color: #6bb8ff; }
+    .c-metalloid    { background: #1f4a32; border-color: #6bffaf; }
+    .c-nonmetal     { background: #143a4a; border-color: #6be5ff; }
+    .c-halogen      { background: #143a3a; border-color: #6bffd1; }
+    .c-noble        { background: #36204a; border-color: #c66bff; }
+    .c-lanthanide   { background: #4a1f44; border-color: #ff6bdc; }
+    .c-actinide     { background: #4a1430; border-color: #ff6ba0; }
+    .c-unknown      { background: #2a2a2a; border-color: #888; }
+
+    .lg-alkali     { color: #ff6b6b; border-color: #ff6b6b55; background: #ff6b6b11; }
+    .lg-alkaline   { color: #ffaf6b; border-color: #ffaf6b55; background: #ffaf6b11; }
+    .lg-transition { color: #ffd96b; border-color: #ffd96b55; background: #ffd96b11; }
+    .lg-post       { color: #6bb8ff; border-color: #6bb8ff55; background: #6bb8ff11; }
+    .lg-metalloid  { color: #6bffaf; border-color: #6bffaf55; background: #6bffaf11; }
+    .lg-nonmetal   { color: #6be5ff; border-color: #6be5ff55; background: #6be5ff11; }
+    .lg-halogen    { color: #6bffd1; border-color: #6bffd155; background: #6bffd111; }
+    .lg-noble      { color: #c66bff; border-color: #c66bff55; background: #c66bff11; }
+    .lg-lanthanide { color: #ff6bdc; border-color: #ff6bdc55; background: #ff6bdc11; }
+    .lg-actinide   { color: #ff6ba0; border-color: #ff6ba055; background: #ff6ba011; }
+    .lg-unknown    { color: #aaa;    border-color: #88888855; background: #88888811; }
+
+    .placeholder {
+      background: transparent;
+      border: none;
+      cursor: default;
+    }
+    .placeholder:hover { transform: none; }
+
+    .ref-label {
+      grid-column: span 2;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.7rem;
+      color: #888;
+      padding-right: 6px;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal.show { display: flex; }
+
+    .modal-card {
+      background: #0e0e1c;
+      border: 3px solid #ffe600;
+      max-width: 480px;
+      width: 100%;
+      padding: 20px;
+      position: relative;
+    }
+
+    .modal-card .close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: #ffe600;
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .modal-card .big-sym {
+      font-size: 3rem;
+      color: #ffe600;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .modal-card .big-name {
+      text-align: center;
+      font-size: 1.2rem;
+      color: #fff;
+      letter-spacing: 2px;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .modal-card .big-num {
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+    }
+    .modal-card .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      border: 1px solid;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+    .modal-card .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px dashed #222;
+      font-size: 0.85rem;
+    }
+    .modal-card .row span:first-child { color: #888; letter-spacing: 1px; }
+    .modal-card .row span:last-child  { color: #fff; text-align: right; }
+    .modal-card .fact {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #ffe600;
+      background: #ffe60011;
+      border-left: 3px solid #ffe600;
+      padding: 8px 10px;
+      line-height: 1.4;
+    }
+    .modal-card .center { text-align: center; margin-top: 8px; }
+
+    .back {
+      margin-top: 18px;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+    }
+    .back a { color: #ffe600; text-decoration: none; }
+    .back a:hover { text-decoration: underline; }
+
+    @media (max-width: 700px) {
+      h1 { font-size: 1.3rem; letter-spacing: 2px; }
+      .ptable { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>&#9879; Periodic Table</h1>
+  <p class="subtitle">Click any element to learn about it</p>
+
+  <div class="controls">
+    <input id="search" type="text" placeholder="Search name, symbol, number...">
+    <button id="clearBtn">Clear</button>
+    <button id="randomBtn">Random element</button>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="table-wrap">
+    <div class="ptable" id="ptable"></div>
+  </div>
+
+  <div class="back">
+    <a href="../index.html">&laquo; back to games</a>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-card" id="modalCard">
+      <button class="close" id="closeBtn">&times;</button>
+      <div class="big-sym" id="bSym"></div>
+      <div class="big-name" id="bName"></div>
+      <div class="big-num" id="bNum"></div>
+      <div class="center"><span class="badge" id="bBadge"></span></div>
+      <div style="margin-top:14px;">
+        <div class="row"><span>Atomic mass</span><span id="bMass"></span></div>
+        <div class="row"><span>Group</span><span id="bGroup"></span></div>
+        <div class="row"><span>Period</span><span id="bPeriod"></span></div>
+        <div class="row"><span>Electron config</span><span id="bEc"></span></div>
+        <div class="row"><span>State at 20&deg;C</span><span id="bState"></span></div>
+      </div>
+      <div class="fact" id="bFact"></div>
+    </div>
+  </div>
+
+<script>
+// Categories: alkali, alkaline, transition, post, metalloid, nonmetal, halogen, noble, lanthanide, actinide, unknown
+const CAT_NAMES = {
+  alkali: 'Alkali metal',
+  alkaline: 'Alkaline earth',
+  transition: 'Transition metal',
+  post: 'Post-transition',
+  metalloid: 'Metalloid',
+  nonmetal: 'Reactive nonmetal',
+  halogen: 'Halogen',
+  noble: 'Noble gas',
+  lanthanide: 'Lanthanide',
+  actinide: 'Actinide',
+  unknown: 'Unknown / synthetic'
+};
+
+// [n, sym, name, mass, cat, group, period, ec, state, fact]
+const ELEMENTS = [
+  [1,'H','Hydrogen',1.008,'nonmetal',1,1,'1s1','gas','Lightest element. Makes up ~75% of the visible universe.'],
+  [2,'He','Helium',4.0026,'noble',18,1,'1s2','gas','Makes your voice squeaky! Second-most abundant element in the universe.'],
+  [3,'Li','Lithium',6.94,'alkali',1,2,'[He] 2s1','solid','Used in rechargeable batteries — including the one in your phone.'],
+  [4,'Be','Beryllium',9.0122,'alkaline',2,2,'[He] 2s2','solid','Light, stiff, and toxic. Used in spacecraft and X-ray windows.'],
+  [5,'B','Boron',10.81,'metalloid',13,2,'[He] 2s2 2p1','solid','Found in borax and used in tough heat-resistant glass.'],
+  [6,'C','Carbon',12.011,'nonmetal',14,2,'[He] 2s2 2p2','solid','The basis of all life. Diamond and graphite are both pure carbon!'],
+  [7,'N','Nitrogen',14.007,'nonmetal',15,2,'[He] 2s2 2p3','gas','78% of the air you breathe is nitrogen.'],
+  [8,'O','Oxygen',15.999,'nonmetal',16,2,'[He] 2s2 2p4','gas','We need it to breathe. Liquid oxygen is pale blue!'],
+  [9,'F','Fluorine',18.998,'halogen',17,2,'[He] 2s2 2p5','gas','Most reactive element. Tiny amounts protect your teeth in toothpaste.'],
+  [10,'Ne','Neon',20.180,'noble',18,2,'[He] 2s2 2p6','gas','Glows red-orange in neon signs.'],
+  [11,'Na','Sodium',22.990,'alkali',1,3,'[Ne] 3s1','solid','Half of table salt. Pure sodium fizzes and burns in water!'],
+  [12,'Mg','Magnesium',24.305,'alkaline',2,3,'[Ne] 3s2','solid','Burns with a blinding white flame. Used in fireworks and flares.'],
+  [13,'Al','Aluminium',26.982,'post',13,3,'[Ne] 3s2 3p1','solid','Soda cans, foil, and airplanes — light and recyclable.'],
+  [14,'Si','Silicon',28.085,'metalloid',14,3,'[Ne] 3s2 3p2','solid','Computer chips, sand, and glass are all silicon-based.'],
+  [15,'P','Phosphorus',30.974,'nonmetal',15,3,'[Ne] 3s2 3p3','solid','Glows in the dark in one form. Used on match heads.'],
+  [16,'S','Sulfur',32.06,'nonmetal',16,3,'[Ne] 3s2 3p4','solid','Smells like rotten eggs in some forms. Yellow and crumbly.'],
+  [17,'Cl','Chlorine',35.45,'halogen',17,3,'[Ne] 3s2 3p5','gas','Used to keep swimming pools clean. Also the other half of table salt.'],
+  [18,'Ar','Argon',39.948,'noble',18,3,'[Ne] 3s2 3p6','gas','1% of the air. Fills light bulbs to stop the filament burning out.'],
+  [19,'K','Potassium',39.098,'alkali',1,4,'[Ar] 4s1','solid','Bananas contain potassium. Pure potassium explodes in water!'],
+  [20,'Ca','Calcium',40.078,'alkaline',2,4,'[Ar] 4s2','solid','Builds bones, teeth, and seashells.'],
+  [21,'Sc','Scandium',44.956,'transition',3,4,'[Ar] 3d1 4s2','solid','Mixed with aluminium to make super-light bike frames.'],
+  [22,'Ti','Titanium',47.867,'transition',4,4,'[Ar] 3d2 4s2','solid','Strong, light, and rust-proof. Used in jet engines and implants.'],
+  [23,'V','Vanadium',50.942,'transition',5,4,'[Ar] 3d3 4s2','solid','Makes steel tools tougher. Its compounds come in many colors.'],
+  [24,'Cr','Chromium',51.996,'transition',6,4,'[Ar] 3d5 4s1','solid','Gives stainless steel its shine.'],
+  [25,'Mn','Manganese',54.938,'transition',7,4,'[Ar] 3d5 4s2','solid','Essential for batteries and tough steel.'],
+  [26,'Fe','Iron',55.845,'transition',8,4,'[Ar] 3d6 4s2','solid','Earth\'s core is mostly iron. Also in your blood!'],
+  [27,'Co','Cobalt',58.933,'transition',9,4,'[Ar] 3d7 4s2','solid','Gives glass a deep blue color. Named after a goblin (kobold)!'],
+  [28,'Ni','Nickel',58.693,'transition',10,4,'[Ar] 3d8 4s2','solid','Used in coins and rechargeable batteries.'],
+  [29,'Cu','Copper',63.546,'transition',11,4,'[Ar] 3d10 4s1','solid','Excellent conductor — wires, pennies, and the Statue of Liberty.'],
+  [30,'Zn','Zinc',65.38,'transition',12,4,'[Ar] 3d10 4s2','solid','Coats steel to stop rust. Found in your immune system too.'],
+  [31,'Ga','Gallium',69.723,'post',13,4,'[Ar] 3d10 4s2 4p1','solid','Melts in your hand — its melting point is only 30°C!'],
+  [32,'Ge','Germanium',72.630,'metalloid',14,4,'[Ar] 3d10 4s2 4p2','solid','Early transistors were made of germanium before silicon took over.'],
+  [33,'As','Arsenic',74.922,'metalloid',15,4,'[Ar] 3d10 4s2 4p3','solid','Famously poisonous, but also used in semiconductors.'],
+  [34,'Se','Selenium',78.971,'nonmetal',16,4,'[Ar] 3d10 4s2 4p4','solid','Needed in tiny amounts in your diet. Used in solar cells.'],
+  [35,'Br','Bromine',79.904,'halogen',17,4,'[Ar] 3d10 4s2 4p5','liquid','One of only two elements that\'s liquid at room temperature.'],
+  [36,'Kr','Krypton',83.798,'noble',18,4,'[Ar] 3d10 4s2 4p6','gas','Used in some high-performance light bulbs — and Superman\'s home planet!'],
+  [37,'Rb','Rubidium',85.468,'alkali',1,5,'[Kr] 5s1','solid','So reactive it ignites in air.'],
+  [38,'Sr','Strontium',87.62,'alkaline',2,5,'[Kr] 5s2','solid','Gives fireworks their red color.'],
+  [39,'Y','Yttrium',88.906,'transition',3,5,'[Kr] 4d1 5s2','solid','Used in red phosphors for old TV screens.'],
+  [40,'Zr','Zirconium',91.224,'transition',4,5,'[Kr] 4d2 5s2','solid','Cubic zirconia mimics diamond in jewelry.'],
+  [41,'Nb','Niobium',92.906,'transition',5,5,'[Kr] 4d4 5s1','solid','Used in superconducting magnets — like in MRI machines.'],
+  [42,'Mo','Molybdenum',95.95,'transition',6,5,'[Kr] 4d5 5s1','solid','Strengthens steel and is essential for some enzymes.'],
+  [43,'Tc','Technetium',98,'transition',7,5,'[Kr] 4d5 5s2','solid','First element made artificially. Used in medical scans.'],
+  [44,'Ru','Ruthenium',101.07,'transition',8,5,'[Kr] 4d7 5s1','solid','A rare platinum-group metal used in electronics.'],
+  [45,'Rh','Rhodium',102.91,'transition',9,5,'[Kr] 4d8 5s1','solid','Rarest precious metal — used in catalytic converters.'],
+  [46,'Pd','Palladium',106.42,'transition',10,5,'[Kr] 4d10','solid','Catalytic converters and jewelry. Can absorb 900× its volume in hydrogen!'],
+  [47,'Ag','Silver',107.87,'transition',11,5,'[Kr] 4d10 5s1','solid','Best electrical conductor of any element.'],
+  [48,'Cd','Cadmium',112.41,'transition',12,5,'[Kr] 4d10 5s2','solid','Used in some batteries and pigments — but it\'s toxic.'],
+  [49,'In','Indium',114.82,'post',13,5,'[Kr] 4d10 5s2 5p1','solid','Makes the see-through conductive coating on touchscreens.'],
+  [50,'Sn','Tin',118.71,'post',14,5,'[Kr] 4d10 5s2 5p2','solid','Used in solder and to coat steel cans. "Tin cans" are mostly steel!'],
+  [51,'Sb','Antimony',121.76,'metalloid',15,5,'[Kr] 4d10 5s2 5p3','solid','Ancient eye makeup (kohl) was made from antimony.'],
+  [52,'Te','Tellurium',127.60,'metalloid',16,5,'[Kr] 4d10 5s2 5p4','solid','Used in solar panels and rewritable DVDs.'],
+  [53,'I','Iodine',126.90,'halogen',17,5,'[Kr] 4d10 5s2 5p5','solid','Sublimes into purple vapor. Added to salt to prevent goiters.'],
+  [54,'Xe','Xenon',131.29,'noble',18,5,'[Kr] 4d10 5s2 5p6','gas','Powers ion engines on deep-space probes.'],
+  [55,'Cs','Caesium',132.91,'alkali',1,6,'[Xe] 6s1','solid','Atomic clocks use caesium — defining what a second is!'],
+  [56,'Ba','Barium',137.33,'alkaline',2,6,'[Xe] 6s2','solid','Doctors give you a "barium meal" to make your stomach show up on X-rays.'],
+  [57,'La','Lanthanum',138.91,'lanthanide',3,6,'[Xe] 5d1 6s2','solid','Used in camera lenses and rechargeable batteries.'],
+  [58,'Ce','Cerium',140.12,'lanthanide',3,6,'[Xe] 4f1 5d1 6s2','solid','Most abundant of the "rare earths". Used in flint for lighters.'],
+  [59,'Pr','Praseodymium',140.91,'lanthanide',3,6,'[Xe] 4f3 6s2','solid','Used in welder\'s goggles to filter glare.'],
+  [60,'Nd','Neodymium',144.24,'lanthanide',3,6,'[Xe] 4f4 6s2','solid','Makes the strongest permanent magnets known.'],
+  [61,'Pm','Promethium',145,'lanthanide',3,6,'[Xe] 4f5 6s2','solid','Radioactive and very rare on Earth.'],
+  [62,'Sm','Samarium',150.36,'lanthanide',3,6,'[Xe] 4f6 6s2','solid','Used in heat-resistant magnets and cancer treatments.'],
+  [63,'Eu','Europium',151.96,'lanthanide',3,6,'[Xe] 4f7 6s2','solid','Glows in euro banknotes under UV light — an anti-counterfeit trick!'],
+  [64,'Gd','Gadolinium',157.25,'lanthanide',3,6,'[Xe] 4f7 5d1 6s2','solid','Used as a contrast agent in MRI scans.'],
+  [65,'Tb','Terbium',158.93,'lanthanide',3,6,'[Xe] 4f9 6s2','solid','Gives green light in TV screens and bright LEDs.'],
+  [66,'Dy','Dysprosium',162.50,'lanthanide',3,6,'[Xe] 4f10 6s2','solid','Name means "hard to get" — used in EV motors.'],
+  [67,'Ho','Holmium',164.93,'lanthanide',3,6,'[Xe] 4f11 6s2','solid','Has the strongest magnetic moment of any element.'],
+  [68,'Er','Erbium',167.26,'lanthanide',3,6,'[Xe] 4f12 6s2','solid','Powers the fiber-optic cables of the internet.'],
+  [69,'Tm','Thulium',168.93,'lanthanide',3,6,'[Xe] 4f13 6s2','solid','One of the rarest lanthanides. Used in portable X-ray sources.'],
+  [70,'Yb','Ytterbium',173.05,'lanthanide',3,6,'[Xe] 4f14 6s2','solid','Used in some of the most accurate atomic clocks ever built.'],
+  [71,'Lu','Lutetium',174.97,'lanthanide',3,6,'[Xe] 4f14 5d1 6s2','solid','Densest of the lanthanides. Very expensive!'],
+  [72,'Hf','Hafnium',178.49,'transition',4,6,'[Xe] 4f14 5d2 6s2','solid','Used in computer chips and nuclear submarine reactors.'],
+  [73,'Ta','Tantalum',180.95,'transition',5,6,'[Xe] 4f14 5d3 6s2','solid','In nearly every phone — used in tiny high-quality capacitors.'],
+  [74,'W','Tungsten',183.84,'transition',6,6,'[Xe] 4f14 5d4 6s2','solid','Highest melting point of any metal — 3422°C!'],
+  [75,'Re','Rhenium',186.21,'transition',7,6,'[Xe] 4f14 5d5 6s2','solid','One of the rarest stable elements. Used in jet engine blades.'],
+  [76,'Os','Osmium',190.23,'transition',8,6,'[Xe] 4f14 5d6 6s2','solid','Densest natural element — twice as dense as lead.'],
+  [77,'Ir','Iridium',192.22,'transition',9,6,'[Xe] 4f14 5d7 6s2','solid','A spike of iridium in rocks marks the dinosaur-killing asteroid.'],
+  [78,'Pt','Platinum',195.08,'transition',10,6,'[Xe] 4f14 5d9 6s1','solid','Rarer than gold. Used in jewelry and car exhaust converters.'],
+  [79,'Au','Gold',196.97,'transition',11,6,'[Xe] 4f14 5d10 6s1','solid','Doesn\'t rust or tarnish. Gold made on Earth came from colliding neutron stars!'],
+  [80,'Hg','Mercury',200.59,'transition',12,6,'[Xe] 4f14 5d10 6s2','liquid','The only metal liquid at room temperature.'],
+  [81,'Tl','Thallium',204.38,'post',13,6,'[Xe] 4f14 5d10 6s2 6p1','solid','Once used as rat poison — extremely toxic.'],
+  [82,'Pb','Lead',207.2,'post',14,6,'[Xe] 4f14 5d10 6s2 6p2','solid','Heavy and soft. The Romans used it for plumbing (which gave them lead poisoning).'],
+  [83,'Bi','Bismuth',208.98,'post',15,6,'[Xe] 4f14 5d10 6s2 6p3','solid','Forms beautiful rainbow-colored stair-step crystals.'],
+  [84,'Po','Polonium',209,'post',16,6,'[Xe] 4f14 5d10 6s2 6p4','solid','Highly radioactive. Discovered by Marie Curie, named after Poland.'],
+  [85,'At','Astatine',210,'halogen',17,6,'[Xe] 4f14 5d10 6s2 6p5','solid','The rarest naturally occurring element on Earth.'],
+  [86,'Rn','Radon',222,'noble',18,6,'[Xe] 4f14 5d10 6s2 6p6','gas','A radioactive gas that can seep into basements from the ground.'],
+  [87,'Fr','Francium',223,'alkali',1,7,'[Rn] 7s1','solid','Extremely rare — only a few atoms exist on Earth at any time.'],
+  [88,'Ra','Radium',226,'alkaline',2,7,'[Rn] 7s2','solid','Glows in the dark! Once used in watch dials before its dangers were known.'],
+  [89,'Ac','Actinium',227,'actinide',3,7,'[Rn] 6d1 7s2','solid','Glows blue in the dark from its own radiation.'],
+  [90,'Th','Thorium',232.04,'actinide',3,7,'[Rn] 6d2 7s2','solid','A possible fuel for future nuclear reactors.'],
+  [91,'Pa','Protactinium',231.04,'actinide',3,7,'[Rn] 5f2 6d1 7s2','solid','One of the rarest naturally occurring elements.'],
+  [92,'U','Uranium',238.03,'actinide',3,7,'[Rn] 5f3 6d1 7s2','solid','Fuels nuclear power plants and (sadly) atomic bombs.'],
+  [93,'Np','Neptunium',237,'actinide',3,7,'[Rn] 5f4 6d1 7s2','solid','First transuranic element — named after Neptune.'],
+  [94,'Pu','Plutonium',244,'actinide',3,7,'[Rn] 5f6 7s2','solid','Powers space probes like Voyager and the Mars rovers.'],
+  [95,'Am','Americium',243,'actinide',3,7,'[Rn] 5f7 7s2','solid','Inside most smoke detectors — a tiny bit of americium.'],
+  [96,'Cm','Curium',247,'actinide',3,7,'[Rn] 5f7 6d1 7s2','solid','Named after Marie and Pierre Curie.'],
+  [97,'Bk','Berkelium',247,'actinide',3,7,'[Rn] 5f9 7s2','solid','Named after Berkeley, California, where it was made.'],
+  [98,'Cf','Californium',251,'actinide',3,7,'[Rn] 5f10 7s2','solid','One gram costs about $27 million. Used to start nuclear reactors.'],
+  [99,'Es','Einsteinium',252,'actinide',3,7,'[Rn] 5f11 7s2','solid','Named after Albert Einstein. Found in fallout from a 1952 H-bomb test.'],
+  [100,'Fm','Fermium',257,'actinide',3,7,'[Rn] 5f12 7s2','solid','Named after physicist Enrico Fermi.'],
+  [101,'Md','Mendelevium',258,'actinide',3,7,'[Rn] 5f13 7s2','solid','Named after Dmitri Mendeleev, who invented the periodic table!'],
+  [102,'No','Nobelium',259,'actinide',3,7,'[Rn] 5f14 7s2','solid','Named after Alfred Nobel of Nobel Prize fame.'],
+  [103,'Lr','Lawrencium',266,'actinide',3,7,'[Rn] 5f14 7s2 7p1','solid','Named after Ernest Lawrence, inventor of the cyclotron.'],
+  [104,'Rf','Rutherfordium',267,'transition',4,7,'[Rn] 5f14 6d2 7s2','solid','Named after Ernest Rutherford, who discovered the atomic nucleus.'],
+  [105,'Db','Dubnium',268,'transition',5,7,'[Rn] 5f14 6d3 7s2','solid','Named after the Russian town of Dubna.'],
+  [106,'Sg','Seaborgium',269,'transition',6,7,'[Rn] 5f14 6d4 7s2','solid','Named after Glenn Seaborg — while he was still alive!'],
+  [107,'Bh','Bohrium',270,'transition',7,7,'[Rn] 5f14 6d5 7s2','solid','Named after Niels Bohr, pioneer of quantum theory.'],
+  [108,'Hs','Hassium',269,'transition',8,7,'[Rn] 5f14 6d6 7s2','solid','Named after the German state of Hesse.'],
+  [109,'Mt','Meitnerium',278,'unknown',9,7,'[Rn] 5f14 6d7 7s2','solid','Named after Lise Meitner, co-discoverer of nuclear fission.'],
+  [110,'Ds','Darmstadtium',281,'unknown',10,7,'[Rn] 5f14 6d8 7s2','solid','Named after Darmstadt, Germany, where many heavy elements were made.'],
+  [111,'Rg','Roentgenium',282,'unknown',11,7,'[Rn] 5f14 6d9 7s2','solid','Named after Wilhelm Röntgen, who discovered X-rays.'],
+  [112,'Cn','Copernicium',285,'post',12,7,'[Rn] 5f14 6d10 7s2','unknown','Named after astronomer Nicolaus Copernicus.'],
+  [113,'Nh','Nihonium',286,'unknown',13,7,'[Rn] 5f14 6d10 7s2 7p1','unknown','First element discovered in Japan — "Nihon" means Japan.'],
+  [114,'Fl','Flerovium',289,'unknown',14,7,'[Rn] 5f14 6d10 7s2 7p2','unknown','Named after physicist Georgy Flyorov.'],
+  [115,'Mc','Moscovium',290,'unknown',15,7,'[Rn] 5f14 6d10 7s2 7p3','unknown','Named after Moscow, Russia.'],
+  [116,'Lv','Livermorium',293,'unknown',16,7,'[Rn] 5f14 6d10 7s2 7p4','unknown','Named after Livermore, California.'],
+  [117,'Ts','Tennessine',294,'unknown',17,7,'[Rn] 5f14 6d10 7s2 7p5','unknown','Named after Tennessee, USA.'],
+  [118,'Og','Oganesson',294,'unknown',18,7,'[Rn] 5f14 6d10 7s2 7p6','unknown','Heaviest known element. Named after physicist Yuri Oganessian.']
+];
+
+// Compute grid position for each element
+function gridPos(el) {
+  const [n, , , , cat, group, period] = el;
+  // Lanthanides (57-71): row 9, cols 3-17 (slot 3 is La's marker, but display separately)
+  if (n >= 57 && n <= 71) {
+    return { row: 9, col: 3 + (n - 57) };
+  }
+  if (n >= 89 && n <= 103) {
+    return { row: 10, col: 3 + (n - 89) };
+  }
+  return { row: period, col: group };
+}
+
+const ptable = document.getElementById('ptable');
+const cells = {};
+
+ELEMENTS.forEach(el => {
+  const [n, sym, name, mass, cat] = el;
+  const pos = gridPos(el);
+  const div = document.createElement('div');
+  div.className = `cell c-${cat}`;
+  div.style.gridRow = pos.row;
+  div.style.gridColumn = pos.col;
+  div.dataset.cat = cat;
+  div.dataset.n = n;
+  div.dataset.sym = sym.toLowerCase();
+  div.dataset.name = name.toLowerCase();
+  const massDisplay = Number.isInteger(mass) ? `(${mass})` : mass.toFixed(mass < 10 ? 3 : 2);
+  div.innerHTML = `
+    <div class="num">${n}</div>
+    <div class="sym">${sym}</div>
+    <div class="name">${name}</div>
+    <div class="mass">${massDisplay}</div>
+  `;
+  div.addEventListener('click', () => showModal(el));
+  ptable.appendChild(div);
+  cells[n] = div;
+});
+
+// Add lanthanide/actinide placeholders in main table (row 6/7, col 3)
+function placeholder(row, col, label, cls) {
+  const ph = document.createElement('div');
+  ph.className = `cell ${cls}`;
+  ph.style.gridRow = row;
+  ph.style.gridColumn = col;
+  ph.innerHTML = `<div class="num">57-71</div><div class="sym" style="font-size:0.7rem;">${label}</div>`;
+  if (label === '*') ph.innerHTML = `<div class="sym" style="font-size:1.4rem;color:#ff6bdc;">*</div><div class="name">57-71</div>`;
+  if (label === '**') ph.innerHTML = `<div class="sym" style="font-size:1.4rem;color:#ff6ba0;">**</div><div class="name">89-103</div>`;
+  ph.style.cursor = 'default';
+  ph.addEventListener('click', e => e.stopPropagation());
+  ptable.appendChild(ph);
+}
+placeholder(6, 3, '*', 'c-lanthanide');
+placeholder(7, 3, '**', 'c-actinide');
+
+// Row labels for the f-block
+function refLabel(row, text, color) {
+  const l = document.createElement('div');
+  l.className = 'ref-label';
+  l.style.gridRow = row;
+  l.style.gridColumn = '1 / span 2';
+  l.style.color = color;
+  l.textContent = text;
+  ptable.appendChild(l);
+}
+refLabel(9, '*  Lanthanides', '#ff6bdc');
+refLabel(10, '** Actinides', '#ff6ba0');
+
+// Legend
+const legend = document.getElementById('legend');
+Object.keys(CAT_NAMES).forEach(cat => {
+  const s = document.createElement('span');
+  s.className = `lg-${cat}`;
+  s.textContent = CAT_NAMES[cat];
+  s.dataset.cat = cat;
+  s.addEventListener('click', () => toggleCat(cat, s));
+  legend.appendChild(s);
+});
+
+let activeCats = new Set(Object.keys(CAT_NAMES));
+function toggleCat(cat, span) {
+  if (activeCats.has(cat)) {
+    activeCats.delete(cat);
+    span.classList.add('dim');
+  } else {
+    activeCats.add(cat);
+    span.classList.remove('dim');
+  }
+  applyFilter();
+}
+
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', applyFilter);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  searchInput.value = '';
+  activeCats = new Set(Object.keys(CAT_NAMES));
+  document.querySelectorAll('.legend span').forEach(s => s.classList.remove('dim'));
+  applyFilter();
+});
+document.getElementById('randomBtn').addEventListener('click', () => {
+  const el = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
+  showModal(el);
+});
+
+function applyFilter() {
+  const q = searchInput.value.trim().toLowerCase();
+  Object.values(cells).forEach(cell => {
+    const inCat = activeCats.has(cell.dataset.cat);
+    let matches = !q;
+    if (q) {
+      matches = cell.dataset.sym === q ||
+                cell.dataset.sym.startsWith(q) ||
+                cell.dataset.name.includes(q) ||
+                cell.dataset.n === q;
+    }
+    cell.classList.toggle('dim', !inCat || !matches);
+    cell.classList.toggle('match', q && matches && inCat);
+  });
+}
+
+// Modal
+const modal = document.getElementById('modal');
+const closeBtn = document.getElementById('closeBtn');
+closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+modal.addEventListener('click', e => {
+  if (e.target === modal) modal.classList.remove('show');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') modal.classList.remove('show');
+});
+
+function showModal(el) {
+  const [n, sym, name, mass, cat, group, period, ec, state, fact] = el;
+  document.getElementById('bSym').textContent = sym;
+  document.getElementById('bName').textContent = name;
+  document.getElementById('bNum').textContent = `Atomic number ${n}`;
+  const badge = document.getElementById('bBadge');
+  badge.textContent = CAT_NAMES[cat];
+  badge.className = `badge lg-${cat}`;
+  document.getElementById('bMass').textContent = Number.isInteger(mass) ? `${mass} (most stable)` : mass;
+  document.getElementById('bGroup').textContent = (n >= 57 && n <= 71) ? 'Lanthanide' : (n >= 89 && n <= 103) ? 'Actinide' : group;
+  document.getElementById('bPeriod').textContent = period;
+  document.getElementById('bEc').textContent = ec;
+  const stateMap = { solid: 'Solid', liquid: 'Liquid', gas: 'Gas', unknown: 'Unknown' };
+  document.getElementById('bState').textContent = stateMap[state] || state;
+  document.getElementById('bFact').textContent = fact;
+  const card = document.getElementById('modalCard');
+  card.style.borderColor = getComputedStyle(cells[n]).borderColor;
+  modal.classList.add('show');
+}
+</script>
+</body>
+</html>
