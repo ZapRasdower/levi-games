@@ -509,7 +509,7 @@
   canvas.addEventListener('touchstart', e => { e.preventDefault(); handleJump(); }, { passive: false });
 
   initStars();
-  loop();
+  requestAnimationFrame(loop);
 </script>
 </body>
 </html>
