@@ -108,12 +108,22 @@
   const GROUND = H - 40;
 
   const C = {
-    sky:      '#111125',
-    ground:   '#2a2a4a',
-    groundTop:'#4a4a8a',
-    obstacle: '#ff4444',
-    obstDark: '#8a0000',
-    star:     '#ffe600',
+    skyTop:    '#070716',
+    skyHorizon:'#1d1538',
+    skyTopAlt: '#1a0d2e',
+    skyHorAlt: '#3a2255',
+    ground:    '#1c1a3a',
+    groundTop: '#3a3a6a',
+    grass:     '#2a4a7a',
+    bgFar:     '#0e0e22',
+    bgMid:     '#171834',
+    obstBase:  '#1b1430',
+    obstEdge:  '#5a2a6a',
+    obstGlow:  '#ff4466',
+    coinBody:  '#ffe600',
+    coinDark:  '#b8a800',
+    star:      '#ffe600',
+    moon:      '#f4f1d4',
   };
 
   // Load Levi sprite
@@ -137,8 +147,58 @@
   let nextObstacle = 80;
   let nextCoin = 140;
   let groundOffset = 0;
+  let bgFarOffset = 0;
+  let bgMidOffset = 0;
+  let shake = 0;
   bestEl.textContent = best;
   coinsEl.textContent = totalCoins;
+
+  // ---- BACKGROUNDS (pre-rendered for performance) ----
+  let bgFar = null;     // far mountains
+  let bgMid = null;     // mid hills
+  let skyGradient = null;
+  const moon = { x: W - 90, y: 38, r: 14 };
+
+  function buildMountainLayer(width, height, baseY, fill, peakCount, minPeak, maxPeak, rough) {
+    const off = document.createElement('canvas');
+    off.width = width;
+    off.height = height;
+    const c = off.getContext('2d');
+
+    // Compute peak heights, ensuring first === last for seamless tiling.
+    const ys = [];
+    for (let i = 0; i < peakCount; i++) {
+      const t = i / peakCount;
+      const base = minPeak + Math.random() * (maxPeak - minPeak);
+      // Layer some sines for organic ridges
+      const extra = Math.sin(t * Math.PI * 4 + Math.random()) * rough;
+      ys.push(baseY - base + extra);
+    }
+    ys.push(ys[0]);
+
+    c.fillStyle = fill;
+    c.beginPath();
+    c.moveTo(0, height);
+    const step = width / peakCount;
+    for (let i = 0; i <= peakCount; i++) {
+      // Small mid-point bumps so silhouettes aren't pure triangles
+      const x = i * step;
+      c.lineTo(x, ys[i]);
+    }
+    c.lineTo(width, height);
+    c.closePath();
+    c.fill();
+    return off;
+  }
+
+  function buildBackgrounds() {
+    // Far layer: gentle distant mountains
+    bgFar = buildMountainLayer(W * 2, GROUND, GROUND - 14,
+      C.bgFar, 14, 28, 70, 8);
+    // Mid layer: closer, jaggier hills
+    bgMid = buildMountainLayer(W * 2, GROUND, GROUND - 4,
+      C.bgMid, 24, 18, 55, 12);
+  }
 
   // ---- PLAYER (Levi) ----
   const SPRITE_W = 50;
@@ -189,7 +249,10 @@
       if (this.y >= GROUND) {
         this.y = GROUND;
         this.vy = 0;
-        if (!this.onGround) this.squish = 1.15;
+        if (!this.onGround) {
+          this.squish = 1.15;
+          spawnLandDust(this.x, this.y);
+        }
         this.onGround = true;
         this.jumpCount = 0;
         this.targetRot = 0;
@@ -233,8 +296,31 @@
   }
 
   function initStars() {
-    for (let i = 0; i < 50; i++) {
-      stars.push({ x: Math.random() * W, y: Math.random() * (GROUND - 20) });
+    for (let i = 0; i < 60; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * (GROUND - 80),
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.4 + Math.random() * 1.6,
+        size:  Math.random() < 0.15 ? 2 : 1,
+        base:  0.35 + Math.random() * 0.5,
+      });
+    }
+  }
+
+  function spawnLandDust(x, y) {
+    for (let i = 0; i < 5; i++) {
+      const dir = i < 3 ? -1 : 1;
+      particles.push({
+        x: x + dir * (4 + Math.random() * 6),
+        y: y - 2,
+        vx: dir * (0.8 + Math.random() * 1.2),
+        vy: -Math.random() * 1.2,
+        life: 14,
+        maxLife: 14,
+        color: '#8a8aaa',
+        size: 2,
+      });
     }
   }
 
@@ -263,13 +349,29 @@
   }
 
   function drawCoin(c) {
+    // Soft glow
+    const g = ctx.createRadialGradient(c.x, c.y, 1, c.x, c.y, c.r * 2.4);
+    g.addColorStop(0, 'rgba(255,230,0,0.45)');
+    g.addColorStop(1, 'rgba(255,230,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r * 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spinning coin body
     const sx = Math.cos(c.spin) * c.r;
-    ctx.fillStyle = C.star;
+    ctx.fillStyle = C.coinBody;
     ctx.beginPath();
     ctx.ellipse(c.x, c.y, Math.max(1.5, Math.abs(sx)), c.r, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#b8a800';
+    // Dark edge & center mark
+    ctx.fillStyle = C.coinDark;
     ctx.fillRect(c.x - 1, c.y - 2, 2, 4);
+    // White highlight (only when coin is face-on)
+    if (Math.abs(sx) > c.r * 0.5) {
+      ctx.fillStyle = '#fff8b0';
+      ctx.fillRect(c.x - Math.abs(sx) * 0.4, c.y - c.r * 0.5, 1, 2);
+    }
   }
 
   function spawnFloater(x, y, text, color) {
@@ -281,26 +383,131 @@
            a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
-  function drawGround() {
-    ctx.fillStyle = C.groundTop;
-    ctx.fillRect(0, GROUND, W, 4);
-    ctx.fillStyle = C.ground;
-    ctx.fillRect(0, GROUND + 4, W, H - GROUND - 4);
+  function drawSky(t) {
+    // t is the day/night blend factor (0..1)
+    const top = lerpColor(C.skyTop, C.skyTopAlt, t);
+    const hor = lerpColor(C.skyHorizon, C.skyHorAlt, t);
+    const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+    g.addColorStop(0, top);
+    g.addColorStop(1, hor);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, GROUND);
+  }
 
-    ctx.fillStyle = '#3a3a6a';
+  function drawMoon() {
+    // Soft glow
+    const g = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.4, moon.x, moon.y, moon.r * 2.2);
+    g.addColorStop(0, 'rgba(244,241,212,0.35)');
+    g.addColorStop(1, 'rgba(244,241,212,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(moon.x, moon.y, moon.r * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    // Body
+    ctx.fillStyle = C.moon;
+    ctx.beginPath();
+    ctx.arc(moon.x, moon.y, moon.r, 0, Math.PI * 2);
+    ctx.fill();
+    // Crescent shadow
+    ctx.fillStyle = 'rgba(20,20,40,0.4)';
+    ctx.beginPath();
+    ctx.arc(moon.x - 4, moon.y - 2, moon.r * 0.95, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawStars() {
+    for (const s of stars) {
+      const tw = 0.5 + 0.5 * Math.sin(frame * 0.04 * s.speed + s.phase);
+      ctx.globalAlpha = s.base * (0.4 + 0.6 * tw);
+      ctx.fillStyle = C.star;
+      ctx.fillRect(s.x | 0, s.y | 0, s.size, s.size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawParallax() {
+    if (!bgFar || !bgMid) return;
+    const fw = bgFar.width;
+    const mw = bgMid.width;
+    const fx = -(bgFarOffset % fw);
+    const mx = -(bgMidOffset % mw);
+    ctx.drawImage(bgFar, fx, 0);
+    ctx.drawImage(bgFar, fx + fw, 0);
+    ctx.drawImage(bgMid, mx, 0);
+    ctx.drawImage(bgMid, mx + mw, 0);
+  }
+
+  function drawGround() {
+    // Top strip
+    ctx.fillStyle = C.groundTop;
+    ctx.fillRect(0, GROUND, W, 3);
+
+    // Body gradient
+    const g = ctx.createLinearGradient(0, GROUND, 0, H);
+    g.addColorStop(0, C.ground);
+    g.addColorStop(1, '#0a0820');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, GROUND + 3, W, H - GROUND - 3);
+
+    // Tufts / pebbles on the surface (scroll with ground)
+    for (let i = 0; i < 22; i++) {
+      const x = ((i * 30 - groundOffset) % W + W) % W;
+      ctx.fillStyle = C.grass;
+      ctx.fillRect(x, GROUND - 1, 4, 1);
+      if (i % 3 === 0) {
+        ctx.fillStyle = '#272750';
+        ctx.fillRect(x + 14, GROUND + 6, 3, 2);
+      }
+    }
+    // Stripes lower down
+    ctx.fillStyle = '#252548';
     for (let i = 0; i < 15; i++) {
       const x = ((i * 44 - groundOffset) % W + W) % W;
-      ctx.fillRect(x, GROUND + 10, 28, 3);
+      ctx.fillRect(x, GROUND + 14, 28, 2);
     }
   }
 
   function drawObstacle(obs) {
+    const x = Math.floor(obs.x);
     const py = GROUND - obs.h;
-    ctx.fillStyle = C.obstacle;
-    ctx.fillRect(Math.floor(obs.x), py, obs.w, obs.h);
-    ctx.fillStyle = C.obstDark;
-    ctx.fillRect(Math.floor(obs.x), py, obs.w, 5);
-    ctx.fillRect(Math.floor(obs.x) + obs.w - 4, py, 4, obs.h);
+    const w = obs.w;
+    const h = obs.h;
+
+    // Crystal shape: vertical body with a triangular tip, gradient + glow seam
+    ctx.save();
+
+    // Soft glow halo
+    const glow = ctx.createRadialGradient(x + w / 2, py + h * 0.4, 2, x + w / 2, py + h * 0.4, h * 0.9);
+    glow.addColorStop(0, 'rgba(255,68,102,0.35)');
+    glow.addColorStop(1, 'rgba(255,68,102,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 10, py - 6, w + 20, h + 8);
+
+    // Body (with peaked top)
+    const g = ctx.createLinearGradient(x, py, x, py + h);
+    g.addColorStop(0, C.obstEdge);
+    g.addColorStop(1, C.obstBase);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, py - 4);     // peak
+    ctx.lineTo(x + w, py + 5);
+    ctx.lineTo(x + w, py + h);
+    ctx.lineTo(x, py + h);
+    ctx.lineTo(x, py + 5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Left highlight edge
+    ctx.fillStyle = '#a14ab0';
+    ctx.fillRect(x + 1, py + 6, 1, h - 6);
+    // Glowing crack/seam down the middle
+    ctx.fillStyle = C.obstGlow;
+    ctx.fillRect(x + w / 2 - 1, py + 2, 2, h - 4);
+    // Bright tip
+    ctx.fillStyle = '#ffd1d8';
+    ctx.fillRect(x + w / 2 - 1, py - 3, 2, 3);
+
+    ctx.restore();
   }
 
   function reset() {
@@ -314,6 +521,9 @@
     nextObstacle = 80;
     nextCoin = 140;
     groundOffset = 0;
+    bgFarOffset = 0;
+    bgMidOffset = 0;
+    shake = 0;
   }
 
   function lerpColor(a, b, t) {
@@ -334,6 +544,8 @@
       speed = 4 + Math.min(6, score / 25);
 
       groundOffset = (groundOffset + speed) % 44;
+      bgFarOffset = (bgFarOffset + speed * 0.12) % (W * 2);
+      bgMidOffset = (bgMidOffset + speed * 0.35) % (W * 2);
 
       nextObstacle--;
       if (nextObstacle <= 0) {
@@ -381,6 +593,7 @@
             spawnFloater(player.x, player.y - SPRITE_H, 'NEW BEST!', C.star);
           }
           spawnDeathParticles(player.x, player.y - SPRITE_H / 2);
+          shake = 14;
           msgEl.textContent = `GAME OVER! Score ${score} (+${runCoins} coins) — SPACE to retry`;
           break;
         }
@@ -388,6 +601,8 @@
 
       player.update();
     }
+
+    if (shake > 0) shake *= 0.85;
 
     // Particles and floaters animate even when dead
     for (const p of particles) {
@@ -402,19 +617,22 @@
   }
 
   function render() {
-    // Day/night cycle based on score
-    const t = (Math.sin(frame / 600) + 1) / 2;
-    const sky = lerpColor('#111125', '#3a2a55', t);
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
-
-    // Stars
-    ctx.fillStyle = C.star;
-    for (const s of stars) {
-      if (Math.random() < 0.002) continue;
-      ctx.fillRect(Math.floor(s.x), Math.floor(s.y), 2, 2);
+    // Apply optional screen shake on death
+    if (shake > 0.5) {
+      const sx = (Math.random() - 0.5) * shake;
+      const sy = (Math.random() - 0.5) * shake;
+      ctx.setTransform(1, 0, 0, 1, sx, sy);
+    } else {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 
+    // Day/night blend based on score
+    const t = (Math.sin(frame / 600) + 1) / 2;
+
+    drawSky(t);
+    drawStars();
+    drawMoon();
+    drawParallax();
     drawGround();
 
     if (state === 'paused') {
@@ -435,7 +653,8 @@
       const alpha = p.life / p.maxLife;
       ctx.globalAlpha = alpha;
       ctx.fillStyle = p.color;
-      ctx.fillRect(Math.floor(p.x), Math.floor(p.y), 4, 4);
+      const sz = p.size || 4;
+      ctx.fillRect(p.x | 0, p.y | 0, sz, sz);
     }
     ctx.globalAlpha = 1;
 
@@ -447,6 +666,7 @@
       ctx.fillText(f.text, f.x, f.y);
     }
     ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   // Fixed timestep so the game plays at the same speed on 60/120/144Hz displays.
@@ -509,6 +729,15 @@
   canvas.addEventListener('touchstart', e => { e.preventDefault(); handleJump(); }, { passive: false });
 
   initStars();
+  buildBackgrounds();
+
+  // Auto-pause when the tab is hidden so we don't keep ticking in the
+  // background (and so the dt-cap doesn't eat the first frame back).
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') togglePause();
+    lastTime = 0; // reset dt baseline on resume
+  });
+
   requestAnimationFrame(loop);
 </script>
 </body>
