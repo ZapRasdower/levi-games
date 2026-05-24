@@ -181,6 +181,7 @@
     <button data-speed="20">20×</button>
     <button id="scaleBtn">SHOW REAL DISTANCES</button>
     <button id="compareBtn">SIZE COMPARE</button>
+    <button id="cometBtn">LAUNCH COMET</button>
     <button id="quizBtn">QUIZ ME</button>
   </div>
 
@@ -203,6 +204,7 @@
   const pauseBtn = document.getElementById('pauseBtn');
   const scaleBtn = document.getElementById('scaleBtn');
   const compareBtn = document.getElementById('compareBtn');
+  const cometBtn = document.getElementById('cometBtn');
   const quizBtn = document.getElementById('quizBtn');
 
   const QUIZ_BEST_KEY = 'solarSystem.quizBest';
@@ -281,6 +283,21 @@
     fact: "The Sun is a star — a giant ball of mostly hydrogen and helium. It contains 99.86% of all the mass in the solar system, and every second it converts about 600 million tonnes of hydrogen into helium."
   };
 
+  // Extra educational data keyed by planet name (temperature, composition,
+  // and orbital speed in km/s — note how the inner planets race around the
+  // Sun far faster than the outer ones, a real consequence of gravity).
+  const EXTRA = {
+    Mercury: { tempC: '167°C avg (430° day / −180° night)', madeOf: 'Rock & metal core',     orbitKmS: 47.4 },
+    Venus:   { tempC: '465°C — the hottest planet',         madeOf: 'Rock, thick CO₂ air',   orbitKmS: 35.0 },
+    Earth:   { tempC: '15°C average',                       madeOf: 'Rock, water & air',     orbitKmS: 29.8 },
+    Mars:    { tempC: '−65°C average',                      madeOf: 'Rock & rusty iron dust',orbitKmS: 24.1 },
+    Jupiter: { tempC: '−110°C at the cloud tops',           madeOf: 'Hydrogen & helium gas', orbitKmS: 13.1 },
+    Saturn:  { tempC: '−140°C at the cloud tops',           madeOf: 'Hydrogen & helium gas', orbitKmS: 9.7 },
+    Uranus:  { tempC: '−195°C',                             madeOf: 'Icy water, methane, ammonia', orbitKmS: 6.8 },
+    Neptune: { tempC: '−200°C',                             madeOf: 'Icy water, methane, ammonia', orbitKmS: 5.4 },
+  };
+  const KID_KG = 30; // a typical 10-year-old, for the "you'd weigh" stat
+
   // State
   let simDays = 0;
   let speed = 1;          // multiplier
@@ -294,6 +311,13 @@
   let quiz = null;        // { target: planet, score, best }
   let quizFlash = 0;      // 0=none, +ve=correct, -ve=wrong (counts down)
   let mode = 'orbit';     // 'orbit' or 'compare'
+
+  // ---- Comet physics sandbox ----
+  let cometMode = false;
+  let comets = [];        // { x, y, vx, vy, trail: [] }
+  let aiming = null;      // { x0, y0, x1, y1 } while dragging to launch
+  const GM = 950;         // Sun's gravitational parameter, tuned for the screen
+  let sunFlash = 0;       // brief flash when a comet falls into the Sun
 
   // Per-frame screen positions for hit-testing, populated by the renderer.
   // Each entry: { x, y, r }.  index -1 reserved for the Sun.
@@ -498,7 +522,14 @@
       }
       drawAsteroidBelt();
       drawSun(t);
+      if (sunFlash > 0) {
+        ctx.fillStyle = `rgba(255,240,180,${sunFlash / 24})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, SUN.r + 6 + (12 - sunFlash) * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
       for (let i = 0; i < PLANETS.length; i++) drawPlanet(PLANETS[i], i, t);
+      drawComets();
 
       // Cache screen positions for hit-testing
       sunScreenPos = { x: cx, y: cy, r: SUN.r };
@@ -696,8 +727,103 @@
     lastTime = now;
     if (!paused) {
       simDays += (dt / 1000) * timePerSec * speed;
+      if (comets.length) stepComets();
     }
+    if (sunFlash > 0) sunFlash--;
     render(now);
+  }
+
+  // Newtonian gravity toward the Sun. Uses small sub-steps for a stable
+  // inverse-square integration, so comets trace real orbits, slingshots,
+  // and escape trajectories.
+  function stepComets() {
+    const sx = sunScreenPos.x, sy = sunScreenPos.y;
+    const sunR = sunScreenPos.r;
+    const SUBSTEPS = 4;
+    const h = 1 / SUBSTEPS;
+    const survivors = [];
+    for (const c of comets) {
+      let alive = true;
+      for (let s = 0; s < SUBSTEPS; s++) {
+        const dx = sx - c.x, dy = sy - c.y;
+        const r2 = dx * dx + dy * dy;
+        const r = Math.sqrt(r2);
+        if (r < sunR) { alive = false; sunFlash = 12; break; }   // fell into the Sun
+        const a = GM / r2;                 // acceleration magnitude (inverse square)
+        c.vx += a * (dx / r) * h;
+        c.vy += a * (dy / r) * h;
+        c.x += c.vx * h;
+        c.y += c.vy * h;
+      }
+      if (!alive) continue;
+      // Drop comets that fly far off screen
+      if (c.x < -600 || c.x > W + 600 || c.y < -600 || c.y > H + 600) continue;
+      c.trail.push({ x: c.x, y: c.y });
+      if (c.trail.length > 80) c.trail.shift();
+      survivors.push(c);
+    }
+    comets = survivors;
+  }
+
+  function drawComets() {
+    // Trails
+    for (const c of comets) {
+      for (let i = 1; i < c.trail.length; i++) {
+        const a = i / c.trail.length;
+        ctx.strokeStyle = `rgba(140,200,255,${a * 0.5})`;
+        ctx.lineWidth = a * 2;
+        ctx.beginPath();
+        ctx.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
+        ctx.lineTo(c.trail[i].x, c.trail[i].y);
+        ctx.stroke();
+      }
+    }
+    // Heads + sun-pointing tails
+    for (const c of comets) {
+      const dx = c.x - sunScreenPos.x, dy = c.y - sunScreenPos.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const tailLen = 18 + 1200 / d; // longer tail when closer to the Sun
+      const tg = ctx.createLinearGradient(
+        c.x, c.y, c.x + (dx / d) * tailLen, c.y + (dy / d) * tailLen);
+      tg.addColorStop(0, 'rgba(160,220,255,0.8)');
+      tg.addColorStop(1, 'rgba(160,220,255,0)');
+      ctx.strokeStyle = tg;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y);
+      ctx.lineTo(c.x + (dx / d) * tailLen, c.y + (dy / d) * tailLen);
+      ctx.stroke();
+      // Nucleus
+      ctx.fillStyle = '#dff1ff';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Aiming arrow while dragging
+    if (aiming) {
+      ctx.strokeStyle = '#6bd1ff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(aiming.x0, aiming.y0);
+      ctx.lineTo(aiming.x1, aiming.y1);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Launch point
+      ctx.fillStyle = '#dff1ff';
+      ctx.beginPath();
+      ctx.arc(aiming.x0, aiming.y0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Arrowhead
+      const ang = Math.atan2(aiming.y1 - aiming.y0, aiming.x1 - aiming.x0);
+      ctx.fillStyle = '#6bd1ff';
+      ctx.beginPath();
+      ctx.moveTo(aiming.x1, aiming.y1);
+      ctx.lineTo(aiming.x1 - 8 * Math.cos(ang - 0.4), aiming.y1 - 8 * Math.sin(ang - 0.4));
+      ctx.lineTo(aiming.x1 - 8 * Math.cos(ang + 0.4), aiming.y1 - 8 * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fill();
+    }
   }
 
   // ---- Interaction ----
@@ -739,22 +865,30 @@
     let stats;
     if (isSun) {
       stats = [
-        ['DIAMETER',  formatNum(p.diameterKm) + ' km'],
-        ['GRAVITY',   p.gravityG + '× Earth'],
-        ['AGE',       p.ageBy + ' billion yrs'],
-        ['TYPE',      p.type],
+        ['DIAMETER',     formatNum(p.diameterKm) + ' km (~109 Earths)'],
+        ['SURFACE TEMP', '~5,500°C (15,000,000°C core)'],
+        ['MADE OF',      'Hydrogen (73%) & helium (25%)'],
+        ['GRAVITY',      p.gravityG + '× Earth'],
+        ['YOU’D WEIGH', `${Math.round(KID_KG * p.gravityG)} kg (from ${KID_KG} kg)`],
+        ['AGE',          p.ageBy + ' billion years'],
       ];
     } else {
+      const ex = EXTRA[p.name] || {};
       const yearText = p.periodDays < 1000 ? `${p.periodDays} Earth days`
                                            : `${(p.periodDays / 365).toFixed(1)} Earth years`;
       const dayText = p.dayHours < 100 ? `${p.dayHours} hrs`
                                        : `${(p.dayHours / 24).toFixed(0)} Earth days`;
+      const weighKg = (KID_KG * p.gravityG).toFixed(1);
       stats = [
         ['DISTANCE FROM SUN', `${p.orbitAU} AU (${formatNum(Math.round(p.orbitAU * 149.6))} mil km)`],
         ['YEAR LENGTH',       yearText],
         ['DAY LENGTH',        dayText],
         ['DIAMETER',          formatNum(p.diameterKm) + ' km'],
+        ['TEMPERATURE',       ex.tempC || '—'],
+        ['MADE OF',           ex.madeOf || '—'],
+        ['ORBITAL SPEED',     ex.orbitKmS ? `${ex.orbitKmS} km/s around the Sun` : '—'],
         ['GRAVITY',           p.gravityG + '× Earth'],
+        ['YOU’D WEIGH',  `${weighKg} kg (from ${KID_KG} kg)`],
         ['MOONS',             p.moons],
       ];
     }
@@ -772,7 +906,48 @@
     return n.toLocaleString('en-US');
   }
 
+  function canvasCoords(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (W / rect.width),
+      y: (clientY - rect.top) * (H / rect.height),
+    };
+  }
+
+  function launchComet(x0, y0, x1, y1) {
+    // Drag length sets speed; direction is the throw direction.
+    const VEL_SCALE = 0.05;
+    comets.push({
+      x: x0, y: y0,
+      vx: (x1 - x0) * VEL_SCALE,
+      vy: (y1 - y0) * VEL_SCALE,
+      trail: [],
+    });
+    if (comets.length > 12) comets.shift(); // keep it light
+  }
+
+  canvas.addEventListener('mousedown', e => {
+    if (!cometMode || mode !== 'orbit') return;
+    const { x, y } = canvasCoords(e.clientX, e.clientY);
+    aiming = { x0: x, y0: y, x1: x, y1: y };
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (!aiming) return;
+    const { x, y } = canvasCoords(e.clientX, e.clientY);
+    aiming.x1 = x; aiming.y1 = y;
+    if (Math.hypot(x - aiming.x0, y - aiming.y0) > 6) {
+      launchComet(aiming.x0, aiming.y0, aiming.x1, aiming.y1);
+    }
+    aiming = null;
+  });
+
   canvas.addEventListener('mousemove', e => {
+    if (aiming) {
+      const { x, y } = canvasCoords(e.clientX, e.clientY);
+      aiming.x1 = x; aiming.y1 = y;
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
@@ -801,6 +976,7 @@
   });
 
   canvas.addEventListener('click', e => {
+    if (cometMode) return; // canvas is for launching comets in this mode
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
@@ -814,6 +990,32 @@
     }
     if (hit) selectBody(hit);
   });
+
+  // Touch support for the comet launcher
+  canvas.addEventListener('touchstart', e => {
+    if (!cometMode || mode !== 'orbit') return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const { x, y } = canvasCoords(t.clientX, t.clientY);
+    aiming = { x0: x, y0: y, x1: x, y1: y };
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    if (!aiming) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const { x, y } = canvasCoords(t.clientX, t.clientY);
+    aiming.x1 = x; aiming.y1 = y;
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    if (!aiming) return;
+    e.preventDefault();
+    if (Math.hypot(aiming.x1 - aiming.x0, aiming.y1 - aiming.y0) > 6) {
+      launchComet(aiming.x0, aiming.y0, aiming.x1, aiming.y1);
+    }
+    aiming = null;
+  }, { passive: false });
 
   function showTip(text, x, y) {
     tooltip.textContent = text;
@@ -850,6 +1052,33 @@
     compareBtn.classList.toggle('active', mode === 'compare');
     // Hide the distance-toggle while in compare mode (it's irrelevant there)
     scaleBtn.style.display = mode === 'compare' ? 'none' : '';
+    if (mode === 'compare' && cometMode) stopComet(); // comets only make sense in orbit view
+  });
+
+  function startComet() {
+    if (quiz) stopQuiz();
+    cometMode = true;
+    canvas.style.cursor = 'crosshair';
+    cometBtn.textContent = 'STOP COMETS';
+    cometBtn.classList.add('active');
+    questionBar.className = 'show';
+    questionBar.textContent = 'Drag from any point and release to fling a comet — the Sun\'s gravity does the rest!';
+  }
+
+  function stopComet() {
+    cometMode = false;
+    comets = [];
+    aiming = null;
+    canvas.style.cursor = 'pointer';
+    cometBtn.textContent = 'LAUNCH COMET';
+    cometBtn.classList.remove('active');
+    questionBar.classList.remove('show');
+    questionBar.textContent = '';
+  }
+
+  cometBtn.addEventListener('click', () => {
+    if (cometMode) stopComet();
+    else startComet();
   });
 
   // ---- Quiz ----
@@ -869,6 +1098,7 @@
   ];
 
   function startQuiz() {
+    if (cometMode) stopComet();
     quiz = {
       score: 0,
       best: parseInt(localStorage.getItem(QUIZ_BEST_KEY) || '0', 10),
