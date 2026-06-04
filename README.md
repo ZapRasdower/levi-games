@@ -10,6 +10,7 @@ A static collection of small browser games made for/by Levi. Hosted via GitHub P
 - **Levi Snake** (`snake/`) — classic snake with bonus snacks worth extra points.
 - **Atom Builder** (`atom-builder/`) — educational sandbox. Add protons, neutrons, and electrons to build atoms; the game identifies the element, isotope, and ion charge. Zoom in on the nucleus to see the quarks (uud / udd) inside protons and neutrons.
 - **Solar System** (`solar-system/`) — interactive map of the planets. Click any planet (or the Sun) for facts, speed up time to watch orbits, toggle real-distance scale, and take a planet-spotting quiz.
+- **Squishy Pets** (`squishy-pets/`) — cozy idle collector. Open themed blind boxes, squish soft-body pets to earn Dough, buy upgrades, and collect all 32 pets across 4 categories (Dumpling, Sushi, Sweet, Critter). Progress saves to `localStorage`.
 
 ## Run locally
 
