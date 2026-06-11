@@ -70,6 +70,26 @@
       letter-spacing: 1px;
     }
     button:hover { border-color: #ffe600; }
+    button.active { background: #2a2a4a; border-color: #ffe600; }
+
+    #questionBar {
+      width: 100%;
+      max-width: 960px;
+      min-height: 28px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: #1a1a2e;
+      border: 2px solid #ffe60055;
+      color: #ffe600;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      text-align: center;
+      display: none;
+    }
+
+    #questionBar.show { display: block; }
+    #questionBar.right { border-color: #6bffd1; color: #6bffd1; }
+    #questionBar.wrong { border-color: #ff6b6b; color: #ff6b6b; }
 
     .legend {
       display: flex;
@@ -129,6 +149,9 @@
 
     .cell.dim { opacity: 0.15; pointer-events: none; }
     .cell.match { box-shadow: 0 0 0 2px #ffe600 inset; }
+    .cell.right { border-color: #6bffd1 !important; box-shadow: 0 0 12px #6bffd1; z-index: 3; }
+    .cell.wrong { border-color: #ff6b6b !important; box-shadow: 0 0 12px #ff6b6b; z-index: 3; }
+    .cell.answer { border-color: #6bffd1 !important; box-shadow: 0 0 0 2px #6bffd1 inset; }
 
     .cell .num {
       font-size: 0.55rem;
@@ -183,6 +206,17 @@
     .lg-lanthanide { color: #ff6bdc; border-color: #ff6bdc55; background: #ff6bdc11; }
     .lg-actinide   { color: #ff6ba0; border-color: #ff6ba055; background: #ff6ba011; }
     .lg-unknown    { color: #aaa;    border-color: #88888855; background: #88888811; }
+
+    /* State-of-matter colors (COLOR BY STATE view) */
+    .s-solid   { background: #2a3340; border-color: #9ab0cc; }
+    .s-liquid  { background: #14424a; border-color: #6be5ff; }
+    .s-gas     { background: #36204a; border-color: #c66bff; }
+    .s-unknown { background: #2a2a2a; border-color: #888; }
+
+    .lg-s-solid   { color: #9ab0cc; border-color: #9ab0cc55; background: #9ab0cc11; }
+    .lg-s-liquid  { color: #6be5ff; border-color: #6be5ff55; background: #6be5ff11; }
+    .lg-s-gas     { color: #c66bff; border-color: #c66bff55; background: #c66bff11; }
+    .lg-s-unknown { color: #aaa;    border-color: #88888855; background: #88888811; }
 
     .placeholder {
       background: transparent;
@@ -287,6 +321,28 @@
     }
     .modal-card .center { text-align: center; margin-top: 8px; }
 
+    .modal-card .atom-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0 4px;
+    }
+    #bohrCanvas { display: block; }
+
+    .modal-card .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 14px;
+      gap: 8px;
+    }
+    .modal-card .nav button { flex: 1; font-size: 0.75rem; padding: 5px 8px; }
+    .modal-card .nav .hint {
+      color: #555;
+      font-size: 0.65rem;
+      align-self: center;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
     .back {
       margin-top: 18px;
       font-size: 0.8rem;
@@ -304,13 +360,17 @@
 <body>
 
   <h1>&#9879; Periodic Table</h1>
-  <p class="subtitle">Click any element to learn about it</p>
+  <p class="subtitle">Click any element to see its atom &middot; quiz yourself &middot; recolor by state of matter</p>
 
   <div class="controls">
     <input id="search" type="text" placeholder="Search name, symbol, number...">
     <button id="clearBtn">Clear</button>
     <button id="randomBtn">Random element</button>
+    <button id="colorBtn">Color: category</button>
+    <button id="quizBtn">Quiz me</button>
   </div>
+
+  <div id="questionBar"></div>
 
   <div class="legend" id="legend"></div>
 
@@ -329,14 +389,22 @@
       <div class="big-name" id="bName"></div>
       <div class="big-num" id="bNum"></div>
       <div class="center"><span class="badge" id="bBadge"></span></div>
-      <div style="margin-top:14px;">
+      <div class="atom-wrap"><canvas id="bohrCanvas" width="190" height="190"></canvas></div>
+      <div style="margin-top:6px;">
         <div class="row"><span>Atomic mass</span><span id="bMass"></span></div>
+        <div class="row"><span>Protons / neutrons</span><span id="bNuc"></span></div>
+        <div class="row"><span>Electrons per shell</span><span id="bShells"></span></div>
         <div class="row"><span>Group</span><span id="bGroup"></span></div>
         <div class="row"><span>Period</span><span id="bPeriod"></span></div>
         <div class="row"><span>Electron config</span><span id="bEc"></span></div>
         <div class="row"><span>State at 20&deg;C</span><span id="bState"></span></div>
       </div>
       <div class="fact" id="bFact"></div>
+      <div class="nav">
+        <button id="prevBtn">&larr; prev</button>
+        <span class="hint">arrow keys work too</span>
+        <button id="nextBtn">next &rarr;</button>
+      </div>
     </div>
   </div>
 
@@ -495,13 +563,14 @@ const ptable = document.getElementById('ptable');
 const cells = {};
 
 ELEMENTS.forEach(el => {
-  const [n, sym, name, mass, cat] = el;
+  const [n, sym, name, mass, cat, , , , state] = el;
   const pos = gridPos(el);
   const div = document.createElement('div');
   div.className = `cell c-${cat}`;
   div.style.gridRow = pos.row;
   div.style.gridColumn = pos.col;
   div.dataset.cat = cat;
+  div.dataset.state = state;
   div.dataset.n = n;
   div.dataset.sym = sym.toLowerCase();
   div.dataset.name = name.toLowerCase();
@@ -512,7 +581,10 @@ ELEMENTS.forEach(el => {
     <div class="name">${name}</div>
     <div class="mass">${massDisplay}</div>
   `;
-  div.addEventListener('click', () => showModal(el));
+  div.addEventListener('click', () => {
+    if (quiz) answerQuiz(el, div);
+    else showModal(el);
+  });
   ptable.appendChild(div);
   cells[n] = div;
 });
@@ -546,35 +618,56 @@ function refLabel(row, text, color) {
 refLabel(9, '*  Lanthanides', '#ff6bdc');
 refLabel(10, '** Actinides', '#ff6ba0');
 
-// Legend
+// Legend — chips depend on the current color mode (category or state of
+// matter), and clicking a chip filters the table by that group.
+const STATE_NAMES = { solid: 'Solid at 20°C', liquid: 'Liquid at 20°C', gas: 'Gas at 20°C', unknown: 'Unknown' };
 const legend = document.getElementById('legend');
-Object.keys(CAT_NAMES).forEach(cat => {
-  const s = document.createElement('span');
-  s.className = `lg-${cat}`;
-  s.textContent = CAT_NAMES[cat];
-  s.dataset.cat = cat;
-  s.addEventListener('click', () => toggleCat(cat, s));
-  legend.appendChild(s);
-});
-
+let colorMode = 'cat'; // 'cat' or 'state'
 let activeCats = new Set(Object.keys(CAT_NAMES));
-function toggleCat(cat, span) {
-  if (activeCats.has(cat)) {
-    activeCats.delete(cat);
-    span.classList.add('dim');
-  } else {
-    activeCats.add(cat);
-    span.classList.remove('dim');
-  }
-  applyFilter();
+let activeStates = new Set(Object.keys(STATE_NAMES));
+
+function renderLegend() {
+  legend.innerHTML = '';
+  const entries = colorMode === 'cat' ? CAT_NAMES : STATE_NAMES;
+  const activeSet = colorMode === 'cat' ? activeCats : activeStates;
+  const prefix = colorMode === 'cat' ? 'lg-' : 'lg-s-';
+  Object.keys(entries).forEach(key => {
+    const s = document.createElement('span');
+    s.className = `${prefix}${key}` + (activeSet.has(key) ? '' : ' dim');
+    s.textContent = entries[key];
+    s.addEventListener('click', () => {
+      if (activeSet.has(key)) { activeSet.delete(key); s.classList.add('dim'); }
+      else { activeSet.add(key); s.classList.remove('dim'); }
+      applyFilter();
+    });
+    legend.appendChild(s);
+  });
 }
+renderLegend();
+
+function applyCellColors() {
+  Object.values(cells).forEach(cell => {
+    cell.classList.remove(`c-${cell.dataset.cat}`, `s-${cell.dataset.state}`);
+    cell.classList.add(colorMode === 'cat' ? `c-${cell.dataset.cat}` : `s-${cell.dataset.state}`);
+  });
+}
+
+const colorBtn = document.getElementById('colorBtn');
+colorBtn.addEventListener('click', () => {
+  colorMode = colorMode === 'cat' ? 'state' : 'cat';
+  colorBtn.textContent = colorMode === 'cat' ? 'Color: category' : 'Color: state at 20°C';
+  applyCellColors();
+  renderLegend();
+  applyFilter();
+});
 
 const searchInput = document.getElementById('search');
 searchInput.addEventListener('input', applyFilter);
 document.getElementById('clearBtn').addEventListener('click', () => {
   searchInput.value = '';
   activeCats = new Set(Object.keys(CAT_NAMES));
-  document.querySelectorAll('.legend span').forEach(s => s.classList.remove('dim'));
+  activeStates = new Set(Object.keys(STATE_NAMES));
+  renderLegend();
   applyFilter();
 });
 document.getElementById('randomBtn').addEventListener('click', () => {
@@ -585,7 +678,9 @@ document.getElementById('randomBtn').addEventListener('click', () => {
 function applyFilter() {
   const q = searchInput.value.trim().toLowerCase();
   Object.values(cells).forEach(cell => {
-    const inCat = activeCats.has(cell.dataset.cat);
+    const inGroup = colorMode === 'cat'
+      ? activeCats.has(cell.dataset.cat)
+      : activeStates.has(cell.dataset.state);
     let matches = !q;
     if (q) {
       matches = cell.dataset.sym === q ||
@@ -593,8 +688,8 @@ function applyFilter() {
                 cell.dataset.name.includes(q) ||
                 cell.dataset.n === q;
     }
-    cell.classList.toggle('dim', !inCat || !matches);
-    cell.classList.toggle('match', q && matches && inCat);
+    cell.classList.toggle('dim', !inGroup || !matches);
+    cell.classList.toggle('match', q && matches && inGroup);
   });
 }
 
@@ -609,8 +704,90 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') modal.classList.remove('show');
 });
 
+// ---- Electron shells (computed from the electron configuration) ----
+const BY_SYM = {};
+ELEMENTS.forEach(el => { BY_SYM[el[1]] = el; });
+const shellCache = {};
+
+// Expand the noble-gas core (e.g. "[Xe] 6s1") recursively, then total the
+// electrons in each principal shell n=1..7.
+function shellsOf(el) {
+  const n = el[0];
+  if (shellCache[n]) return shellCache[n];
+  const shells = [0, 0, 0, 0, 0, 0, 0];
+  let ec = el[7];
+  const core = ec.match(/^\[(\w+)\]/);
+  if (core) {
+    shellsOf(BY_SYM[core[1]]).forEach((c, i) => { shells[i] += c; });
+    ec = ec.slice(core[0].length);
+  }
+  for (const m of ec.matchAll(/(\d)[spdf](\d+)/g)) {
+    shells[parseInt(m[1], 10) - 1] += parseInt(m[2], 10);
+  }
+  shellCache[n] = shells;
+  return shells;
+}
+
+// ---- Animated Bohr-model atom in the modal ----
+const bohr = document.getElementById('bohrCanvas');
+const bctx = bohr.getContext('2d');
+let bohrEl = null;
+
+function drawBohr(ts) {
+  requestAnimationFrame(drawBohr);
+  if (!bohrEl || !modal.classList.contains('show')) return;
+  const Wb = bohr.width, Hb = bohr.height;
+  const cxb = Wb / 2, cyb = Hb / 2;
+  bctx.clearRect(0, 0, Wb, Hb);
+
+  const shells = shellsOf(bohrEl).filter(c => c > 0);
+  const nucR = 13;
+  const maxR = Wb / 2 - 6;
+  const accent = getComputedStyle(cells[bohrEl[0]]).borderColor;
+
+  // Shell orbits + electrons (alternating directions and speeds)
+  shells.forEach((count, k) => {
+    const r = shells.length === 1
+      ? (nucR + maxR) / 2
+      : nucR + 11 + (k / (shells.length - 1)) * (maxR - nucR - 11);
+    bctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    bctx.lineWidth = 1;
+    bctx.beginPath();
+    bctx.arc(cxb, cyb, r, 0, Math.PI * 2);
+    bctx.stroke();
+
+    const dir = k % 2 === 0 ? 1 : -1;
+    const spin = ts * 0.0005 * dir * (1.4 - k * 0.12);
+    for (let e = 0; e < count; e++) {
+      const a = spin + (e / count) * Math.PI * 2;
+      bctx.fillStyle = accent;
+      bctx.beginPath();
+      bctx.arc(cxb + Math.cos(a) * r, cyb + Math.sin(a) * r, 2.4, 0, Math.PI * 2);
+      bctx.fill();
+    }
+  });
+
+  // Nucleus
+  const ng = bctx.createRadialGradient(cxb - 3, cyb - 3, 1, cxb, cyb, nucR);
+  ng.addColorStop(0, '#ffd06b');
+  ng.addColorStop(1, '#c44a3a');
+  bctx.fillStyle = ng;
+  bctx.beginPath();
+  bctx.arc(cxb, cyb, nucR, 0, Math.PI * 2);
+  bctx.fill();
+  bctx.fillStyle = '#fff';
+  bctx.font = 'bold 9px Courier New';
+  bctx.textAlign = 'center';
+  bctx.fillText(bohrEl[1], cxb, cyb + 3);
+}
+requestAnimationFrame(drawBohr);
+
+let currentIndex = 0;
+
 function showModal(el) {
   const [n, sym, name, mass, cat, group, period, ec, state, fact] = el;
+  currentIndex = ELEMENTS.indexOf(el);
+  bohrEl = el;
   document.getElementById('bSym').textContent = sym;
   document.getElementById('bName').textContent = name;
   document.getElementById('bNum').textContent = `Atomic number ${n}`;
@@ -618,6 +795,12 @@ function showModal(el) {
   badge.textContent = CAT_NAMES[cat];
   badge.className = `badge lg-${cat}`;
   document.getElementById('bMass').textContent = Number.isInteger(mass) ? `${mass} (most stable)` : mass;
+  const neutrons = Math.round(mass) - n;
+  document.getElementById('bNuc').textContent = `${n} p⁺ / ~${neutrons} n⁰`;
+  const shells = shellsOf(el);
+  let last = shells.length - 1;
+  while (last > 0 && shells[last] === 0) last--;
+  document.getElementById('bShells').textContent = shells.slice(0, last + 1).join(', ');
   document.getElementById('bGroup').textContent = (n >= 57 && n <= 71) ? 'Lanthanide' : (n >= 89 && n <= 103) ? 'Actinide' : group;
   document.getElementById('bPeriod').textContent = period;
   document.getElementById('bEc').textContent = ec;
@@ -628,6 +811,106 @@ function showModal(el) {
   card.style.borderColor = getComputedStyle(cells[n]).borderColor;
   modal.classList.add('show');
 }
+
+// Prev/next element navigation (buttons or arrow keys)
+function stepElement(delta) {
+  const next = (currentIndex + delta + ELEMENTS.length) % ELEMENTS.length;
+  showModal(ELEMENTS[next]);
+}
+document.getElementById('prevBtn').addEventListener('click', () => stepElement(-1));
+document.getElementById('nextBtn').addEventListener('click', () => stepElement(1));
+document.addEventListener('keydown', e => {
+  if (!modal.classList.contains('show')) return;
+  if (e.key === 'ArrowLeft') stepElement(-1);
+  if (e.key === 'ArrowRight') stepElement(1);
+});
+
+// ---- Quiz: find the element! ----
+const QUIZ_BEST_KEY = 'ptable.quizBest';
+const questionBar = document.getElementById('questionBar');
+const quizBtn = document.getElementById('quizBtn');
+let quiz = null; // { score, best, current: {q, test} }
+
+function makeQuestion() {
+  const el = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
+  const roll = Math.random();
+  if (roll < 0.3) {
+    return { q: `Click the element with symbol "${el[1]}"`, test: e2 => e2 === el };
+  }
+  if (roll < 0.5) {
+    return { q: `Click element number ${el[0]}`, test: e2 => e2 === el };
+  }
+  if (roll < 0.7) {
+    return { q: `Find ${el[2]}!`, test: e2 => e2 === el };
+  }
+  if (roll < 0.85) {
+    const cats = ['alkali', 'alkaline', 'halogen', 'noble', 'lanthanide', 'actinide', 'metalloid'];
+    const cat = cats[Math.floor(Math.random() * cats.length)];
+    return { q: `Click any ${CAT_NAMES[cat].toLowerCase()}`, test: e2 => e2[4] === cat };
+  }
+  const states = [
+    ['liquid', 'Click an element that is LIQUID at room temperature (there are only 2!)'],
+    ['gas',    'Click any element that is a GAS at room temperature'],
+  ];
+  const [st, q] = states[Math.floor(Math.random() * states.length)];
+  return { q, test: e2 => e2[8] === st };
+}
+
+function nextQuestion() {
+  if (!quiz) return;
+  quiz.current = makeQuestion();
+  questionBar.className = 'show';
+  questionBar.textContent = `${quiz.current.q}  —  Score: ${quiz.score}  Best: ${quiz.best}`;
+}
+
+function answerQuiz(el, cell) {
+  if (!quiz || quiz.waiting) return;
+  quiz.waiting = true;
+  const correct = quiz.current.test(el);
+  if (correct) {
+    quiz.score++;
+    if (quiz.score > quiz.best) {
+      quiz.best = quiz.score;
+      localStorage.setItem(QUIZ_BEST_KEY, quiz.best);
+    }
+    cell.classList.add('right');
+    questionBar.className = 'show right';
+    questionBar.textContent = `✓ Correct — ${el[2]}!  Score: ${quiz.score}  Best: ${quiz.best}`;
+    setTimeout(() => {
+      cell.classList.remove('right');
+      if (quiz) { quiz.waiting = false; nextQuestion(); }
+    }, 1000);
+  } else {
+    quiz.score = 0;
+    cell.classList.add('wrong');
+    // Light up every element that would have been a correct answer
+    const answers = ELEMENTS.filter(e2 => quiz.current.test(e2));
+    answers.forEach(e2 => cells[e2[0]].classList.add('answer'));
+    questionBar.className = 'show wrong';
+    const names = answers.slice(0, 3).map(e2 => e2[2]).join(', ');
+    questionBar.textContent = `✗ Nope — that was ${el[2]}. Answer: ${names}${answers.length > 3 ? '…' : ''}.  Score reset.`;
+    setTimeout(() => {
+      cell.classList.remove('wrong');
+      answers.forEach(e2 => cells[e2[0]].classList.remove('answer'));
+      if (quiz) { quiz.waiting = false; nextQuestion(); }
+    }, 2000);
+  }
+}
+
+quizBtn.addEventListener('click', () => {
+  if (quiz) {
+    quiz = null;
+    questionBar.className = '';
+    questionBar.textContent = '';
+    quizBtn.textContent = 'Quiz me';
+    quizBtn.classList.remove('active');
+  } else {
+    quiz = { score: 0, best: parseInt(localStorage.getItem(QUIZ_BEST_KEY) || '0', 10), waiting: false };
+    quizBtn.textContent = 'Stop quiz';
+    quizBtn.classList.add('active');
+    nextQuestion();
+  }
+});
 </script>
 </body>
 </html>
