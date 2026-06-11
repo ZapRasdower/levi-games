@@ -125,6 +125,7 @@
     <div class="hud-row">
       <div class="pill" id="rateP">⚡ <b id="rateVal">0</b>/s</div>
       <div class="pill">🧸 <b id="cFound">0</b>/<span id="cTotal">32</span></div>
+      <div class="pill" id="pityP" title="boxes until a rare or better is guaranteed">🎁 rare ≤<b id="pityVal">10</b></div>
     </div>
   </div>
 </header>
@@ -143,6 +144,7 @@
     <button class="iconbtn" id="shelfBtn" title="shelf">📖</button>
     <button class="btn big" id="openBtn"><span id="openLabel">Open Box</span><span class="cost"><span>🥟</span><span id="openCost">0</span></span></button>
     <button class="iconbtn" id="shopBtn" title="upgrades">🛒</button>
+    <button class="iconbtn" id="achBtn" title="achievements">🏆</button>
     <button class="iconbtn" id="muteBtn" title="sound">🔊</button>
   </div>
 </div>
@@ -153,6 +155,15 @@
     <h2>🛒 Upgrade Shop</h2>
     <p class="hint">Spend Dough to squish smarter and earn faster.</p>
     <div id="shopList"></div>
+  </div>
+</div>
+
+<div class="modal" id="achModal">
+  <div class="sheet">
+    <button class="close-x" data-close="achModal">✕</button>
+    <h2>🏆 Achievements</h2>
+    <p class="hint">Earn trophies as you play — each one pays out bonus Dough.</p>
+    <div id="achList"></div>
   </div>
 </div>
 
@@ -232,6 +243,17 @@ const CATEGORIES=[
    {id:"axolotl",name:"Galaxy Axolotl",rarity:"epic",kind:"critter",squish:1.2,body:"#b98ce6",shade:"#9a6fd6",hi:"#dcc4ff",ear:"frill",earColor:"#f48fc0",wideEyes:true,starry:true},
    {id:"corgi",name:"Royal Corgi",rarity:"legendary",kind:"critter",squish:1.05,body:"#f3c878",shade:"#dba24e",hi:"#ffe6b0",ear:"point",earColor:"#dba24e",earInner:"#fff",nose:true,crown:true,shiny:true},
   ]},
+ {id:"boba",name:"Boba Café",emoji:"🧋",accent:"#9a6fd6",accentD:"#7d54bd",boxBg:"#b393e6",boxLid:"#9a76d4",bg1:"#f4eefb",bg2:"#e6dbf5",unlock:4200,pull:300,
+  pets:[
+   {id:"milktea",name:"Classic Milk Tea",rarity:"common",kind:"boba",squish:1.2,body:"#e8c79a",shade:"#cfa770",hi:"#f7e3c4",pearls:"#4a3328",straw:"#ef6f53"},
+   {id:"strawboba",name:"Strawberry Boba",rarity:"common",kind:"boba",squish:1.2,body:"#f7b8cc",shade:"#e68fae",hi:"#ffdce8",pearls:"#7a2a3e",straw:"#fff"},
+   {id:"matchaboba",name:"Matcha Latte",rarity:"common",kind:"boba",squish:1.2,body:"#b9d98e",shade:"#92bd63",hi:"#dcedc0",pearls:"#3e4a28",straw:"#fff"},
+   {id:"taro",name:"Taro Swirl",rarity:"uncommon",kind:"boba",squish:1.25,body:"#c5a8e8",shade:"#a583d4",hi:"#e3d2f7",pearls:"#43306a",straw:"#f1b53b",glossy:true},
+   {id:"mangoslush",name:"Mango Slush",rarity:"uncommon",kind:"boba",squish:1.3,body:"#ffd27a",shade:"#f0ad42",hi:"#ffe9b8",pearls:"#8a5a14",straw:"#5aa86f",glossy:true},
+   {id:"thaitea",name:"Thai Tea",rarity:"rare",kind:"boba",squish:1.2,body:"#f0a05e",shade:"#d67d33",hi:"#ffc995",pearls:"#5a3014",straw:"#fff",glossy:true},
+   {id:"galaxyboba",name:"Galaxy Boba",rarity:"epic",kind:"boba",squish:1.25,body:"#5a4a9e",shade:"#3d2f73",hi:"#8f7fd0",pearls:"#241a44",straw:"#f48fc0",starry:true},
+   {id:"royalboba",name:"Royal Gold Boba",rarity:"legendary",kind:"boba",squish:1.2,body:"#f6cb56",shade:"#dfa42e",hi:"#ffe9a8",pearls:"#7a5410",straw:"#fff",shiny:true,crown:true},
+  ]},
 ];
 const catById=id=>CATEGORIES.find(c=>c.id===id);
 let PET_INDEX={}; CATEGORIES.forEach(c=>c.pets.forEach(p=>{p.cat=c.id;PET_INDEX[p.id]=p;}));
@@ -247,11 +269,33 @@ const UPGRADES=[
 ];
 const upCost=u=>Math.floor(u.base*Math.pow(u.growth, state.up[u.id]));
 
+/* ---------------- Achievements ---------------- */
+const ACH=[
+ {id:"firstbox",emoji:"📦",name:"First Box",desc:"Open your first blind box",reward:30,test:()=>state.boxes>=1},
+ {id:"squish100",emoji:"🖐️",name:"Squish Novice",desc:"Squish 100 times",reward:100,test:()=>state.stats.squishes>=100},
+ {id:"squish1000",emoji:"💪",name:"Squish Master",desc:"Squish 1,000 times",reward:500,test:()=>state.stats.squishes>=1000},
+ {id:"boxes10",emoji:"🎁",name:"Box Curious",desc:"Open 10 boxes",reward:150,test:()=>state.boxes>=10},
+ {id:"boxes50",emoji:"🎀",name:"Box Fanatic",desc:"Open 50 boxes",reward:600,test:()=>state.boxes>=50},
+ {id:"collect10",emoji:"🧸",name:"Collector",desc:"Discover 10 different pets",reward:250,test:()=>uniqueCount()>=10},
+ {id:"collect25",emoji:"🏛️",name:"Curator",desc:"Discover 25 different pets",reward:900,test:()=>uniqueCount()>=25},
+ {id:"fullset",emoji:"🌟",name:"Full Set!",desc:"Collect every pet in one theme",reward:800,test:()=>CATEGORIES.some(c=>c.pets.every(p=>state.pets[p.id]>0))},
+ {id:"legend",emoji:"👑",name:"Legendary!",desc:"Pull a legendary pet",reward:1000,test:()=>Object.keys(PET_INDEX).some(id=>PET_INDEX[id].rarity==="legendary"&&state.pets[id]>0)},
+ {id:"crit",emoji:"✨",name:"Golden Moment",desc:"Land a ×10 golden squish",reward:200,test:()=>state.stats.crits>=1},
+ {id:"rich",emoji:"💰",name:"Dough Tycoon",desc:"Hold 10,000 Dough at once",reward:500,test:()=>state.dough>=10000},
+ {id:"allcats",emoji:"🗺️",name:"World Tour",desc:"Unlock every box theme",reward:1200,test:()=>CATEGORIES.every(c=>state.unlocked[c.id])},
+];
+function checkAch(){let got=false;
+  for(const a of ACH){if(!state.ach[a.id]&&a.test()){state.ach[a.id]=true;state.dough+=a.reward;got=true;
+    showToast("🏆 "+a.name+" — +"+fmt(a.reward)+" 🥟");Sfx.sparkle();burst(22,CC);}}
+  if(got){updateHUD();save();}
+}
+
 /* ---------------- Game state ---------------- */
 const state={
   mode:"box", blob:null, cat:CATEGORIES[0],
   dough:50, boxes:0,
-  pets:{}, up:{}, unlocked:{dumpling:true}, pulls:{},
+  pets:{}, up:{}, unlocked:{dumpling:true}, pulls:{}, pity:{},
+  stats:{squishes:0,crits:0}, ach:{},
   pendingPet:null, pendingNew:false,
   lidLift:0, openT:0, boxScale:1, boxAlpha:1, bob:0, bobT:0, hop:0, flash:0,
   pressing:false, pointer:{x:0,y:0}, pointerR:0,
@@ -260,7 +304,8 @@ const state={
 };
 Object.keys(PET_INDEX).forEach(id=>state.pets[id]=0);
 UPGRADES.forEach(u=>state.up[u.id]=0);
-CATEGORIES.forEach(c=>state.pulls[c.id]=0);
+CATEGORIES.forEach(c=>{state.pulls[c.id]=0;state.pity[c.id]=0;});
+const PITY_AT=10; // a rare+ pet is guaranteed within this many boxes per theme
 
 const pullCost=c=>Math.floor(c.pull*Math.pow(1.25,state.pulls[c.id]||0));
 const uniqueCount=()=>Object.values(state.pets).filter(v=>v>0).length;
@@ -277,7 +322,7 @@ const collBonus=()=>uniqueCount()*0.02;
 const SAVE_KEY="squishy_pets_v2";
 const hasStore=()=>{try{return!!(window.storage&&typeof window.storage.get==="function");}catch(e){return false;}};
 const hasLocal=()=>{try{return!!window.localStorage;}catch(e){return false;}};
-function serialize(){return JSON.stringify({d:state.dough,b:state.boxes,p:state.pets,u:state.up,k:Object.keys(state.unlocked),pl:state.pulls,m:Sfx.muted,t:Date.now()});}
+function serialize(){return JSON.stringify({d:state.dough,b:state.boxes,p:state.pets,u:state.up,k:Object.keys(state.unlocked),pl:state.pulls,py:state.pity,st:state.stats,a:Object.keys(state.ach),m:Sfx.muted,t:Date.now()});}
 let saveT=null;
 function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ const data=serialize();
     if(hasStore()){try{window.storage.set(SAVE_KEY,data,false).catch(()=>{});}catch(e){}}
@@ -298,6 +343,9 @@ async function loadGame(){
       if(s.u)for(const id in s.u)if(id in state.up)state.up[id]=s.u[id];
       if(s.k)s.k.forEach(id=>{if(catById(id))state.unlocked[id]=true;});
       if(s.pl)for(const id in s.pl)if(id in state.pulls)state.pulls[id]=s.pl[id];
+      if(s.py)for(const id in s.py)if(id in state.pity)state.pity[id]=s.py[id];
+      if(s.st){state.stats.squishes=s.st.squishes||0;state.stats.crits=s.st.crits||0;}
+      if(s.a)s.a.forEach(id=>state.ach[id]=true);
       if(s.m)Sfx.muted=true;
       // offline idle earnings (capped 4h)
       const elapsed=clamp((Date.now()-(s.t||Date.now()))/1000,0,4*3600);
@@ -363,6 +411,16 @@ class Blob{
       if(t.nori){ctx.fillStyle="#2f3a33";ctx.fillRect(this.cx-bb.w*0.1,bb.minY,bb.w*0.2,bb.h);}
     }
     if(t.band){ctx.fillStyle="rgba(120,70,40,.4)";ctx.fillRect(bb.minX,this.cy-bb.h*0.08,bb.w,bb.h*0.16);}
+    if(t.kind==="boba"){
+      // foam line near the top, tapioca pearls settled at the bottom (deterministic so they don't shimmer)
+      ctx.fillStyle="rgba(255,255,255,.45)";ctx.fillRect(bb.minX,bb.minY+bb.h*0.2,bb.w,Math.max(2,bb.h*0.025));
+      const pr=Math.max(3,bb.w*0.052);
+      for(let i=0;i<9;i++){
+        const px=bb.minX+bb.w*(0.12+((i*53)%80)/100),py=bb.maxY-bb.h*(0.06+((i*37)%22)/100);
+        ctx.fillStyle=t.pearls;ctx.beginPath();ctx.arc(px,py,pr,0,TAU);ctx.fill();
+        ctx.fillStyle="rgba(255,255,255,.3)";ctx.beginPath();ctx.arc(px-pr*0.3,py-pr*0.3,pr*0.3,0,TAU);ctx.fill();
+      }
+    }
     if(t.dusting){ctx.fillStyle="rgba(255,255,255,.6)";for(let i=0;i<14;i++){ctx.beginPath();ctx.arc(bb.minX+Math.random()*bb.w,bb.minY+Math.random()*bb.h*0.55,Math.random()*1.5+0.5,0,TAU);ctx.fill();}}
     if(t.starry){for(let i=0;i<22;i++){ctx.fillStyle="rgba(255,255,255,"+(0.4+Math.random()*0.5)+")";ctx.beginPath();ctx.arc(bb.minX+Math.random()*bb.w,bb.minY+Math.random()*bb.h,Math.random()*1.6+0.4,0,TAU);ctx.fill();}}
     if(t.markings){ctx.fillStyle="rgba(255,255,255,.85)";ctx.beginPath();ctx.ellipse(this.cx-bb.w*0.22,this.cy,bb.w*0.13,bb.h*0.1,0,0,TAU);ctx.ellipse(this.cx+bb.w*0.22,this.cy,bb.w*0.13,bb.h*0.1,0,0,TAU);ctx.fill();}
@@ -372,10 +430,17 @@ class Blob{
     if(t.kind==="dumpling"&&t.pleat){ctx.save();ctx.strokeStyle=t.pleat;ctx.lineWidth=Math.max(2,baseR*0.03);ctx.lineCap="round";ctx.globalAlpha=.6;const topY=bb.minY+bb.h*0.16,folds=5;for(let i=0;i<folds;i++){const fx=this.cx+(i-(folds-1)/2)*bb.w*0.13;ctx.beginPath();ctx.moveTo(fx,topY);ctx.quadraticCurveTo(fx+bb.w*0.04,topY-bb.h*0.07,fx+bb.w*0.02,topY-bb.h*0.12);ctx.stroke();}ctx.restore();}
     // gloss dot
     ctx.save();ctx.fillStyle="rgba(255,255,255,.5)";ctx.beginPath();ctx.ellipse(this.cx-bb.w*0.2,bb.minY+bb.h*0.28,bb.w*0.1,bb.h*0.07,-0.5,0,TAU);ctx.fill();ctx.restore();
+    if(t.straw)this.drawStraw(ctx);
     this.drawFace(ctx,pressing,easeOut(this.spawnT));
     if(t.crown)this.drawCrown(ctx);
     if(t.spicy)this.drawSpice(ctx);
   }
+  drawStraw(ctx){const bb=this.bb,t=this.type,w=Math.max(6,bb.w*0.1);
+    ctx.save();ctx.translate(this.cx+bb.w*0.2,bb.minY+bb.h*0.14);ctx.rotate(0.16);
+    ctx.fillStyle=t.straw;ctx.strokeStyle="rgba(90,68,52,.25)";ctx.lineWidth=1.5;
+    roundRect(-w/2,-bb.h*0.46,w,bb.h*0.5,w*0.4);ctx.fill();ctx.stroke();
+    ctx.fillStyle="rgba(0,0,0,.12)";roundRect(-w/2,-bb.h*0.46,w*0.4,bb.h*0.5,w*0.3);ctx.fill();
+    ctx.restore();}
   drawEars(ctx,front){const bb=this.bb,t=this.type,cx=this.cx,top=bb.minY+bb.h*0.06,ew=bb.w*0.2;ctx.save();ctx.fillStyle=t.earColor||t.shade;
     if(t.ear==="point"){for(const s of[-1,1]){ctx.save();ctx.fillStyle=t.earColor;ctx.beginPath();ctx.moveTo(cx+s*bb.w*0.22,top);ctx.lineTo(cx+s*bb.w*0.42,bb.minY-bb.h*0.28);ctx.lineTo(cx+s*bb.w*0.04,bb.minY-bb.h*0.02);ctx.closePath();ctx.fill();if(t.earInner){ctx.fillStyle=t.earInner;ctx.beginPath();ctx.moveTo(cx+s*bb.w*0.22,top+2);ctx.lineTo(cx+s*bb.w*0.34,bb.minY-bb.h*0.18);ctx.lineTo(cx+s*bb.w*0.1,bb.minY-bb.h*0.01);ctx.closePath();ctx.fill();}ctx.restore();}}
     else if(t.ear==="round"){for(const s of[-1,1]){ctx.fillStyle=t.earColor;ctx.beginPath();ctx.arc(cx+s*bb.w*0.3,bb.minY+bb.h*0.02,bb.w*0.15,0,TAU);ctx.fill();if(t.earInner){ctx.fillStyle=t.earInner;ctx.beginPath();ctx.arc(cx+s*bb.w*0.3,bb.minY+bb.h*0.04,bb.w*0.08,0,TAU);ctx.fill();}}}
@@ -439,6 +504,11 @@ function burst(n,colors){for(let i=0;i<n;i++){const a=rand(0,TAU),sp=rand(120,46
 function updConf(dt){for(let i=confetti.length-1;i>=0;i--){const c=confetti[i];c.vy+=c.g*dt;c.x+=c.vx*dt;c.y+=c.vy*dt;c.rot+=c.vr*dt;c.life+=dt;c.vx*=0.99;if(c.life>c.max||c.y>H+40)confetti.splice(i,1);}}
 function drawConf(){for(const c of confetti){const a=clamp(1-c.life/c.max,0,1);ctx.save();ctx.globalAlpha=a;ctx.translate(c.x,c.y);ctx.rotate(c.rot);ctx.fillStyle=c.col;if(c.shape===0)ctx.fillRect(-c.sz/2,-c.sz/3,c.sz,c.sz*0.66);else{ctx.beginPath();ctx.arc(0,0,c.sz*0.5,0,TAU);ctx.fill();}ctx.restore();}}
 
+const drops=[];
+function burstDrops(x,y,col,n){for(let i=0;i<n;i++){const a=rand(0,TAU),sp=rand(50,200);drops.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-rand(40,140),g:560,life:0,max:rand(0.35,0.7),r:rand(2,4.5),col});}if(drops.length>90)drops.splice(0,drops.length-90);}
+function updDrops(dt){for(let i=drops.length-1;i>=0;i--){const d=drops[i];d.vy+=d.g*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.life+=dt;if(d.life>d.max)drops.splice(i,1);}}
+function drawDrops(){for(const d of drops){const a=clamp(1-d.life/d.max,0,1);ctx.save();ctx.globalAlpha=a*0.85;ctx.fillStyle=d.col;ctx.beginPath();ctx.arc(d.x,d.y,d.r*(1-d.life/d.max*0.4),0,TAU);ctx.fill();ctx.restore();}}
+
 const floats=[];
 function spawnFloat(text,big){floats.push({x:homeX+rand(-20,20),y:homeY-baseR*0.4,text,life:0,max:big?1.3:0.9,vy:big?60:46,big});}
 function updFloat(dt){for(let i=floats.length-1;i>=0;i--){const f=floats[i];f.life+=dt;f.y-=f.vy*dt;if(f.life>f.max)floats.splice(i,1);}}
@@ -446,7 +516,7 @@ function drawFloat(){ctx.save();ctx.textAlign="center";for(const f of floats){co
 
 /* ---------------- DOM refs ---------------- */
 const $=id=>document.getElementById(id);
-const elPrompt=$("prompt"),elBanner=$("banner"),elRarityTag=$("rarityTag"),elDumpName=$("dumpName"),elNewFlag=$("newFlag"),elDough=$("doughVal"),elRate=$("rateVal"),elFound=$("cFound"),elTotal=$("cTotal"),elOpenCost=$("openCost"),elOpenLabel=$("openLabel"),elOpenBtn=$("openBtn"),elToast=$("toast"),elCatStrip=$("catstrip");
+const elPrompt=$("prompt"),elBanner=$("banner"),elRarityTag=$("rarityTag"),elDumpName=$("dumpName"),elNewFlag=$("newFlag"),elDough=$("doughVal"),elRate=$("rateVal"),elFound=$("cFound"),elTotal=$("cTotal"),elOpenCost=$("openCost"),elOpenLabel=$("openLabel"),elOpenBtn=$("openBtn"),elToast=$("toast"),elCatStrip=$("catstrip"),elPity=$("pityVal");
 elTotal.textContent=TOTAL_PETS;
 
 let toastT=null;
@@ -455,6 +525,7 @@ function showToast(msg){elToast.textContent=msg;elToast.classList.add("show");cl
 function applyTheme(c){document.documentElement.style.setProperty("--accent",c.accent);elOpenBtn.style.background=c.accent;elOpenBtn.style.boxShadow="0 5px 0 "+c.accentD;document.body.style.background=`radial-gradient(120% 90% at 50% 6%, ${c.bg1} 0%, ${c.bg2} 100%)`;}
 
 function updateHUD(){elDough.textContent=fmt(state.dough);elRate.textContent=helperRate().toFixed(1);elFound.textContent=uniqueCount();
+  elPity.textContent=Math.max(1,PITY_AT-(state.pity[state.cat.id]||0));
   const cost=pullCost(state.cat);elOpenCost.textContent=fmt(cost);elOpenLabel.textContent="Open "+state.cat.emoji+" Box";
   const can=state.dough>=cost&&state.unlocked[state.cat.id];elOpenBtn.classList.toggle("disabled",!can);}
 
@@ -465,7 +536,7 @@ function refreshCatStrip(){[...elCatStrip.children].forEach((el,i)=>{const c=CAT
 
 function selectCat(c){Sfx.init();
   if(!state.unlocked[c.id]){
-    if(state.dough>=c.unlock){state.dough-=c.unlock;state.unlocked[c.id]=true;Sfx.coin();showToast("Unlocked "+c.name+"! 🎉");refreshCatStrip();save();}
+    if(state.dough>=c.unlock){state.dough-=c.unlock;state.unlocked[c.id]=true;Sfx.coin();showToast("Unlocked "+c.name+"! 🎉");refreshCatStrip();checkAch();save();}
     else{Sfx.buzz();showToast("Need 🥟"+fmt(c.unlock)+" to unlock "+c.name);updateHUD();return;}
   }
   state.cat=c;applyTheme(c);refreshCatStrip();updateHUD();
@@ -483,13 +554,20 @@ function attemptOpen(){
   state.dough-=cost;state.boxes++;state.pulls[c.id]=(state.pulls[c.id]||0)+1;Sfx.thud();
   // roll pet
   state.pendingPet=rollPet(c);state.pendingNew=state.pets[state.pendingPet.id]===0;
+  const rr=state.pendingPet.rarity; // higher rarity = longer, shakier reveal
+  state.openDur=rr==="legendary"?1.7:rr==="epic"?1.25:rr==="rare"?0.95:0.6;
   state.blob=null;state.mode="opening";state.openT=0;state.lidLift=0;state.boxAlpha=1;state.boxScale=1;state._puff=false;
   elBanner.classList.remove("show");elPrompt.style.opacity=0;updateHUD();save();
 }
 function rollPet(c){
   const luck=state.up.luck;let total=0;const w={};
-  for(const k in RARITY){const m=k==="common"?1:(1+luck*0.14);w[k]=RARITY[k].weight*m;total+=w[k];}
-  let r=Math.random()*total,chosen="common";for(const k in RARITY){r-=w[k];if(r<=0){chosen=k;break;}}
+  const pityHit=(state.pity[c.id]||0)>=PITY_AT-1;
+  for(const k in RARITY){
+    if(pityHit&&(k==="common"||k==="uncommon"))continue; // pity: force rare or better
+    const m=k==="common"?1:(1+luck*0.14);w[k]=RARITY[k].weight*m;total+=w[k];
+  }
+  let r=Math.random()*total,chosen=pityHit?"rare":"common";for(const k in w){r-=w[k];if(r<=0){chosen=k;break;}}
+  if(chosen==="common"||chosen==="uncommon")state.pity[c.id]=(state.pity[c.id]||0)+1;else state.pity[c.id]=0;
   const pool=c.pets.filter(p=>p.rarity===chosen);return pool[Math.floor(Math.random()*pool.length)]||c.pets[0];
 }
 function reveal(){
@@ -500,20 +578,22 @@ function reveal(){
   const rc=RARITY[p.rarity];burst(rc.confetti,[p.body,p.shade||p.body,"#fff3d6",rc.color]);
   elRarityTag.textContent=rc.label;elRarityTag.style.background=rc.color;elDumpName.textContent=p.name;elNewFlag.style.display=isNew?"inline-block":"none";
   elBanner.classList.add("show");clearTimeout(state._bt);state._bt=setTimeout(()=>elBanner.classList.remove("show"),2400);
-  updateHUD();save();
+  updateHUD();checkAch();save();
 }
 
 /* ---------------- earning ---------------- */
 function doSquishEarn(){
   if(!state.blob)return;
-  state.combo++;state.comboTimer=comboDecay();
+  state.combo++;state.comboTimer=comboDecay();state.stats.squishes++;
   const cm=Math.min(comboCap(),1+state.combo*0.2);
   let amt=squishPower()*cm*RARITY[state.blob.type.rarity].mult*(1+collBonus());
-  let crit=false;if(Math.random()<critChance()){amt*=10;crit=true;}
+  let crit=false;if(Math.random()<critChance()){amt*=10;crit=true;state.stats.crits++;}
   amt=Math.max(1,Math.round(amt));
   state.dough+=amt;spawnFloat("+"+fmt(amt)+(crit?" ✨":(state.combo>2?" x"+cm.toFixed(1):"")),crit);
+  const b=state.blob;burstDrops(state.pointer.x||b.cx,Math.min(state.pointer.y||b.cy,b.bb.maxY),b.type.body,crit?12:4);
+  if(cm>=comboCap()&&Math.random()<0.25)spawnFloat("💗");
   Sfx.squish(clamp(0.4+state.blob.squashSmooth,0.4,1));
-  updateHUD();save();
+  updateHUD();checkAch();save();
 }
 
 /* ---------------- pointer ---------------- */
@@ -542,8 +622,18 @@ function renderShop(){const list=$("shopList");list.innerHTML="";UPGRADES.forEac
   row.innerHTML=`<div class="ue">${u.emoji}</div><div class="um"><div class="un">${u.name}</div><div class="ud">${u.desc(lv)}</div><div class="ulv">Level ${lv}${maxed?" · MAX":""}</div></div>`;
   const btn=document.createElement("button");btn.className="buy"+(maxed?" max":can?"":" disabled");
   btn.innerHTML=maxed?"MAX":`<span>🥟 ${fmt(cost)}</span><small>upgrade</small>`;
-  btn.onclick=()=>{if(maxed)return;if(state.dough<cost){Sfx.buzz();showToast("Need 🥟"+fmt(cost));return;}state.dough-=cost;state.up[u.id]++;Sfx.coin();updateHUD();renderShop();save();};
+  btn.onclick=()=>{if(maxed)return;if(state.dough<cost){Sfx.buzz();showToast("Need 🥟"+fmt(cost));return;}state.dough-=cost;state.up[u.id]++;Sfx.coin();updateHUD();renderShop();checkAch();save();};
   row.appendChild(btn);list.appendChild(row);});}
+
+function openAch(){Sfx.init();const list=$("achList");list.innerHTML="";
+  const earned=ACH.filter(a=>state.ach[a.id]).length;
+  document.querySelector("#achModal h2").textContent=`🏆 Achievements (${earned}/${ACH.length})`;
+  ACH.forEach(a=>{const done=!!state.ach[a.id];
+    const row=document.createElement("div");row.className="up";if(!done)row.style.opacity="0.55";
+    row.innerHTML=`<div class="ue">${done?a.emoji:"🔒"}</div><div class="um"><div class="un">${a.name}</div><div class="ud">${a.desc}</div><div class="ulv">${done?"✓ earned":"reward: 🥟"+fmt(a.reward)}</div></div>`;
+    list.appendChild(row);});
+  $("achModal").classList.add("show");}
+$("achBtn").onclick=openAch;
 
 function miniHTML(d,locked){const grad=`radial-gradient(circle at 35% 30%, ${d.hi||d.body}, ${d.body} 55%, ${d.shade||d.body})`;return`<div class="mini" style="background:${locked?'#cfc3b3':grad}"><span class="eye l"></span><span class="eye r"></span><span class="sm"></span><span class="bl l"></span><span class="bl r"></span></div>`;}
 function openShelf(){Sfx.init();const list=$("shelfList");list.innerHTML="";
@@ -567,11 +657,11 @@ function frame(now){
   const rate=helperRate();if(rate>0){state.dough+=rate*dt;state._acc=(state._acc||0)+rate*dt;if(state._acc>=1){updateHUD();state._acc=0;}}
   // sparks
   sparkT+=dt;if(sparkT>0.16){spawnSpark();sparkT=0;}updSpark(dt);
-  updConf(dt);updFloat(dt);if(state.flash>0)state.flash=Math.max(0,state.flash-dt*1.6);
+  updConf(dt);updFloat(dt);updDrops(dt);if(state.flash>0)state.flash=Math.max(0,state.flash-dt*1.6);
   // combo decay
   if(state.combo>0){state.comboTimer-=dt;if(state.comboTimer<=0)state.combo=0;}
   // opening anim
-  if(state.mode==="opening"){state.openT+=dt;const p=Math.min(1,state.openT/0.6);state.lidLift=easeOut(p);if(state.openT>0.25&&!state._puff){for(let i=0;i<10;i++)spawnSpark();state._puff=true;}if(p>=1)reveal();}
+  if(state.mode==="opening"){state.openT+=dt;const dur=state.openDur||0.6,p=Math.min(1,state.openT/dur);state.lidLift=easeOut(p);if(state.openT>dur*0.4&&!state._puff){for(let i=0;i<10;i++)spawnSpark();state._puff=true;}if(p>=1)reveal();}
   if(state.hop>0.5)state.hop*=Math.pow(0.001,dt);else state.hop=0;
   // auto-squish flavor bounce
   if(state.blob&&state.mode==="play"&&rate>0&&!state.pressing){state.autoTimer+=dt;if(state.autoTimer>2.4){state.autoTimer=0;state.blob.poke(state.blob.cx,state.blob.bb.maxY,baseR*0.3);}}
@@ -590,13 +680,28 @@ function frame(now){
   ctx.save();const tg=ctx.createLinearGradient(0,boxY+baseR*0.8,0,H);tg.addColorStop(0,"rgba(160,130,95,0)");tg.addColorStop(1,"rgba(150,118,82,0.32)");ctx.fillStyle=tg;ctx.fillRect(0,boxY,W,H-boxY);ctx.fillStyle="rgba(255,255,255,.5)";ctx.beginPath();ctx.ellipse(homeX,boxY+baseR*0.85,baseR*1.9,baseR*0.38,0,0,TAU);ctx.fill();ctx.restore();
   drawSpark();
   if(state.mode==="box"||state.mode==="opening"){
+    let shakeX=0;
+    if(state.mode==="opening"&&state.pendingPet){
+      const rr=state.pendingPet.rarity,rc=RARITY[rr],p=Math.min(1,state.openT/(state.openDur||0.6));
+      if(rr==="rare"||rr==="epic"||rr==="legendary"){
+        // anticipation: rarity-colored glow swells and the box rattles
+        const amp=(rr==="legendary"?7:rr==="epic"?5:3)*p;
+        shakeX=Math.sin(state.openT*46)*amp;
+        ctx.save();ctx.globalAlpha=p*(rr==="legendary"?0.55:0.38);
+        const gg=ctx.createRadialGradient(homeX,boxY,baseR*0.2,homeX,boxY,baseR*(2.2+p));
+        gg.addColorStop(0,rc.color);gg.addColorStop(1,"rgba(255,255,255,0)");
+        ctx.fillStyle=gg;ctx.beginPath();ctx.arc(homeX,boxY,baseR*(2.2+p),0,TAU);ctx.fill();ctx.restore();
+      }
+    }
+    ctx.save();ctx.translate(shakeX,0);
     drawBox(state.cat,state.lidLift,state.boxAlpha,state.boxScale,state.bob);
+    ctx.restore();
     if(state.mode==="box"){ctx.save();ctx.globalAlpha=0.85;ctx.fillStyle="#fff";ctx.font=`700 ${baseR*0.55}px Fredoka, sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.strokeStyle="rgba(0,0,0,.15)";ctx.lineWidth=4;ctx.strokeText("?",homeX,boxY-baseR*0.05+state.bob);ctx.fillText("?",homeX,boxY-baseR*0.05+state.bob);ctx.restore();}
   }else{drawBox(state.cat,1,0.8,0.72,state.bob*0.4);}
   if(state.blob)state.blob.draw(ctx,state.pressing);
   // combo badge
   if(state.combo>1&&state.blob){const cm=Math.min(comboCap(),1+state.combo*0.2);ctx.save();ctx.textAlign="center";ctx.font="700 22px Fredoka, sans-serif";ctx.fillStyle="#ef6f53";ctx.strokeStyle="#fff";ctx.lineWidth=5;const ty=state.blob.bb.minY-baseR*0.5;ctx.strokeText("COMBO x"+cm.toFixed(1),state.blob.cx,ty);ctx.fillText("COMBO x"+cm.toFixed(1),state.blob.cx,ty);ctx.restore();}
-  drawConf();drawFloat();
+  drawDrops();drawConf();drawFloat();
   if(state.flash>0){ctx.save();ctx.globalAlpha=state.flash*0.5;const fg=ctx.createRadialGradient(homeX,homeY,0,homeX,homeY,Math.max(W,H)*0.7);fg.addColorStop(0,"rgba(255,230,150,.8)");fg.addColorStop(1,"rgba(255,230,150,0)");ctx.fillStyle=fg;ctx.fillRect(0,0,W,H);ctx.restore();}
   requestAnimationFrame(frame);
 }
@@ -605,7 +710,7 @@ function frame(now){
 (async function boot(){
   await loadGame();
   resize();
-  applyTheme(state.cat);buildCatStrip();updateHUD();refreshMute();
+  applyTheme(state.cat);buildCatStrip();updateHUD();refreshMute();checkAch();
   if(uniqueCount()===0){elPrompt.style.opacity=1;}else{elPrompt.style.opacity=1;}
   requestAnimationFrame(frame);
 })();

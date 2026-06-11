@@ -167,7 +167,7 @@
 <body>
 
   <h1>&#128640; Solar System</h1>
-  <p class="subtitle">Click a planet to learn about it &middot; speed up time to watch them orbit</p>
+  <p class="subtitle">Click a planet to learn about it &middot; launch comets &middot; quiz yourself &middot; find Pluto!</p>
 
   <div id="questionBar"></div>
 
@@ -180,6 +180,7 @@
     <button data-speed="5">5×</button>
     <button data-speed="20">20×</button>
     <button id="scaleBtn">SHOW REAL DISTANCES</button>
+    <button id="labelBtn">SHOW NAMES</button>
     <button id="compareBtn">SIZE COMPARE</button>
     <button id="cometBtn">LAUNCH COMET</button>
     <button id="quizBtn">QUIZ ME</button>
@@ -264,7 +265,8 @@
       color: '#9adfe6', accent: '#5a96a0',
       r: 12, compressedR: 330, orbitAU: 19.22, periodDays: 30687,
       diameterKm: 50724, gravityG: 0.89, moons: 27, dayHours: 17.2,
-      fact: 'Uranus is tipped on its side! It rotates almost completely sideways compared to other planets, so its poles take turns facing the Sun for 42 years at a time.'
+      fact: 'Uranus is tipped on its side! It rotates almost completely sideways compared to other planets, so its poles take turns facing the Sun for 42 years at a time.',
+      thinRings: true
     },
     {
       name: 'Neptune', type: 'Ice giant',
@@ -272,6 +274,14 @@
       r: 12, compressedR: 380, orbitAU: 30.05, periodDays: 60190,
       diameterKm: 49244, gravityG: 1.14, moons: 14, dayHours: 16.1,
       fact: 'Neptune has the fastest winds in the solar system — over 2,000 km/h, faster than the speed of sound on Earth. It was the first planet found by math before being seen.'
+    },
+    {
+      name: 'Pluto', type: 'Dwarf planet',
+      color: '#d9c2a7', accent: '#9a7f63',
+      r: 3, compressedR: 412, orbitAU: 39.5, periodDays: 90560,
+      diameterKm: 2376, gravityG: 0.06, moons: 5, dayHours: 153.3,
+      dwarf: true,
+      fact: 'Pluto was counted as the 9th planet until 2006, when it was reclassified as a dwarf planet. It has a giant heart-shaped nitrogen glacier, and its biggest moon Charon is half its size!'
     }
   ];
 
@@ -295,6 +305,7 @@
     Saturn:  { tempC: '−140°C at the cloud tops',           madeOf: 'Hydrogen & helium gas', orbitKmS: 9.7 },
     Uranus:  { tempC: '−195°C',                             madeOf: 'Icy water, methane, ammonia', orbitKmS: 6.8 },
     Neptune: { tempC: '−200°C',                             madeOf: 'Icy water, methane, ammonia', orbitKmS: 5.4 },
+    Pluto:   { tempC: '−230°C',                             madeOf: 'Nitrogen ice & rock',   orbitKmS: 4.7 },
   };
   const KID_KG = 30; // a typical 10-year-old, for the "you'd weigh" stat
 
@@ -311,6 +322,7 @@
   let quiz = null;        // { target: planet, score, best }
   let quizFlash = 0;      // 0=none, +ve=correct, -ve=wrong (counts down)
   let mode = 'orbit';     // 'orbit' or 'compare'
+  let showLabels = false;
 
   // ---- Comet physics sandbox ----
   let cometMode = false;
@@ -318,29 +330,40 @@
   let aiming = null;      // { x0, y0, x1, y1 } while dragging to launch
   const GM = 950;         // Sun's gravitational parameter, tuned for the screen
   let sunFlash = 0;       // brief flash when a comet falls into the Sun
+  let impacts = [];       // expanding rings where a comet hit a planet
 
   // Per-frame screen positions for hit-testing, populated by the renderer.
   // Each entry: { x, y, r }.  index -1 reserved for the Sun.
   let screenPos = [];
   let sunScreenPos = { x: cx, y: cy, r: SUN.r };
 
-  for (let i = 0; i < 200; i++) {
+  // Orbits are drawn slightly tilted (squashed vertically) for a 3D feel,
+  // and compressed radii are normalized so the outermost orbit fits the canvas.
+  const TILT = 0.55;
+  const MAX_COMPRESSED = Math.max(...PLANETS.map(p => p.compressedR));
+  const ORBIT_SCALE = (W / 2 - 14) / MAX_COMPRESSED;
+  const MAX_AU = 40; // real-scale mode maps 0..40 AU (Pluto included)
+
+  const STAR_TINTS = ['255,255,255', '255,255,255', '205,222,255', '255,232,205'];
+  for (let i = 0; i < 230; i++) {
     stars.push({
       x: Math.random() * W,
       y: Math.random() * H,
       brightness: Math.random() * 0.6 + 0.2,
       twinkle: Math.random() * Math.PI * 2,
+      size: Math.random() < 0.12 ? 2 : 1,
+      tint: STAR_TINTS[Math.floor(Math.random() * STAR_TINTS.length)],
     });
   }
+  let shootingStar = null;
 
   // ---- Coordinates ----
   function orbitRadius(p) {
     if (realScale) {
-      // Map 0..30 AU to 30..(min(W,H)/2 - 12)
-      const maxR = Math.min(W, H) / 2 - 14;
-      return 30 + (p.orbitAU / 30) * (maxR - 30);
+      const maxR = W / 2 - 14;
+      return 30 + (p.orbitAU / MAX_AU) * (maxR - 30);
     }
-    return p.compressedR;
+    return p.compressedR * ORBIT_SCALE;
   }
 
   function planetPos(p, i) {
@@ -348,27 +371,70 @@
     // give each planet a phase offset so they don't all start aligned
     const phase = i * 0.7;
     const angle = phase + (simDays / p.periodDays) * Math.PI * 2;
-    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, angle, r };
+    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r * TILT, angle, r };
   }
 
   // ---- Drawing ----
   function drawStars(t) {
     for (const s of stars) {
       const b = s.brightness * (0.7 + 0.3 * Math.sin(t * 0.001 + s.twinkle));
-      ctx.fillStyle = `rgba(255,255,255,${b})`;
-      ctx.fillRect(s.x, s.y, 1, 1);
+      ctx.fillStyle = `rgba(${s.tint},${b})`;
+      ctx.fillRect(s.x, s.y, s.size, s.size);
     }
+    drawShootingStar();
+  }
+
+  function drawShootingStar() {
+    if (!shootingStar && Math.random() < 0.004) {
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      shootingStar = {
+        x: Math.random() * W, y: Math.random() * H * 0.35,
+        vx: (5 + Math.random() * 4) * dir, vy: 2 + Math.random() * 2, life: 0,
+      };
+    }
+    if (!shootingStar) return;
+    const s = shootingStar;
+    s.x += s.vx; s.y += s.vy; s.life++;
+    const a = Math.max(0, 1 - s.life / 55);
+    const grad = ctx.createLinearGradient(s.x, s.y, s.x - s.vx * 7, s.y - s.vy * 7);
+    grad.addColorStop(0, `rgba(255,255,255,${0.85 * a})`);
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - s.vx * 7, s.y - s.vy * 7);
+    ctx.stroke();
+    if (s.life > 55 || s.x < -60 || s.x > W + 60 || s.y > H + 60) shootingStar = null;
   }
 
   function drawSun(t) {
-    // Glow
-    const glow = ctx.createRadialGradient(cx, cy, SUN.r * 0.5, cx, cy, SUN.r * 3);
+    // Glow (gently breathing)
+    const pulse = 1 + 0.05 * Math.sin(t * 0.0012);
+    const glow = ctx.createRadialGradient(cx, cy, SUN.r * 0.5, cx, cy, SUN.r * 3 * pulse);
     glow.addColorStop(0, 'rgba(255,200,40,0.55)');
     glow.addColorStop(1, 'rgba(255,200,40,0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(cx, cy, SUN.r * 3, 0, Math.PI * 2);
+    ctx.arc(cx, cy, SUN.r * 3 * pulse, 0, Math.PI * 2);
     ctx.fill();
+
+    // Slowly rotating corona rays
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 0.00006);
+    ctx.fillStyle = 'rgba(255,205,60,0.07)';
+    for (let i = 0; i < 12; i++) {
+      const a = i * (Math.PI * 2 / 12);
+      const len = SUN.r * (2.0 + 0.4 * Math.sin(t * 0.001 + i * 1.7));
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a - 0.1) * SUN.r * 0.9, Math.sin(a - 0.1) * SUN.r * 0.9);
+      ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+      ctx.lineTo(Math.cos(a + 0.1) * SUN.r * 0.9, Math.sin(a + 0.1) * SUN.r * 0.9);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
 
     // Body
     ctx.fillStyle = SUN.color;
@@ -394,52 +460,71 @@
       ctx.arc(cx, cy, SUN.r + 5, 0, Math.PI * 2);
       ctx.stroke();
     }
+
+    if (sunFlash > 0) {
+      ctx.fillStyle = `rgba(255,240,180,${sunFlash / 24})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, SUN.r + 6 + (12 - sunFlash) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function drawAsteroidBelt() {
     // Between Mars and Jupiter
-    const r1 = realScale ? orbitRadius({ orbitAU: 2.2 }) : (PLANETS[3].compressedR + 18);
-    const r2 = realScale ? orbitRadius({ orbitAU: 3.2 }) : (PLANETS[3].compressedR + 30);
+    const r1 = realScale ? orbitRadius({ orbitAU: 2.2 }) : (PLANETS[3].compressedR + 18) * ORBIT_SCALE;
+    const r2 = realScale ? orbitRadius({ orbitAU: 3.2 }) : (PLANETS[3].compressedR + 30) * ORBIT_SCALE;
     ctx.fillStyle = 'rgba(170,170,170,0.45)';
     // Deterministic dots so they don't shimmer
     for (let i = 0; i < 220; i++) {
       const a = (i * 137.5 * Math.PI / 180) + simDays * 0.0008;
       const r = r1 + ((i * 73) % 1000) / 1000 * (r2 - r1);
       const x = cx + Math.cos(a) * r;
-      const y = cy + Math.sin(a) * r;
+      const y = cy + Math.sin(a) * r * TILT;
       ctx.fillRect(x, y, 1, 1);
     }
   }
 
   function drawOrbit(p, highlight) {
     const r = orbitRadius(p);
-    ctx.strokeStyle = highlight ? '#ffe60055' : '#ffffff10';
+    ctx.strokeStyle = highlight ? '#ffe60055' : (p.dwarf ? '#ffffff0a' : '#ffffff10');
     ctx.lineWidth = 1;
+    if (p.dwarf) ctx.setLineDash([3, 5]);
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, r, r * TILT, 0, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.setLineDash([]);
   }
 
-  function drawPlanet(p, i, t) {
-    const pos = planetPos(p, i);
+  // Saturn-style rings split into a far half (behind the planet) and a
+  // near half (in front), with a Cassini-division gap between bands.
+  function drawSaturnRings(x, y, r, half) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-0.4);
+    ctx.scale(1, 0.35);
+    const start = half === 'front' ? 0 : Math.PI;
+    const end = half === 'front' ? Math.PI : Math.PI * 2;
+    const bands = [
+      [1.35, r * 0.42, 'rgba(196,180,130,0.55)'],
+      [1.78, r * 0.30, 'rgba(226,212,164,0.8)'],
+      [2.18, r * 0.16, 'rgba(170,155,110,0.45)'],
+    ];
+    for (const [mul, wd, col] of bands) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = Math.max(1.5, wd);
+      ctx.beginPath();
+      ctx.arc(0, 0, r * mul, start, end);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPlanet(p, i, t, pos) {
     const isHover = hoverIndex === i;
     const isSel = selected === p;
 
-    // Saturn rings (drawn behind)
-    if (p.rings) {
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.rotate(-0.4);
-      ctx.scale(1, 0.35);
-      ctx.strokeStyle = '#d4c89a';
-      ctx.lineWidth = 2;
-      for (let k = 0; k < 3; k++) {
-        ctx.beginPath();
-        ctx.arc(0, 0, p.r + 6 + k * 4, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    // Saturn rings, far half (drawn behind the body)
+    if (p.rings) drawSaturnRings(pos.x, pos.y, p.r, 'back');
 
     // Body
     ctx.fillStyle = p.color;
@@ -478,16 +563,41 @@
       ctx.restore();
     }
 
+    // Saturn rings, near half (in front of the body)
+    if (p.rings) drawSaturnRings(pos.x, pos.y, p.r, 'front');
+
+    // Uranus has faint, nearly-vertical rings (it spins on its side)
+    if (p.thinRings) {
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.rotate(1.35);
+      ctx.scale(1, 0.3);
+      ctx.strokeStyle = 'rgba(160,210,220,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.r * 1.7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // Earth's moon
     if (p.hasMoon) {
       const ma = simDays * 0.22 + i;
       const mr = p.r + 9;
       const mx = pos.x + Math.cos(ma) * mr;
-      const my = pos.y + Math.sin(ma) * mr;
+      const my = pos.y + Math.sin(ma) * mr * TILT;
       ctx.fillStyle = '#bbbbbb';
       ctx.beginPath();
       ctx.arc(mx, my, 2.2, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Name label
+    if (showLabels) {
+      ctx.fillStyle = 'rgba(220,220,220,0.75)';
+      ctx.font = '9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.name.toUpperCase(), pos.x, pos.y + p.r + 13);
     }
 
     // Highlight ring
@@ -521,22 +631,25 @@
         drawOrbit(PLANETS[i], hoverIndex === i || selected === PLANETS[i]);
       }
       drawAsteroidBelt();
-      drawSun(t);
-      if (sunFlash > 0) {
-        ctx.fillStyle = `rgba(255,240,180,${sunFlash / 24})`;
-        ctx.beginPath();
-        ctx.arc(cx, cy, SUN.r + 6 + (12 - sunFlash) * 2, 0, Math.PI * 2);
-        ctx.fill();
+
+      // Depth-sort so planets on the near side of their tilted orbit pass
+      // in front of the Sun, and planets behind it are partly hidden.
+      const bodies = PLANETS.map((p, i) => ({ p, i, pos: planetPos(p, i) }));
+      bodies.sort((a, b) => a.pos.y - b.pos.y);
+      let sunDrawn = false;
+      for (const b of bodies) {
+        if (!sunDrawn && b.pos.y > cy) { drawSun(t); sunDrawn = true; }
+        drawPlanet(b.p, b.i, t, b.pos);
       }
-      for (let i = 0; i < PLANETS.length; i++) drawPlanet(PLANETS[i], i, t);
+      if (!sunDrawn) drawSun(t);
+
       drawComets();
+      drawImpacts();
 
       // Cache screen positions for hit-testing
       sunScreenPos = { x: cx, y: cy, r: SUN.r };
-      screenPos = PLANETS.map((p, i) => {
-        const pos = planetPos(p, i);
-        return { x: pos.x, y: pos.y, r: p.r };
-      });
+      screenPos = [];
+      for (const b of bodies) screenPos[b.i] = { x: b.pos.x, y: b.pos.y, r: b.p.r };
     }
 
     if (quizFlash > 0) quizFlash--;
@@ -618,21 +731,8 @@
       const y = baselineY;
       screenPos.push({ x, y, r });
 
-      // Saturn rings (drawn first, behind body)
-      if (p.rings) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(-0.3);
-        ctx.scale(1, 0.32);
-        ctx.strokeStyle = '#d4c89a';
-        ctx.lineWidth = 2;
-        for (let k = 0; k < 3; k++) {
-          ctx.beginPath();
-          ctx.arc(0, 0, r + 6 + k * 4, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
+      // Saturn rings, far half (drawn first, behind body)
+      if (p.rings) drawSaturnRings(x, y, r, 'back');
 
       // Body
       ctx.fillStyle = p.color;
@@ -666,6 +766,9 @@
         ctx.restore();
       }
 
+      // Saturn rings, near half (in front)
+      if (p.rings) drawSaturnRings(x, y, r, 'front');
+
       // Highlight ring
       if (hoverIndex === i || selected === p) {
         ctx.strokeStyle = '#ffe600';
@@ -683,15 +786,16 @@
         ctx.stroke();
       }
 
-      // Name label below
+      // Name label below (staggered in two rows so neighbours don't overlap)
+      const labelY = baselineY + Math.max(r, 12) + 16 + (i % 2) * 28;
       ctx.fillStyle = '#ccc';
       ctx.font = 'bold 11px Courier New';
       ctx.textAlign = 'center';
-      ctx.fillText(p.name.toUpperCase(), x, baselineY + Math.max(r, 12) + 16);
+      ctx.fillText(p.name.toUpperCase(), x, labelY);
       // Diameter label
       ctx.fillStyle = '#666';
       ctx.font = '10px Courier New';
-      ctx.fillText(formatNum(p.diameterKm) + ' km', x, baselineY + Math.max(r, 12) + 30);
+      ctx.fillText(formatNum(p.diameterKm) + ' km', x, labelY + 14);
 
       cursor += r * 2 + scaledGap;
     }
@@ -756,6 +860,19 @@
         c.y += c.vy * h;
       }
       if (!alive) continue;
+      // Splat on any planet in the way
+      for (let i = 0; i < screenPos.length; i++) {
+        const sp = screenPos[i];
+        if (!sp) continue;
+        const ddx = c.x - sp.x, ddy = c.y - sp.y;
+        const hitR = sp.r + 3;
+        if (ddx * ddx + ddy * ddy < hitR * hitR) {
+          alive = false;
+          impacts.push({ x: sp.x, y: sp.y, r: sp.r, life: 0 });
+          break;
+        }
+      }
+      if (!alive) continue;
       // Drop comets that fly far off screen
       if (c.x < -600 || c.x > W + 600 || c.y < -600 || c.y > H + 600) continue;
       c.trail.push({ x: c.x, y: c.y });
@@ -763,6 +880,19 @@
       survivors.push(c);
     }
     comets = survivors;
+  }
+
+  function drawImpacts() {
+    impacts = impacts.filter(im => im.life < 20);
+    for (const im of impacts) {
+      im.life++;
+      const k = im.life / 20;
+      ctx.strokeStyle = `rgba(255,210,120,${1 - k})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(im.x, im.y, im.r + 4 + k * 16, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 
   function drawComets() {
@@ -879,8 +1009,10 @@
       const dayText = p.dayHours < 100 ? `${p.dayHours} hrs`
                                        : `${(p.dayHours / 24).toFixed(0)} Earth days`;
       const weighKg = (KID_KG * p.gravityG).toFixed(1);
+      const lightMin = p.orbitAU * 8.317;
       stats = [
         ['DISTANCE FROM SUN', `${p.orbitAU} AU (${formatNum(Math.round(p.orbitAU * 149.6))} mil km)`],
+        ['SUNLIGHT TAKES',    `${lightMin < 10 ? lightMin.toFixed(1) : Math.round(lightMin)} min to get there`],
         ['YEAR LENGTH',       yearText],
         ['DAY LENGTH',        dayText],
         ['DIAMETER',          formatNum(p.diameterKm) + ' km'],
@@ -1046,6 +1178,13 @@
     scaleBtn.classList.toggle('active', realScale);
   });
 
+  const labelBtn = document.getElementById('labelBtn');
+  labelBtn.addEventListener('click', () => {
+    showLabels = !showLabels;
+    labelBtn.textContent = showLabels ? 'HIDE NAMES' : 'SHOW NAMES';
+    labelBtn.classList.toggle('active', showLabels);
+  });
+
   compareBtn.addEventListener('click', () => {
     mode = mode === 'compare' ? 'orbit' : 'compare';
     compareBtn.textContent = mode === 'compare' ? 'BACK TO ORBITS' : 'SIZE COMPARE';
@@ -1089,12 +1228,17 @@
     { test: p => p.name === 'Mars',     q: 'Click the Red Planet' },
     { test: p => p.name === 'Venus',    q: 'Click the hottest planet' },
     { test: p => p.name === 'Earth',    q: 'Click the only planet known to have life' },
-    { test: p => p.name === 'Neptune',  q: 'Click the farthest planet from the Sun' },
+    { test: p => p.name === 'Neptune',  q: 'Click the farthest true planet from the Sun (dwarf planets don\'t count!)' },
     { test: p => p.name === 'Uranus',   q: 'Click the planet that is tipped on its side' },
-    { test: p => p.name === 'Mercury',  q: 'Click the smallest planet' },
+    { test: p => p.name === 'Mercury',  q: 'Click the smallest true planet (dwarf planets don\'t count!)' },
     { test: p => p.name === 'Jupiter',  q: 'Click the planet with the Great Red Spot' },
     { test: p => p.moons === 1,         q: 'Click the planet with exactly one moon' },
     { test: p => p.name === 'Mars',     q: 'Click the planet with Olympus Mons (the biggest volcano)' },
+    { test: p => p.name === 'Pluto',    q: 'Click the dwarf planet that used to be planet #9' },
+    { test: p => p.name === 'Saturn',   q: 'Click the planet with the most moons (146!)' },
+    { test: p => p.name === 'Neptune',  q: 'Click the windiest planet' },
+    { test: p => p.name === 'Saturn',   q: 'Click the planet so light it would float in water' },
+    { test: p => p.name === 'Venus',    q: 'Click the planet that spins backward' },
   ];
 
   function startQuiz() {
