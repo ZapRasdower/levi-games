@@ -57,7 +57,9 @@
       border: 3px solid #1a1a2e;
       background: #04040c;
       display: block;
-      cursor: pointer;
+      cursor: grab;
+      touch-action: none;
+      max-width: 100%;
     }
 
     .controls {
@@ -167,11 +169,11 @@
 <body>
 
   <h1>&#128640; Solar System</h1>
-  <p class="subtitle">Click a planet to learn about it &middot; launch comets &middot; quiz yourself &middot; find Pluto!</p>
+  <p class="subtitle">Drag to spin the view in 3D &middot; scroll to zoom &middot; click a planet to learn about it &middot; launch comets &middot; quiz yourself!</p>
 
   <div id="questionBar"></div>
 
-  <canvas id="gameCanvas" width="720" height="440"></canvas>
+  <canvas id="gameCanvas" width="720" height="500"></canvas>
 
   <div class="controls">
     <button id="pauseBtn">PAUSE</button>
@@ -179,6 +181,7 @@
     <button data-speed="1" class="active">1×</button>
     <button data-speed="5">5×</button>
     <button data-speed="20">20×</button>
+    <button id="viewBtn">RESET VIEW</button>
     <button id="scaleBtn">SHOW REAL DISTANCES</button>
     <button id="labelBtn">SHOW NAMES</button>
     <button id="compareBtn">SIZE COMPARE</button>
@@ -203,6 +206,7 @@
   const panel = document.getElementById('panel');
   const questionBar = document.getElementById('questionBar');
   const pauseBtn = document.getElementById('pauseBtn');
+  const viewBtn = document.getElementById('viewBtn');
   const scaleBtn = document.getElementById('scaleBtn');
   const compareBtn = document.getElementById('compareBtn');
   const cometBtn = document.getElementById('cometBtn');
@@ -213,26 +217,28 @@
   // Real-ish data; orbit radius & display radius are tuned for visibility.
   // periodDays = real Earth days for one orbit.
   // orbitAU = real semi-major axis (used in real-scale mode).
-  // compressedR = pixels in compressed mode.
+  // compressedR = world units in compressed mode.
+  // inclDeg = real orbital inclination vs. the ecliptic (gives true 3D orbits;
+  //           look how tilted Pluto's path is when you spin the view!).
   const PLANETS = [
     {
       name: 'Mercury', type: 'Terrestrial planet',
       color: '#a89074', accent: '#7a6452',
-      r: 4, compressedR: 60, orbitAU: 0.39, periodDays: 88,
+      r: 4, compressedR: 60, orbitAU: 0.39, periodDays: 88, inclDeg: 7.0,
       diameterKm: 4879, gravityG: 0.38, moons: 0, dayHours: 4222.6,
       fact: 'Mercury is the smallest planet and the closest to the Sun. Days are longer than years here — one Mercury day takes about 176 Earth days, but a year is just 88!'
     },
     {
       name: 'Venus', type: 'Terrestrial planet',
       color: '#e6c074', accent: '#a88a40',
-      r: 7, compressedR: 90, orbitAU: 0.72, periodDays: 225,
+      r: 7, compressedR: 90, orbitAU: 0.72, periodDays: 225, inclDeg: 3.4,
       diameterKm: 12104, gravityG: 0.91, moons: 0, dayHours: 2802,
       fact: 'Venus is the hottest planet (about 465°C / 870°F) because of a thick CO₂ atmosphere — even though Mercury is closer to the Sun. It also spins backward!'
     },
     {
       name: 'Earth', type: 'Our home planet',
       color: '#5aa0e6', accent: '#3a6da0',
-      r: 7, compressedR: 125, orbitAU: 1.00, periodDays: 365,
+      r: 7, compressedR: 125, orbitAU: 1.00, periodDays: 365, inclDeg: 0,
       diameterKm: 12742, gravityG: 1.00, moons: 1, dayHours: 24,
       fact: "Earth is the only place we've ever found life. About 71% of its surface is covered in liquid water, and its magnetic field protects us from harmful solar radiation.",
       hasMoon: true
@@ -240,14 +246,14 @@
     {
       name: 'Mars', type: 'Terrestrial planet',
       color: '#d76b3a', accent: '#8a3a1a',
-      r: 5, compressedR: 160, orbitAU: 1.52, periodDays: 687,
+      r: 5, compressedR: 160, orbitAU: 1.52, periodDays: 687, inclDeg: 1.9,
       diameterKm: 6779, gravityG: 0.38, moons: 2, dayHours: 24.6,
       fact: 'Mars has the largest volcano in the solar system — Olympus Mons — about 22 km tall, almost 3× higher than Mount Everest. Its red color comes from rusty iron in the soil.'
     },
     {
       name: 'Jupiter', type: 'Gas giant',
       color: '#d4a06a', accent: '#8a6038',
-      r: 22, compressedR: 220, orbitAU: 5.20, periodDays: 4333,
+      r: 22, compressedR: 220, orbitAU: 5.20, periodDays: 4333, inclDeg: 1.3,
       diameterKm: 139820, gravityG: 2.53, moons: 95, dayHours: 9.9,
       fact: 'Jupiter is so big that more than 1,300 Earths could fit inside it. The Great Red Spot is a giant storm that has been raging for at least 400 years.',
       bands: true
@@ -255,7 +261,7 @@
     {
       name: 'Saturn', type: 'Gas giant',
       color: '#e6d39a', accent: '#a8945a',
-      r: 18, compressedR: 280, orbitAU: 9.58, periodDays: 10759,
+      r: 18, compressedR: 280, orbitAU: 9.58, periodDays: 10759, inclDeg: 2.5,
       diameterKm: 116460, gravityG: 1.07, moons: 146, dayHours: 10.7,
       fact: "Saturn's rings are made of billions of chunks of ice and rock, some as small as dust grains and others as big as a house. Saturn is so light it would float in water!",
       rings: true
@@ -263,7 +269,7 @@
     {
       name: 'Uranus', type: 'Ice giant',
       color: '#9adfe6', accent: '#5a96a0',
-      r: 12, compressedR: 330, orbitAU: 19.22, periodDays: 30687,
+      r: 12, compressedR: 330, orbitAU: 19.22, periodDays: 30687, inclDeg: 0.8,
       diameterKm: 50724, gravityG: 0.89, moons: 27, dayHours: 17.2,
       fact: 'Uranus is tipped on its side! It rotates almost completely sideways compared to other planets, so its poles take turns facing the Sun for 42 years at a time.',
       thinRings: true
@@ -271,14 +277,14 @@
     {
       name: 'Neptune', type: 'Ice giant',
       color: '#3a6dd0', accent: '#1a3a8a',
-      r: 12, compressedR: 380, orbitAU: 30.05, periodDays: 60190,
+      r: 12, compressedR: 380, orbitAU: 30.05, periodDays: 60190, inclDeg: 1.8,
       diameterKm: 49244, gravityG: 1.14, moons: 14, dayHours: 16.1,
       fact: 'Neptune has the fastest winds in the solar system — over 2,000 km/h, faster than the speed of sound on Earth. It was the first planet found by math before being seen.'
     },
     {
       name: 'Pluto', type: 'Dwarf planet',
       color: '#d9c2a7', accent: '#9a7f63',
-      r: 3, compressedR: 412, orbitAU: 39.5, periodDays: 90560,
+      r: 3, compressedR: 412, orbitAU: 39.5, periodDays: 90560, inclDeg: 17.2,
       diameterKm: 2376, gravityG: 0.06, moons: 5, dayHours: 153.3,
       dwarf: true,
       fact: 'Pluto was counted as the 9th planet until 2006, when it was reclassified as a dwarf planet. It has a giant heart-shaped nitrogen glacier, and its biggest moon Charon is half its size!'
@@ -324,22 +330,71 @@
   let mode = 'orbit';     // 'orbit' or 'compare'
   let showLabels = false;
 
+  // ---- 3D camera ----
+  // The solar system lives in 3D world space: the Sun at the origin, planets
+  // orbiting (mostly) in the XZ plane, +Y pointing "up" out of the ecliptic.
+  // The camera orbits the Sun on a sphere: yaw spins around, pitch tilts
+  // between near-edge-on and top-down, dist zooms.
+  const DEFAULT_CAM = { yaw: 0, pitch: 0.58, dist: 1150 };
+  let cam = { ...DEFAULT_CAM };
+  const FOCAL = 900;
+  const MIN_PITCH = 0.12, MAX_PITCH = 1.5;
+  const MIN_DIST = 400, MAX_DIST = 3000;
+
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  // World point -> screen point with perspective. Returns the screen x/y,
+  // the perspective scale s (1 = "actual size" at the Sun's distance when
+  // fully zoomed to default), and depth from the camera (for sorting).
+  function project(wx, wy, wz) {
+    const cyaw = Math.cos(cam.yaw), syaw = Math.sin(cam.yaw);
+    const x1 = wx * cyaw - wz * syaw;
+    const z1 = wx * syaw + wz * cyaw;
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const y2 = wy * cp - z1 * sp;
+    const z2 = wy * sp + z1 * cp;
+    const depth = cam.dist - z2;
+    const s = FOCAL / Math.max(60, depth);
+    return { x: cx + x1 * s, y: cy - y2 * s, s, depth };
+  }
+
+  // Screen point -> the point on the ecliptic plane (y=0) under the cursor,
+  // by casting a ray from the camera through the pixel. Used to aim comets.
+  function screenToPlane(sx, sy) {
+    const cyaw = Math.cos(cam.yaw), syaw = Math.sin(cam.yaw);
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    // Camera position in world space
+    const camY = cam.dist * sp;
+    const ground = cam.dist * cp;
+    const camX = ground * syaw;
+    const camZ = ground * cyaw;
+    // Ray direction: view space -> world space (inverse camera rotation)
+    const vx = (sx - cx) / FOCAL, vy = -(sy - cy) / FOCAL, vz = -1;
+    const dy = vy * cp + vz * sp;
+    const z1 = -vy * sp + vz * cp;
+    const dx = vx * cyaw + z1 * syaw;
+    const dz = -vx * syaw + z1 * cyaw;
+    if (dy >= -1e-6) return null; // looking above the plane
+    const t = -camY / dy;
+    const wx = camX + dx * t, wz = camZ + dz * t;
+    if (Math.abs(wx) > 4000 || Math.abs(wz) > 4000) return null;
+    return { x: wx, z: wz };
+  }
+
   // ---- Comet physics sandbox ----
   let cometMode = false;
-  let comets = [];        // { x, y, vx, vy, trail: [] }
-  let aiming = null;      // { x0, y0, x1, y1 } while dragging to launch
-  const GM = 950;         // Sun's gravitational parameter, tuned for the screen
+  let comets = [];        // { x, z, vx, vz, trail: [{x,z}] } — in world space
+  let aiming = null;      // { x0, z0, x1, z1 } on the ecliptic plane
+  const GM = 950;         // Sun's gravitational parameter, tuned for the scene
   let sunFlash = 0;       // brief flash when a comet falls into the Sun
   let impacts = [];       // expanding rings where a comet hit a planet
 
   // Per-frame screen positions for hit-testing, populated by the renderer.
-  // Each entry: { x, y, r }.  index -1 reserved for the Sun.
+  // Each entry: { x, y, r } (r = on-screen apparent radius).
   let screenPos = [];
   let sunScreenPos = { x: cx, y: cy, r: SUN.r };
+  let sunScr = { x: cx, y: cy, s: 1, depth: DEFAULT_CAM.dist };
 
-  // Orbits are drawn slightly tilted (squashed vertically) for a 3D feel,
-  // and compressed radii are normalized so the outermost orbit fits the canvas.
-  const TILT = 0.55;
   const MAX_COMPRESSED = Math.max(...PLANETS.map(p => p.compressedR));
   const ORBIT_SCALE = (W / 2 - 14) / MAX_COMPRESSED;
   const MAX_AU = 40; // real-scale mode maps 0..40 AU (Pluto included)
@@ -366,12 +421,19 @@
     return p.compressedR * ORBIT_SCALE;
   }
 
-  function planetPos(p, i) {
+  // 3D world position of a planet on its (inclined) orbit.
+  function planetPos3D(p, i) {
     const r = orbitRadius(p);
     // give each planet a phase offset so they don't all start aligned
     const phase = i * 0.7;
     const angle = phase + (simDays / p.periodDays) * Math.PI * 2;
-    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r * TILT, angle, r };
+    const incl = (p.inclDeg || 0) * Math.PI / 180;
+    return {
+      wx: Math.cos(angle) * r,
+      wy: Math.sin(angle) * r * Math.sin(incl),
+      wz: Math.sin(angle) * r * Math.cos(incl),
+      angle, r
+    };
   }
 
   // ---- Drawing ----
@@ -408,29 +470,32 @@
     if (s.life > 55 || s.x < -60 || s.x > W + 60 || s.y > H + 60) shootingStar = null;
   }
 
-  function drawSun(t) {
+  function drawSun(t, scr) {
+    const x = scr.x, y = scr.y;
+    const R = SUN.r * scr.s;
+
     // Glow (gently breathing)
     const pulse = 1 + 0.05 * Math.sin(t * 0.0012);
-    const glow = ctx.createRadialGradient(cx, cy, SUN.r * 0.5, cx, cy, SUN.r * 3 * pulse);
+    const glow = ctx.createRadialGradient(x, y, R * 0.5, x, y, R * 3 * pulse);
     glow.addColorStop(0, 'rgba(255,200,40,0.55)');
     glow.addColorStop(1, 'rgba(255,200,40,0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(cx, cy, SUN.r * 3 * pulse, 0, Math.PI * 2);
+    ctx.arc(x, y, R * 3 * pulse, 0, Math.PI * 2);
     ctx.fill();
 
     // Slowly rotating corona rays
     ctx.save();
-    ctx.translate(cx, cy);
+    ctx.translate(x, y);
     ctx.rotate(t * 0.00006);
     ctx.fillStyle = 'rgba(255,205,60,0.07)';
     for (let i = 0; i < 12; i++) {
       const a = i * (Math.PI * 2 / 12);
-      const len = SUN.r * (2.0 + 0.4 * Math.sin(t * 0.001 + i * 1.7));
+      const len = R * (2.0 + 0.4 * Math.sin(t * 0.001 + i * 1.7));
       ctx.beginPath();
-      ctx.moveTo(Math.cos(a - 0.1) * SUN.r * 0.9, Math.sin(a - 0.1) * SUN.r * 0.9);
+      ctx.moveTo(Math.cos(a - 0.1) * R * 0.9, Math.sin(a - 0.1) * R * 0.9);
       ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
-      ctx.lineTo(Math.cos(a + 0.1) * SUN.r * 0.9, Math.sin(a + 0.1) * SUN.r * 0.9);
+      ctx.lineTo(Math.cos(a + 0.1) * R * 0.9, Math.sin(a + 0.1) * R * 0.9);
       ctx.closePath();
       ctx.fill();
     }
@@ -439,17 +504,17 @@
     // Body
     ctx.fillStyle = SUN.color;
     ctx.beginPath();
-    ctx.arc(cx, cy, SUN.r, 0, Math.PI * 2);
+    ctx.arc(x, y, R, 0, Math.PI * 2);
     ctx.fill();
 
     // Sun spots / surface noise
     ctx.fillStyle = SUN.accent;
     for (let i = 0; i < 4; i++) {
       const a = i * 1.7 + t * 0.0003;
-      const sx = cx + Math.cos(a) * SUN.r * 0.55;
-      const sy = cy + Math.sin(a) * SUN.r * 0.45;
+      const sx = x + Math.cos(a) * R * 0.55;
+      const sy = y + Math.sin(a) * R * 0.45;
       ctx.beginPath();
-      ctx.arc(sx, sy, 3 + Math.sin(t * 0.002 + i), 0, Math.PI * 2);
+      ctx.arc(sx, sy, (3 + Math.sin(t * 0.002 + i)) * scr.s, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -457,14 +522,14 @@
       ctx.strokeStyle = '#ffe600';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(cx, cy, SUN.r + 5, 0, Math.PI * 2);
+      ctx.arc(x, y, R + 5, 0, Math.PI * 2);
       ctx.stroke();
     }
 
     if (sunFlash > 0) {
       ctx.fillStyle = `rgba(255,240,180,${sunFlash / 24})`;
       ctx.beginPath();
-      ctx.arc(cx, cy, SUN.r + 6 + (12 - sunFlash) * 2, 0, Math.PI * 2);
+      ctx.arc(x, y, R + 6 + (12 - sunFlash) * 2, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -474,34 +539,45 @@
     const r1 = realScale ? orbitRadius({ orbitAU: 2.2 }) : (PLANETS[3].compressedR + 18) * ORBIT_SCALE;
     const r2 = realScale ? orbitRadius({ orbitAU: 3.2 }) : (PLANETS[3].compressedR + 30) * ORBIT_SCALE;
     ctx.fillStyle = 'rgba(170,170,170,0.45)';
-    // Deterministic dots so they don't shimmer
+    // Deterministic dots so they don't shimmer; small Y jitter gives the belt
+    // a little real thickness in 3D.
     for (let i = 0; i < 220; i++) {
       const a = (i * 137.5 * Math.PI / 180) + simDays * 0.0008;
       const r = r1 + ((i * 73) % 1000) / 1000 * (r2 - r1);
-      const x = cx + Math.cos(a) * r;
-      const y = cy + Math.sin(a) * r * TILT;
-      ctx.fillRect(x, y, 1, 1);
+      const yj = ((((i * 37) % 100) - 50) / 50) * 3;
+      const pt = project(Math.cos(a) * r, yj, Math.sin(a) * r);
+      const sz = Math.max(1, pt.s);
+      ctx.fillRect(pt.x, pt.y, sz, sz);
     }
   }
 
   function drawOrbit(p, highlight) {
     const r = orbitRadius(p);
-    ctx.strokeStyle = highlight ? '#ffe60055' : (p.dwarf ? '#ffffff0a' : '#ffffff10');
+    const incl = (p.inclDeg || 0) * Math.PI / 180;
+    ctx.strokeStyle = highlight ? '#ffe60055' : (p.dwarf ? '#ffffff0a' : '#ffffff12');
     ctx.lineWidth = 1;
     if (p.dwarf) ctx.setLineDash([3, 5]);
     ctx.beginPath();
-    ctx.ellipse(cx, cy, r, r * TILT, 0, 0, Math.PI * 2);
+    const STEPS = 90;
+    for (let k = 0; k <= STEPS; k++) {
+      const a = (k / STEPS) * Math.PI * 2;
+      const pt = project(Math.cos(a) * r, Math.sin(a) * r * Math.sin(incl), Math.sin(a) * r * Math.cos(incl));
+      if (k === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    }
     ctx.stroke();
     ctx.setLineDash([]);
   }
 
   // Saturn-style rings split into a far half (behind the planet) and a
   // near half (in front), with a Cassini-division gap between bands.
-  function drawSaturnRings(x, y, r, half) {
+  // squash follows the camera pitch in orbit view so the rings open up
+  // as you fly over the top of the system.
+  function drawSaturnRings(x, y, r, half, squash = 0.35) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(-0.4);
-    ctx.scale(1, 0.35);
+    ctx.scale(1, squash);
     const start = half === 'front' ? 0 : Math.PI;
     const end = half === 'front' ? Math.PI : Math.PI * 2;
     const bands = [
@@ -519,76 +595,80 @@
     ctx.restore();
   }
 
-  function drawPlanet(p, i, t, pos) {
+  function ringSquash() {
+    return clamp(0.18 + Math.sin(cam.pitch) * 0.45, 0.15, 0.75);
+  }
+
+  function drawPlanet(p, i, t, scr, w) {
     const isHover = hoverIndex === i;
     const isSel = selected === p;
+    const pr = p.r * scr.s;
 
     // Saturn rings, far half (drawn behind the body)
-    if (p.rings) drawSaturnRings(pos.x, pos.y, p.r, 'back');
+    if (p.rings) drawSaturnRings(scr.x, scr.y, pr, 'back', ringSquash());
 
     // Body
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, p.r, 0, Math.PI * 2);
+    ctx.arc(scr.x, scr.y, pr, 0, Math.PI * 2);
     ctx.fill();
 
     // Shading (sun-side highlight)
-    const lightAng = Math.atan2(cy - pos.y, cx - pos.x);
-    const lx = pos.x + Math.cos(lightAng) * p.r * 0.35;
-    const ly = pos.y + Math.sin(lightAng) * p.r * 0.35;
-    const grad = ctx.createRadialGradient(lx, ly, 0, pos.x, pos.y, p.r);
+    const lightAng = Math.atan2(sunScr.y - scr.y, sunScr.x - scr.x);
+    const lx = scr.x + Math.cos(lightAng) * pr * 0.35;
+    const ly = scr.y + Math.sin(lightAng) * pr * 0.35;
+    const grad = ctx.createRadialGradient(lx, ly, 0, scr.x, scr.y, pr);
     grad.addColorStop(0, 'rgba(255,255,255,0.25)');
     grad.addColorStop(0.6, 'rgba(255,255,255,0)');
     grad.addColorStop(1, 'rgba(0,0,0,0.45)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, p.r, 0, Math.PI * 2);
+    ctx.arc(scr.x, scr.y, pr, 0, Math.PI * 2);
     ctx.fill();
 
     // Jupiter bands
     if (p.bands) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, p.r, 0, Math.PI * 2);
+      ctx.arc(scr.x, scr.y, pr, 0, Math.PI * 2);
       ctx.clip();
       ctx.fillStyle = p.accent;
       for (let k = -2; k <= 2; k++) {
-        ctx.fillRect(pos.x - p.r, pos.y + k * 5 - 1, p.r * 2, 2);
+        ctx.fillRect(scr.x - pr, scr.y + k * 5 * scr.s - 1, pr * 2, Math.max(1.5, 2 * scr.s));
       }
       // Great red spot
       ctx.fillStyle = '#c44a3a';
       ctx.beginPath();
-      ctx.ellipse(pos.x + p.r * 0.3, pos.y + p.r * 0.2, 4, 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(scr.x + pr * 0.3, scr.y + pr * 0.2, 4 * scr.s, 2 * scr.s, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
     // Saturn rings, near half (in front of the body)
-    if (p.rings) drawSaturnRings(pos.x, pos.y, p.r, 'front');
+    if (p.rings) drawSaturnRings(scr.x, scr.y, pr, 'front', ringSquash());
 
     // Uranus has faint, nearly-vertical rings (it spins on its side)
     if (p.thinRings) {
       ctx.save();
-      ctx.translate(pos.x, pos.y);
+      ctx.translate(scr.x, scr.y);
       ctx.rotate(1.35);
       ctx.scale(1, 0.3);
       ctx.strokeStyle = 'rgba(160,210,220,0.4)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(0, 0, p.r * 1.7, 0, Math.PI * 2);
+      ctx.arc(0, 0, pr * 1.7, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
-    // Earth's moon
+    // Earth's moon (orbits in 3D around the planet)
     if (p.hasMoon) {
       const ma = simDays * 0.22 + i;
       const mr = p.r + 9;
-      const mx = pos.x + Math.cos(ma) * mr;
-      const my = pos.y + Math.sin(ma) * mr * TILT;
+      const mScr = project(w.wx + Math.cos(ma) * mr, w.wy, w.wz + Math.sin(ma) * mr);
       ctx.fillStyle = '#bbbbbb';
       ctx.beginPath();
-      ctx.arc(mx, my, 2.2, 0, Math.PI * 2);
+      ctx.arc(mScr.x, mScr.y, 2.2 * mScr.s, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -597,7 +677,7 @@
       ctx.fillStyle = 'rgba(220,220,220,0.75)';
       ctx.font = '9px Courier New';
       ctx.textAlign = 'center';
-      ctx.fillText(p.name.toUpperCase(), pos.x, pos.y + p.r + 13);
+      ctx.fillText(p.name.toUpperCase(), scr.x, scr.y + pr + 13);
     }
 
     // Highlight ring
@@ -605,7 +685,7 @@
       ctx.strokeStyle = '#ffe600';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, p.r + 5, 0, Math.PI * 2);
+      ctx.arc(scr.x, scr.y, pr + 5, 0, Math.PI * 2);
       ctx.stroke();
     }
     if (quizFlash !== 0 && quiz && quiz.targetIndex === i) {
@@ -613,7 +693,7 @@
       ctx.strokeStyle = c;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, p.r + 8 + (Math.abs(quizFlash) % 10), 0, Math.PI * 2);
+      ctx.arc(scr.x, scr.y, pr + 8 + (Math.abs(quizFlash) % 10), 0, Math.PI * 2);
       ctx.stroke();
     }
   }
@@ -626,30 +706,40 @@
     if (mode === 'compare') {
       renderCompare(t);
     } else {
-      // Orbits
+      // Orbit paths
       for (let i = 0; i < PLANETS.length; i++) {
         drawOrbit(PLANETS[i], hoverIndex === i || selected === PLANETS[i]);
       }
       drawAsteroidBelt();
 
-      // Depth-sort so planets on the near side of their tilted orbit pass
-      // in front of the Sun, and planets behind it are partly hidden.
-      const bodies = PLANETS.map((p, i) => ({ p, i, pos: planetPos(p, i) }));
-      bodies.sort((a, b) => a.pos.y - b.pos.y);
-      let sunDrawn = false;
-      for (const b of bodies) {
-        if (!sunDrawn && b.pos.y > cy) { drawSun(t); sunDrawn = true; }
-        drawPlanet(b.p, b.i, t, b.pos);
+      sunScr = project(0, 0, 0);
+
+      // Project every body, then paint far-to-near so planets correctly
+      // pass in front of / behind the Sun and each other in 3D.
+      const bodies = PLANETS.map((p, i) => {
+        const w = planetPos3D(p, i);
+        return { p, i, w, scr: project(w.wx, w.wy, w.wz) };
+      });
+      const drawList = [...bodies, { sun: true, scr: sunScr }];
+      drawList.sort((a, b) => b.scr.depth - a.scr.depth);
+      for (const b of drawList) {
+        if (b.sun) drawSun(t, sunScr);
+        else drawPlanet(b.p, b.i, t, b.scr, b.w);
       }
-      if (!sunDrawn) drawSun(t);
 
       drawComets();
       drawImpacts();
 
       // Cache screen positions for hit-testing
-      sunScreenPos = { x: cx, y: cy, r: SUN.r };
+      sunScreenPos = { x: sunScr.x, y: sunScr.y, r: SUN.r * sunScr.s };
       screenPos = [];
-      for (const b of bodies) screenPos[b.i] = { x: b.pos.x, y: b.pos.y, r: b.p.r };
+      for (const b of bodies) screenPos[b.i] = { x: b.scr.x, y: b.scr.y, r: b.p.r * b.scr.s };
+
+      // Control hint
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '10px Courier New';
+      ctx.textAlign = 'left';
+      ctx.fillText('DRAG: SPIN VIEW · SCROLL/PINCH: ZOOM', 10, H - 10);
     }
 
     if (quizFlash > 0) quizFlash--;
@@ -837,45 +927,44 @@
     render(now);
   }
 
-  // Newtonian gravity toward the Sun. Uses small sub-steps for a stable
-  // inverse-square integration, so comets trace real orbits, slingshots,
-  // and escape trajectories.
+  // Newtonian gravity toward the Sun, simulated in world space on the
+  // ecliptic plane. Uses small sub-steps for a stable inverse-square
+  // integration, so comets trace real orbits, slingshots, and escape
+  // trajectories — and they stay correct as you spin the camera.
   function stepComets() {
-    const sx = sunScreenPos.x, sy = sunScreenPos.y;
-    const sunR = sunScreenPos.r;
     const SUBSTEPS = 4;
     const h = 1 / SUBSTEPS;
+    const positions = PLANETS.map((p, i) => planetPos3D(p, i));
     const survivors = [];
     for (const c of comets) {
       let alive = true;
       for (let s = 0; s < SUBSTEPS; s++) {
-        const dx = sx - c.x, dy = sy - c.y;
-        const r2 = dx * dx + dy * dy;
+        const r2 = c.x * c.x + c.z * c.z;
         const r = Math.sqrt(r2);
-        if (r < sunR) { alive = false; sunFlash = 12; break; }   // fell into the Sun
+        if (r < SUN.r) { alive = false; sunFlash = 12; break; }   // fell into the Sun
         const a = GM / r2;                 // acceleration magnitude (inverse square)
-        c.vx += a * (dx / r) * h;
-        c.vy += a * (dy / r) * h;
+        c.vx += a * (-c.x / r) * h;
+        c.vz += a * (-c.z / r) * h;
         c.x += c.vx * h;
-        c.y += c.vy * h;
+        c.z += c.vz * h;
       }
       if (!alive) continue;
-      // Splat on any planet in the way
-      for (let i = 0; i < screenPos.length; i++) {
-        const sp = screenPos[i];
-        if (!sp) continue;
-        const ddx = c.x - sp.x, ddy = c.y - sp.y;
-        const hitR = sp.r + 3;
-        if (ddx * ddx + ddy * ddy < hitR * hitR) {
+      // Splat on any planet in the way (full 3D distance — inclined planets
+      // can dodge above or below a comet!)
+      for (let i = 0; i < PLANETS.length; i++) {
+        const w = positions[i];
+        const ddx = c.x - w.wx, ddy = -w.wy, ddz = c.z - w.wz;
+        const hitR = PLANETS[i].r + 3;
+        if (ddx * ddx + ddy * ddy + ddz * ddz < hitR * hitR) {
           alive = false;
-          impacts.push({ x: sp.x, y: sp.y, r: sp.r, life: 0 });
+          impacts.push({ wx: w.wx, wy: w.wy, wz: w.wz, r: PLANETS[i].r, life: 0 });
           break;
         }
       }
       if (!alive) continue;
-      // Drop comets that fly far off screen
-      if (c.x < -600 || c.x > W + 600 || c.y < -600 || c.y > H + 600) continue;
-      c.trail.push({ x: c.x, y: c.y });
+      // Drop comets that fly far away
+      if (Math.abs(c.x) > 2600 || Math.abs(c.z) > 2600) continue;
+      c.trail.push({ x: c.x, z: c.z });
       if (c.trail.length > 80) c.trail.shift();
       survivors.push(c);
     }
@@ -887,70 +976,79 @@
     for (const im of impacts) {
       im.life++;
       const k = im.life / 20;
+      const scr = project(im.wx, im.wy, im.wz);
       ctx.strokeStyle = `rgba(255,210,120,${1 - k})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(im.x, im.y, im.r + 4 + k * 16, 0, Math.PI * 2);
+      ctx.arc(scr.x, scr.y, im.r * scr.s + 4 + k * 16, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
 
   function drawComets() {
-    // Trails
+    // Trails (projected from world space each frame, so they bend correctly
+    // when you rotate the view)
     for (const c of comets) {
-      for (let i = 1; i < c.trail.length; i++) {
-        const a = i / c.trail.length;
-        ctx.strokeStyle = `rgba(140,200,255,${a * 0.5})`;
-        ctx.lineWidth = a * 2;
-        ctx.beginPath();
-        ctx.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
-        ctx.lineTo(c.trail[i].x, c.trail[i].y);
-        ctx.stroke();
+      if (c.trail.length > 1) {
+        let prev = project(c.trail[0].x, 0, c.trail[0].z);
+        for (let i = 1; i < c.trail.length; i++) {
+          const pt = project(c.trail[i].x, 0, c.trail[i].z);
+          const a = i / c.trail.length;
+          ctx.strokeStyle = `rgba(140,200,255,${a * 0.5})`;
+          ctx.lineWidth = a * 2;
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(pt.x, pt.y);
+          ctx.stroke();
+          prev = pt;
+        }
       }
     }
     // Heads + sun-pointing tails
     for (const c of comets) {
-      const dx = c.x - sunScreenPos.x, dy = c.y - sunScreenPos.y;
-      const d = Math.hypot(dx, dy) || 1;
+      const head = project(c.x, 0, c.z);
+      const d = Math.hypot(c.x, c.z) || 1;
       const tailLen = 18 + 1200 / d; // longer tail when closer to the Sun
-      const tg = ctx.createLinearGradient(
-        c.x, c.y, c.x + (dx / d) * tailLen, c.y + (dy / d) * tailLen);
+      const tip = project(c.x + (c.x / d) * tailLen, 0, c.z + (c.z / d) * tailLen);
+      const tg = ctx.createLinearGradient(head.x, head.y, tip.x, tip.y);
       tg.addColorStop(0, 'rgba(160,220,255,0.8)');
       tg.addColorStop(1, 'rgba(160,220,255,0)');
       ctx.strokeStyle = tg;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = Math.max(1.5, 3 * head.s);
       ctx.beginPath();
-      ctx.moveTo(c.x, c.y);
-      ctx.lineTo(c.x + (dx / d) * tailLen, c.y + (dy / d) * tailLen);
+      ctx.moveTo(head.x, head.y);
+      ctx.lineTo(tip.x, tip.y);
       ctx.stroke();
       // Nucleus
       ctx.fillStyle = '#dff1ff';
       ctx.beginPath();
-      ctx.arc(c.x, c.y, 3, 0, Math.PI * 2);
+      ctx.arc(head.x, head.y, Math.max(1.5, 3 * head.s), 0, Math.PI * 2);
       ctx.fill();
     }
-    // Aiming arrow while dragging
+    // Aiming arrow while dragging (lives on the ecliptic plane)
     if (aiming) {
+      const a0 = project(aiming.x0, 0, aiming.z0);
+      const a1 = project(aiming.x1, 0, aiming.z1);
       ctx.strokeStyle = '#6bd1ff';
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.moveTo(aiming.x0, aiming.y0);
-      ctx.lineTo(aiming.x1, aiming.y1);
+      ctx.moveTo(a0.x, a0.y);
+      ctx.lineTo(a1.x, a1.y);
       ctx.stroke();
       ctx.setLineDash([]);
       // Launch point
       ctx.fillStyle = '#dff1ff';
       ctx.beginPath();
-      ctx.arc(aiming.x0, aiming.y0, 4, 0, Math.PI * 2);
+      ctx.arc(a0.x, a0.y, 4, 0, Math.PI * 2);
       ctx.fill();
       // Arrowhead
-      const ang = Math.atan2(aiming.y1 - aiming.y0, aiming.x1 - aiming.x0);
+      const ang = Math.atan2(a1.y - a0.y, a1.x - a0.x);
       ctx.fillStyle = '#6bd1ff';
       ctx.beginPath();
-      ctx.moveTo(aiming.x1, aiming.y1);
-      ctx.lineTo(aiming.x1 - 8 * Math.cos(ang - 0.4), aiming.y1 - 8 * Math.sin(ang - 0.4));
-      ctx.lineTo(aiming.x1 - 8 * Math.cos(ang + 0.4), aiming.y1 - 8 * Math.sin(ang + 0.4));
+      ctx.moveTo(a1.x, a1.y);
+      ctx.lineTo(a1.x - 8 * Math.cos(ang - 0.4), a1.y - 8 * Math.sin(ang - 0.4));
+      ctx.lineTo(a1.x - 8 * Math.cos(ang + 0.4), a1.y - 8 * Math.sin(ang + 0.4));
       ctx.closePath();
       ctx.fill();
     }
@@ -1019,6 +1117,7 @@
         ['TEMPERATURE',       ex.tempC || '—'],
         ['MADE OF',           ex.madeOf || '—'],
         ['ORBITAL SPEED',     ex.orbitKmS ? `${ex.orbitKmS} km/s around the Sun` : '—'],
+        ['ORBIT TILT',        `${p.inclDeg}° vs. Earth's orbit`],
         ['GRAVITY',           p.gravityG + '× Earth'],
         ['YOU’D WEIGH',  `${weighKg} kg (from ${KID_KG} kg)`],
         ['MOONS',             p.moons],
@@ -1046,43 +1145,66 @@
     };
   }
 
-  function launchComet(x0, y0, x1, y1) {
+  function launchComet(aim) {
     // Drag length sets speed; direction is the throw direction.
     const VEL_SCALE = 0.05;
     comets.push({
-      x: x0, y: y0,
-      vx: (x1 - x0) * VEL_SCALE,
-      vy: (y1 - y0) * VEL_SCALE,
+      x: aim.x0, z: aim.z0,
+      vx: (aim.x1 - aim.x0) * VEL_SCALE,
+      vz: (aim.z1 - aim.z0) * VEL_SCALE,
       trail: [],
     });
     if (comets.length > 12) comets.shift(); // keep it light
   }
 
+  // ---- Mouse: rotate the camera, aim comets, select planets ----
+  let viewDrag = null;       // { sx, sy, yaw0, pitch0, moved }
+  let suppressClick = false; // swallow the click that ends a view-drag
+
   canvas.addEventListener('mousedown', e => {
-    if (!cometMode || mode !== 'orbit') return;
+    if (mode !== 'orbit') return;
     const { x, y } = canvasCoords(e.clientX, e.clientY);
-    aiming = { x0: x, y0: y, x1: x, y1: y };
+    if (cometMode) {
+      const w = screenToPlane(x, y);
+      if (w) aiming = { x0: w.x, z0: w.z, x1: w.x, z1: w.z };
+    } else {
+      viewDrag = { sx: x, sy: y, yaw0: cam.yaw, pitch0: cam.pitch, moved: false };
+    }
   });
 
   window.addEventListener('mouseup', e => {
-    if (!aiming) return;
-    const { x, y } = canvasCoords(e.clientX, e.clientY);
-    aiming.x1 = x; aiming.y1 = y;
-    if (Math.hypot(x - aiming.x0, y - aiming.y0) > 6) {
-      launchComet(aiming.x0, aiming.y0, aiming.x1, aiming.y1);
+    if (aiming) {
+      const { x, y } = canvasCoords(e.clientX, e.clientY);
+      const w = screenToPlane(x, y);
+      if (w) { aiming.x1 = w.x; aiming.z1 = w.z; }
+      if (Math.hypot(aiming.x1 - aiming.x0, aiming.z1 - aiming.z0) > 6) {
+        launchComet(aiming);
+      }
+      aiming = null;
     }
-    aiming = null;
+    if (viewDrag) {
+      if (viewDrag.moved) suppressClick = true;
+      viewDrag = null;
+      canvas.style.cursor = cometMode ? 'crosshair' : 'grab';
+    }
   });
 
   canvas.addEventListener('mousemove', e => {
+    const { x: mx, y: my } = canvasCoords(e.clientX, e.clientY);
     if (aiming) {
-      const { x, y } = canvasCoords(e.clientX, e.clientY);
-      aiming.x1 = x; aiming.y1 = y;
+      const w = screenToPlane(mx, my);
+      if (w) { aiming.x1 = w.x; aiming.z1 = w.z; }
       return;
     }
-    const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (W / rect.width);
-    const my = (e.clientY - rect.top) * (H / rect.height);
+    if (viewDrag) {
+      const dx = mx - viewDrag.sx, dy = my - viewDrag.sy;
+      if (Math.abs(dx) + Math.abs(dy) > 4) viewDrag.moved = true;
+      cam.yaw = viewDrag.yaw0 + dx * 0.006;
+      cam.pitch = clamp(viewDrag.pitch0 + dy * 0.006, MIN_PITCH, MAX_PITCH);
+      hideTip();
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
     const hit = getPlanetAt(mx, my);
     hoverIndex = -1;
     hoverSun = false;
@@ -1097,7 +1219,7 @@
       canvas.style.cursor = 'pointer';
     } else {
       hideTip();
-      canvas.style.cursor = 'default';
+      canvas.style.cursor = cometMode ? 'crosshair' : (mode === 'orbit' ? 'grab' : 'default');
     }
   });
 
@@ -1108,10 +1230,9 @@
   });
 
   canvas.addEventListener('click', e => {
+    if (suppressClick) { suppressClick = false; return; }
     if (cometMode) return; // canvas is for launching comets in this mode
-    const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (W / rect.width);
-    const my = (e.clientY - rect.top) * (H / rect.height);
+    const { x: mx, y: my } = canvasCoords(e.clientX, e.clientY);
     const hit = getPlanetAt(mx, my);
 
     if (quiz && hit && hit.type === 'planet') {
@@ -1123,30 +1244,82 @@
     if (hit) selectBody(hit);
   });
 
-  // Touch support for the comet launcher
-  canvas.addEventListener('touchstart', e => {
-    if (!cometMode || mode !== 'orbit') return;
+  canvas.addEventListener('wheel', e => {
+    if (mode !== 'orbit') return;
     e.preventDefault();
-    const t = e.touches[0];
-    const { x, y } = canvasCoords(t.clientX, t.clientY);
-    aiming = { x0: x, y0: y, x1: x, y1: y };
+    cam.dist = clamp(cam.dist * Math.exp(e.deltaY * 0.0012), MIN_DIST, MAX_DIST);
+  }, { passive: false });
+
+  // ---- Touch: one finger rotates (or aims comets), pinch zooms, tap selects ----
+  let touchState = null;
+
+  function touchDist(e) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    return Math.hypot(dx, dy) || 1;
+  }
+
+  canvas.addEventListener('touchstart', e => {
+    if (mode !== 'orbit') return;
+    e.preventDefault();
+    if (e.touches.length >= 2) {
+      aiming = null;
+      touchState = { kind: 'pinch', d0: touchDist(e), dist0: cam.dist };
+      return;
+    }
+    const t0 = e.touches[0];
+    const { x, y } = canvasCoords(t0.clientX, t0.clientY);
+    if (cometMode) {
+      const w = screenToPlane(x, y);
+      if (w) {
+        aiming = { x0: w.x, z0: w.z, x1: w.x, z1: w.z };
+        touchState = { kind: 'aim' };
+      }
+    } else {
+      touchState = { kind: 'rotate', sx: x, sy: y, yaw0: cam.yaw, pitch0: cam.pitch, moved: false };
+    }
   }, { passive: false });
 
   canvas.addEventListener('touchmove', e => {
-    if (!aiming) return;
+    if (!touchState) return;
     e.preventDefault();
-    const t = e.touches[0];
-    const { x, y } = canvasCoords(t.clientX, t.clientY);
-    aiming.x1 = x; aiming.y1 = y;
+    if (touchState.kind === 'pinch' && e.touches.length >= 2) {
+      cam.dist = clamp(touchState.dist0 * (touchState.d0 / touchDist(e)), MIN_DIST, MAX_DIST);
+      return;
+    }
+    const t0 = e.touches[0];
+    if (!t0) return;
+    const { x, y } = canvasCoords(t0.clientX, t0.clientY);
+    if (touchState.kind === 'aim' && aiming) {
+      const w = screenToPlane(x, y);
+      if (w) { aiming.x1 = w.x; aiming.z1 = w.z; }
+    } else if (touchState.kind === 'rotate') {
+      const dx = x - touchState.sx, dy = y - touchState.sy;
+      if (Math.abs(dx) + Math.abs(dy) > 6) touchState.moved = true;
+      cam.yaw = touchState.yaw0 + dx * 0.006;
+      cam.pitch = clamp(touchState.pitch0 + dy * 0.006, MIN_PITCH, MAX_PITCH);
+    }
   }, { passive: false });
 
   canvas.addEventListener('touchend', e => {
-    if (!aiming) return;
+    if (!touchState) return;
     e.preventDefault();
-    if (Math.hypot(aiming.x1 - aiming.x0, aiming.y1 - aiming.y0) > 6) {
-      launchComet(aiming.x0, aiming.y0, aiming.x1, aiming.y1);
+    if (touchState.kind === 'aim' && aiming) {
+      if (Math.hypot(aiming.x1 - aiming.x0, aiming.z1 - aiming.z0) > 6) {
+        launchComet(aiming);
+      }
+      aiming = null;
+    } else if (touchState.kind === 'rotate' && !touchState.moved) {
+      // A tap: treat it like a click (select / answer quiz)
+      const hit = getPlanetAt(touchState.sx, touchState.sy);
+      if (quiz && hit && hit.type === 'planet') {
+        handleQuizAnswer(hit.index);
+        selectBody(hit);
+      } else if (hit) {
+        selectBody(hit);
+      }
     }
-    aiming = null;
+    touchState = null;
   }, { passive: false });
 
   function showTip(text, x, y) {
@@ -1172,6 +1345,10 @@
     });
   });
 
+  viewBtn.addEventListener('click', () => {
+    cam = { ...DEFAULT_CAM };
+  });
+
   scaleBtn.addEventListener('click', () => {
     realScale = !realScale;
     scaleBtn.textContent = realScale ? 'SHOW COMPRESSED' : 'SHOW REAL DISTANCES';
@@ -1189,8 +1366,10 @@
     mode = mode === 'compare' ? 'orbit' : 'compare';
     compareBtn.textContent = mode === 'compare' ? 'BACK TO ORBITS' : 'SIZE COMPARE';
     compareBtn.classList.toggle('active', mode === 'compare');
-    // Hide the distance-toggle while in compare mode (it's irrelevant there)
+    // Hide controls that only make sense in orbit view
     scaleBtn.style.display = mode === 'compare' ? 'none' : '';
+    viewBtn.style.display = mode === 'compare' ? 'none' : '';
+    canvas.style.cursor = mode === 'compare' ? 'default' : 'grab';
     if (mode === 'compare' && cometMode) stopComet(); // comets only make sense in orbit view
   });
 
@@ -1201,14 +1380,14 @@
     cometBtn.textContent = 'STOP COMETS';
     cometBtn.classList.add('active');
     questionBar.className = 'show';
-    questionBar.textContent = 'Drag from any point and release to fling a comet — the Sun\'s gravity does the rest!';
+    questionBar.textContent = 'Drag and release to fling a comet — the Sun\'s gravity does the rest! (Stop comets to spin the view again.)';
   }
 
   function stopComet() {
     cometMode = false;
     comets = [];
     aiming = null;
-    canvas.style.cursor = 'pointer';
+    canvas.style.cursor = 'grab';
     cometBtn.textContent = 'LAUNCH COMET';
     cometBtn.classList.remove('active');
     questionBar.classList.remove('show');
@@ -1239,6 +1418,7 @@
     { test: p => p.name === 'Neptune',  q: 'Click the windiest planet' },
     { test: p => p.name === 'Saturn',   q: 'Click the planet so light it would float in water' },
     { test: p => p.name === 'Venus',    q: 'Click the planet that spins backward' },
+    { test: p => p.name === 'Pluto',    q: 'Click the body with the most tilted orbit (spin the view to see it!)' },
   ];
 
   function startQuiz() {
