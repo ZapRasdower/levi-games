@@ -921,7 +921,7 @@
     lastTime = now;
     if (!paused) {
       simDays += (dt / 1000) * timePerSec * speed;
-      if (comets.length) stepComets();
+      if (comets.length) stepComets(speed);
     }
     if (sunFlash > 0) sunFlash--;
     render(now);
@@ -931,14 +931,17 @@
   // ecliptic plane. Uses small sub-steps for a stable inverse-square
   // integration, so comets trace real orbits, slingshots, and escape
   // trajectories — and they stay correct as you spin the camera.
-  function stepComets() {
-    const SUBSTEPS = 4;
-    const h = 1 / SUBSTEPS;
+  // mult = the time-warp multiplier, so comets honor the 0.5×–20× speed
+  // buttons just like the planets. The sub-step size stays constant
+  // (more steps at higher speeds) to keep the orbits stable.
+  function stepComets(mult = 1) {
+    const SUBSTEPS = Math.min(96, Math.max(2, Math.ceil(4 * mult)));
+    const h = mult / SUBSTEPS;
     const positions = PLANETS.map((p, i) => planetPos3D(p, i));
     const survivors = [];
     for (const c of comets) {
       let alive = true;
-      for (let s = 0; s < SUBSTEPS; s++) {
+      for (let s = 0; s < SUBSTEPS && alive; s++) {
         const r2 = c.x * c.x + c.z * c.z;
         const r = Math.sqrt(r2);
         if (r < SUN.r) { alive = false; sunFlash = 12; break; }   // fell into the Sun
@@ -947,25 +950,30 @@
         c.vz += a * (-c.z / r) * h;
         c.x += c.vx * h;
         c.z += c.vz * h;
-      }
-      if (!alive) continue;
-      // Splat on any planet in the way (full 3D distance — inclined planets
-      // can dodge above or below a comet!)
-      for (let i = 0; i < PLANETS.length; i++) {
-        const w = positions[i];
-        const ddx = c.x - w.wx, ddy = -w.wy, ddz = c.z - w.wz;
-        const hitR = PLANETS[i].r + 3;
-        if (ddx * ddx + ddy * ddy + ddz * ddz < hitR * hitR) {
-          alive = false;
-          impacts.push({ wx: w.wx, wy: w.wy, wz: w.wz, r: PLANETS[i].r, life: 0 });
-          break;
+        // Splat on any planet in the way — checked every sub-step so fast
+        // time-warp can't tunnel a comet through a planet. Full 3D
+        // distance: inclined planets can dodge above or below a comet!
+        for (let i = 0; i < PLANETS.length; i++) {
+          const w = positions[i];
+          const ddx = c.x - w.wx, ddy = -w.wy, ddz = c.z - w.wz;
+          const hitR = PLANETS[i].r + 3;
+          if (ddx * ddx + ddy * ddy + ddz * ddz < hitR * hitR) {
+            alive = false;
+            impacts.push({ wx: w.wx, wy: w.wy, wz: w.wz, r: PLANETS[i].r, life: 0 });
+            break;
+          }
+        }
+        // Lay down trail points at a steady world-distance cadence (every
+        // 4 sub-steps ≈ once per frame at 1×) so trails stay smooth at 20×.
+        c.stepAcc = (c.stepAcc || 0) + 1;
+        if (alive && c.stepAcc % 4 === 0) {
+          c.trail.push({ x: c.x, z: c.z });
+          if (c.trail.length > 80) c.trail.shift();
         }
       }
       if (!alive) continue;
       // Drop comets that fly far away
       if (Math.abs(c.x) > 2600 || Math.abs(c.z) > 2600) continue;
-      c.trail.push({ x: c.x, z: c.z });
-      if (c.trail.length > 80) c.trail.shift();
       survivors.push(c);
     }
     comets = survivors;
