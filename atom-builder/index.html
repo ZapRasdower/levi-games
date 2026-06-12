@@ -36,13 +36,18 @@
 
     #gameCanvas {
       border: 3px solid #333;
-      background: #111125;
+      background: #090916;
       display: block;
+      cursor: grab;
+      touch-action: none;
+      max-width: 100%;
     }
+
+    #gameCanvas.dragging { cursor: grabbing; }
 
     .panel {
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
       margin-top: 14px;
       background: #1a1a2e;
       border: 2px solid #333;
@@ -67,7 +72,7 @@
 
     .controls {
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
       margin-top: 12px;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -113,7 +118,7 @@
 
     .row-tools {
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
       margin-top: 12px;
       display: flex;
       gap: 10px;
@@ -121,9 +126,12 @@
       justify-content: center;
     }
 
+    #schoolBtn { border-color: #6bd1ff88; color: #6bd1ff; }
+    #schoolBtn:hover { border-color: #6bd1ff; }
+
     .challenge {
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
       margin-top: 12px;
       padding: 14px;
       background: #1a1a2e;
@@ -139,9 +147,96 @@
     .challenge .status.success { color: #6bffd1; }
     .challenge .status.tip { color: #aaa; }
 
+    /* ---- Element discovery collection ---- */
+    .collection {
+      width: 100%;
+      max-width: 720px;
+      margin-top: 14px;
+      background: #1a1a2e;
+      border: 2px solid #333;
+      padding: 12px 16px;
+    }
+
+    .collection .head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .collection .head .got { color: #6bffd1; }
+
+    .badges {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+    }
+
+    .badge {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #2a2a4a;
+      background: #14142a;
+      color: #444;
+      font-size: 0.85rem;
+      cursor: help;
+      user-select: none;
+    }
+
+    .badge .z { font-size: 0.55rem; color: #333; }
+
+    .badge.found {
+      border-color: #6bffd1;
+      background: #14302a;
+      color: #6bffd1;
+      box-shadow: 0 0 8px #6bffd133;
+    }
+
+    .badge.found .z { color: #3a8a72; }
+
+    .badge.flash { animation: badgepop 0.6s ease; }
+
+    @keyframes badgepop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.35); box-shadow: 0 0 18px #6bffd1; }
+      100% { transform: scale(1); }
+    }
+
+    @media (max-width: 540px) {
+      .badges { grid-template-columns: repeat(5, 1fr); }
+    }
+
+    /* ---- Discovery toast ---- */
+    #toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translate(-50%, -120%);
+      background: #14302a;
+      border: 2px solid #6bffd1;
+      color: #d8fff2;
+      padding: 12px 18px;
+      max-width: 420px;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      z-index: 200;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+      transition: transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    #toast.show { transform: translate(-50%, 0); }
+    #toast strong { color: #6bffd1; }
+
     .legend {
       width: 100%;
-      max-width: 640px;
+      max-width: 720px;
       margin-top: 14px;
       font-size: 0.75rem;
       color: #666;
@@ -173,6 +268,7 @@
     [data-tip] { cursor: help; border-bottom: 1px dotted #555; }
     .pgroup .label[data-tip],
     .panel [data-tip] { display: inline-block; }
+    button[data-tip] { border-bottom-width: 2px; }
 
     #tooltip {
       position: fixed;
@@ -196,15 +292,95 @@
     #tooltip.show { opacity: 1; transform: translateY(0); }
     #tooltip strong { color: #ffe600; }
 
-    #gameCanvas { cursor: crosshair; }
+    /* ---- Electron School overlay ---- */
+    #school {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 18, 0.82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 150;
+      padding: 16px;
+    }
+
+    #school.open { display: flex; }
+
+    .school-card {
+      width: 100%;
+      max-width: 560px;
+      background: #11112a;
+      border: 3px solid #6bd1ff;
+      box-shadow: 0 0 30px #6bd1ff33, 8px 8px 0 rgba(0,0,0,0.5);
+      padding: 22px 24px;
+      letter-spacing: 0.5px;
+    }
+
+    .school-card h2 {
+      color: #6bd1ff;
+      font-size: 1.1rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .school-card .page-num {
+      color: #555;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+    }
+
+    .school-card .body {
+      color: #ccc;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      min-height: 150px;
+    }
+
+    .school-card .body strong { color: #6bd1ff; }
+    .school-card .body em { color: #ffe600; font-style: normal; }
+
+    .school-card .body .shellbar {
+      display: flex;
+      gap: 6px;
+      margin: 10px 0;
+      font-size: 0.78rem;
+    }
+
+    .school-card .body .shellbar span {
+      border: 1px solid #2a4a6a;
+      background: #16213a;
+      color: #6bd1ff;
+      padding: 4px 8px;
+    }
+
+    .school-nav {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .school-nav .grp { display: flex; gap: 8px; }
+
+    .school-nav button { font-size: 0.8rem; }
+
+    .school-nav .try {
+      border-color: #6bffd188;
+      color: #6bffd1;
+    }
+
+    .school-nav .try:hover { border-color: #6bffd1; }
   </style>
 </head>
 <body>
 
   <h1>&#9883; Atom Builder</h1>
-  <p class="subtitle">Build atoms, learn the elements &middot; zoom in to see quarks</p>
+  <p class="subtitle">Build atoms in 3D &middot; drag to spin, scroll to zoom &middot; discover all 20 elements</p>
 
-  <canvas id="gameCanvas" width="640" height="420"></canvas>
+  <canvas id="gameCanvas" width="720" height="480"></canvas>
 
   <div class="panel">
     <div class="row">
@@ -249,12 +425,21 @@
     <button id="resetBtn" data-tip="reset">RESET</button>
     <button id="zoomBtn" data-tip="zoom">ZOOM IN ON QUARKS</button>
     <button id="challengeBtn" data-tip="challenge">NEW CHALLENGE</button>
+    <button id="schoolBtn" data-tip="school">&#9889; ELECTRON SCHOOL</button>
   </div>
 
   <div class="challenge hidden" id="challenge">
     <div>CHALLENGE</div>
     <div class="target" id="challengeTarget"></div>
     <div class="status tip" id="challengeStatus">Build the atom above using the buttons.</div>
+  </div>
+
+  <div class="collection">
+    <div class="head">
+      <span data-tip="collection">ELEMENT COLLECTION</span>
+      <span class="got"><span id="foundCount">0</span>/20 discovered</span>
+    </div>
+    <div class="badges" id="badges"></div>
   </div>
 
   <div class="legend">
@@ -267,6 +452,26 @@
   <a class="back-link" href="../index.html">&larr; back to all games</a>
 
   <div id="tooltip"></div>
+  <div id="toast"></div>
+
+  <!-- Electron School overlay -->
+  <div id="school">
+    <div class="school-card">
+      <h2 id="schoolTitle"></h2>
+      <div class="page-num" id="schoolPageNum"></div>
+      <div class="body" id="schoolBody"></div>
+      <div class="school-nav">
+        <div class="grp">
+          <button id="schoolPrev">&larr; BACK</button>
+          <button id="schoolNext">NEXT &rarr;</button>
+        </div>
+        <div class="grp">
+          <button class="try" id="schoolTry">TRY IT ON THE ATOM!</button>
+          <button id="schoolClose">CLOSE &times;</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
   const canvas = document.getElementById('gameCanvas');
@@ -274,29 +479,30 @@
   const W = canvas.width;
   const H = canvas.height;
 
-  // Elements 1-20 (atomic number, symbol, name, most common neutron count for stable isotope)
+  // Elements 1-20 (atomic number, symbol, name, most common neutron count
+  // for stable isotope, fun fact shown when the element is discovered)
   const ELEMENTS = [
     null, // index 0 unused
-    { sym: 'H',  name: 'Hydrogen',   neutrons: 0 },
-    { sym: 'He', name: 'Helium',     neutrons: 2 },
-    { sym: 'Li', name: 'Lithium',    neutrons: 4 },
-    { sym: 'Be', name: 'Beryllium',  neutrons: 5 },
-    { sym: 'B',  name: 'Boron',      neutrons: 6 },
-    { sym: 'C',  name: 'Carbon',     neutrons: 6 },
-    { sym: 'N',  name: 'Nitrogen',   neutrons: 7 },
-    { sym: 'O',  name: 'Oxygen',     neutrons: 8 },
-    { sym: 'F',  name: 'Fluorine',   neutrons: 10 },
-    { sym: 'Ne', name: 'Neon',       neutrons: 10 },
-    { sym: 'Na', name: 'Sodium',     neutrons: 12 },
-    { sym: 'Mg', name: 'Magnesium',  neutrons: 12 },
-    { sym: 'Al', name: 'Aluminum',   neutrons: 14 },
-    { sym: 'Si', name: 'Silicon',    neutrons: 14 },
-    { sym: 'P',  name: 'Phosphorus', neutrons: 16 },
-    { sym: 'S',  name: 'Sulfur',     neutrons: 16 },
-    { sym: 'Cl', name: 'Chlorine',   neutrons: 18 },
-    { sym: 'Ar', name: 'Argon',      neutrons: 22 },
-    { sym: 'K',  name: 'Potassium',  neutrons: 20 },
-    { sym: 'Ca', name: 'Calcium',    neutrons: 20 },
+    { sym: 'H',  name: 'Hydrogen',   neutrons: 0,  fact: 'Hydrogen is the most common atom in the whole universe — stars are mostly made of it!' },
+    { sym: 'He', name: 'Helium',     neutrons: 2,  fact: 'Helium makes balloons float and makes your voice go squeaky. It was found on the Sun before it was found on Earth!' },
+    { sym: 'Li', name: 'Lithium',    neutrons: 4,  fact: 'Lithium powers the batteries in phones, laptops, and electric cars.' },
+    { sym: 'Be', name: 'Beryllium',  neutrons: 5,  fact: 'The James Webb Space Telescope’s giant gold mirrors are made of beryllium.' },
+    { sym: 'B',  name: 'Boron',      neutrons: 6,  fact: 'Boron is the secret ingredient in slime and in heat-proof glass.' },
+    { sym: 'C',  name: 'Carbon',     neutrons: 6,  fact: 'Diamonds and pencil lead are BOTH pure carbon — just with the atoms stacked differently. You are mostly carbon too!' },
+    { sym: 'N',  name: 'Nitrogen',   neutrons: 7,  fact: 'About 78% of every breath you take is nitrogen.' },
+    { sym: 'O',  name: 'Oxygen',     neutrons: 8,  fact: 'Oxygen keeps you alive AND it’s the most common element in the Earth’s crust.' },
+    { sym: 'F',  name: 'Fluorine',   neutrons: 10, fact: 'Fluorine (as fluoride) is in toothpaste to make your teeth armor-strong.' },
+    { sym: 'Ne', name: 'Neon',       neutrons: 10, fact: 'Neon makes glowing red-orange signs. It almost never reacts with anything — it’s a "noble" gas.' },
+    { sym: 'Na', name: 'Sodium',     neutrons: 12, fact: 'Sodium is half of table salt — but pure sodium metal EXPLODES when it touches water!' },
+    { sym: 'Mg', name: 'Magnesium',  neutrons: 12, fact: 'Magnesium burns with a blinding white light — that’s the bright flash in sparklers and fireworks.' },
+    { sym: 'Al', name: 'Aluminum',   neutrons: 14, fact: 'Aluminum is in foil, soda cans, and airplanes. It’s the most common metal in the Earth’s crust.' },
+    { sym: 'Si', name: 'Silicon',    neutrons: 14, fact: 'Computer chips are made of silicon — which comes from ordinary sand!' },
+    { sym: 'P',  name: 'Phosphorus', neutrons: 16, fact: 'Phosphorus is in match heads, and one kind glows in the dark all by itself.' },
+    { sym: 'S',  name: 'Sulfur',     neutrons: 16, fact: 'Sulfur is the rotten-egg smell near volcanoes. Yuck — but useful!' },
+    { sym: 'Cl', name: 'Chlorine',   neutrons: 18, fact: 'Chlorine keeps swimming pools clean and safe.' },
+    { sym: 'Ar', name: 'Argon',      neutrons: 22, fact: 'Argon fills light bulbs. Its name means "lazy" in Greek because it refuses to react with anything.' },
+    { sym: 'K',  name: 'Potassium',  neutrons: 20, fact: 'Bananas are full of potassium — and it’s very slightly radioactive. Banana power!' },
+    { sym: 'Ca', name: 'Calcium',    neutrons: 20, fact: 'Calcium makes your bones and teeth strong. Skeletons are calcium scaffolding!' },
   ];
 
   const SHELL_CAPS = [2, 8, 8, 2]; // simplified Bohr shells, K L M N
@@ -306,10 +512,55 @@
   let zoomMode = false;
   let challenge = null;
   let t = 0;
-  // jitter offsets for nucleon positions (re-seeded each change)
+  // 3D jitter seeds for nucleon positions (re-seeded each change)
   let nucleonSeed = [];
   // hit targets recomputed each frame: { x, y, r, tip }
   let hitTargets = [];
+
+  // ---- 3D camera ----
+  // Hand-rolled camera like the solar system game: yaw spins around the
+  // atom, pitch tilts above/below, zoom moves closer. Drag to rotate.
+  const cam = { yaw: 0.5, pitch: 0.3, zoom: 1 };
+  const MIN_PITCH = -1.35, MAX_PITCH = 1.35;
+  const FOCAL = 760;
+  let autoSpin = true; // gentle idle rotation until the player grabs it
+
+  // Rotate a world point by the camera and project to screen.
+  // Returns screen x/y, perspective scale s, and view depth z (bigger = farther).
+  function project(wx, wy, wz) {
+    const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+    const x1 = wx * cy - wz * sy;
+    const z1 = wx * sy + wz * cy;
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const y1 = wy * cp - z1 * sp;
+    const z2 = wy * sp + z1 * cp;
+    const s = (FOCAL / (FOCAL + z2)) * cam.zoom;
+    return { x: W / 2 + x1 * s, y: H / 2 + y1 * s, s, z: z2 };
+  }
+
+  // ---- Starfield background (generated once) ----
+  const stars = [];
+  for (let i = 0; i < 90; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.3 + 0.3,
+      phase: Math.random() * Math.PI * 2,
+    });
+  }
+
+  function drawBackground() {
+    const g = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, W * 0.7);
+    g.addColorStop(0, '#13132a');
+    g.addColorStop(1, '#07070f');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    for (const st of stars) {
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.0012 + st.phase));
+      ctx.fillStyle = `rgba(180,200,255,${0.45 * tw})`;
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
 
   // ---- Tooltips ----
   const TIPS = {
@@ -330,6 +581,8 @@
     reset: 'Clear all particles and start over.',
     zoom: 'Look <em>inside</em> a proton and a neutron to see the quarks.',
     challenge: 'Get a new build challenge to solve.',
+    school: 'A mini-lesson all about electrons: shells, ions, and why atoms react!',
+    collection: '<strong>Element Collection</strong><br>Build a neutral atom with the right number of neutrons to discover that element and earn its badge!',
     nucleus: '<strong>Nucleus</strong><br>The dense center of the atom. Protons and neutrons live here, packed together.',
     shell: '<strong>Electron shell</strong><br>An "orbit" where electrons live. Inner shells fill first. Capacities (simple model): 2, 8, 8, 2.',
     quarkU: '<strong>Up quark (u)</strong><br>Charge +2/3. A proton has 2 ups + 1 down; a neutron has 1 up + 2 downs.',
@@ -370,9 +623,9 @@
   }
 
   document.addEventListener('mousemove', e => {
-    const t = e.target.closest('[data-tip]');
-    if (t && t.dataset.tip) {
-      showTip(t.dataset.tip, e.clientX, e.clientY);
+    const tgt = e.target.closest('[data-tip]');
+    if (tgt && tgt.dataset.tip) {
+      showTip(tgt.dataset.tip, e.clientX, e.clientY);
     } else if (e.target !== canvas) {
       // canvas has its own handler; ignore here
       hideTip();
@@ -399,13 +652,84 @@
     nucleonSeed = [];
     for (let i = 0; i < MAX_P + MAX_N; i++) {
       nucleonSeed.push({
-        a: Math.random() * Math.PI * 2,
-        r: Math.random(),
+        jx: (Math.random() - 0.5) * 5,
+        jy: (Math.random() - 0.5) * 5,
+        jz: (Math.random() - 0.5) * 5,
         phase: Math.random() * Math.PI * 2,
       });
     }
   }
   reseed();
+
+  // ---- Element discovery collection ----
+  const STORE_KEY = 'atomBuilderDiscovered';
+  let discovered = new Set();
+  try {
+    discovered = new Set(JSON.parse(localStorage.getItem(STORE_KEY) || '[]'));
+  } catch (e) { /* fresh start if storage is corrupt */ }
+
+  const badgesEl = document.getElementById('badges');
+  const foundCountEl = document.getElementById('foundCount');
+  const badgeEls = [];
+  for (let z = 1; z <= 20; z++) {
+    const el = ELEMENTS[z];
+    const b = document.createElement('div');
+    b.className = 'badge';
+    b.innerHTML = `<span class="z">${z}</span><span>${el.sym}</span>`;
+    b.dataset.z = z;
+    badgesEl.appendChild(b);
+    badgeEls[z] = b;
+  }
+
+  // Badge tooltips: show name + fact once discovered, a hint when locked
+  badgesEl.addEventListener('mousemove', e => {
+    const b = e.target.closest('.badge');
+    if (!b) { hideTip(); return; }
+    const z = +b.dataset.z;
+    const el = ELEMENTS[z];
+    const key = '_badge' + z;
+    TIPS[key] = discovered.has(z)
+      ? `<strong>${el.name}</strong><br>${el.fact}`
+      : `<strong>???</strong><br>Build neutral ${el.name} (${z} protons, ${el.neutrons} neutrons, ${z} electrons) to discover it!`;
+    showTip(key, e.clientX, e.clientY);
+  });
+  badgesEl.addEventListener('mouseleave', hideTip);
+
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+
+  function showToast(html) {
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 6000);
+  }
+
+  function refreshBadges() {
+    for (let z = 1; z <= 20; z++) {
+      badgeEls[z].classList.toggle('found', discovered.has(z));
+    }
+    foundCountEl.textContent = discovered.size;
+  }
+  refreshBadges();
+
+  function checkDiscovery() {
+    const el = ELEMENTS[protons];
+    if (!el) return;
+    const neutral = protons === electrons;
+    const common = neutrons === el.neutrons;
+    if (neutral && common && !discovered.has(protons)) {
+      discovered.add(protons);
+      try { localStorage.setItem(STORE_KEY, JSON.stringify([...discovered])); } catch (e) {}
+      refreshBadges();
+      badgeEls[protons].classList.remove('flash');
+      void badgeEls[protons].offsetWidth; // restart animation
+      badgeEls[protons].classList.add('flash');
+      const left = 20 - discovered.size;
+      showToast(`&#127881; <strong>You discovered ${el.name}!</strong><br>${el.fact}` +
+        (left > 0 ? `<br><em>${left} element${left === 1 ? '' : 's'} left to find.</em>` : '<br><em>COLLECTION COMPLETE! You found all 20!</em>'));
+    }
+  }
 
   function updateInfo() {
     els.cP.textContent = protons;
@@ -444,6 +768,7 @@
       els.kind.textContent = parts.join(', ');
     }
 
+    checkDiscovery();
     checkChallenge();
   }
 
@@ -489,87 +814,193 @@
     checkChallenge();
   }
 
-  // ---- Drawing ----
+  // ---- 3D drawing helpers ----
+
+  // Shaded sphere with a highlight, dimmed by depth so far particles recede.
+  function drawSphere3D(p, baseR, color, dark, label) {
+    const r = Math.max(1.5, baseR * p.s);
+    const dim = Math.max(0.45, Math.min(1, p.s * 1.05));
+    const g = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.35, r * 0.1, p.x, p.y, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, dark);
+    ctx.globalAlpha = dim;
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+    if (label && r > 4.5) {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = `bold ${Math.max(7, r)}px Courier New`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, p.x, p.y + 0.5);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawElectron3D(p) {
+    const r = Math.max(2, 4.5 * p.s);
+    const dim = Math.max(0.5, Math.min(1, p.s * 1.05));
+    ctx.globalAlpha = dim;
+    // glow halo
+    ctx.fillStyle = 'rgba(107,209,255,0.22)';
+    ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.4, 0, Math.PI * 2); ctx.fill();
+    const g = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, r * 0.1, p.x, p.y, r);
+    g.addColorStop(0, '#d8f4ff');
+    g.addColorStop(0.5, '#6bd1ff');
+    g.addColorStop(1, '#2a6a9f');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Each shell ring gets its own 3D tilt so the atom looks like a gyroscope.
+  const SHELL_TILTS = [
+    { ax: 0.0,  az: 0.0 },
+    { ax: 0.9,  az: 0.5 },
+    { ax: -0.8, az: 1.1 },
+    { ax: 0.5,  az: -1.0 },
+  ];
+
+  // Point on shell s at angle a, in world space (before camera).
+  function shellPoint(s, radius, a) {
+    const tilt = SHELL_TILTS[s];
+    let x = Math.cos(a) * radius;
+    let y = 0;
+    let z = Math.sin(a) * radius;
+    // rotate around X by ax
+    const cx = Math.cos(tilt.ax), sx = Math.sin(tilt.ax);
+    let y1 = y * cx - z * sx;
+    let z1 = y * sx + z * cx;
+    // rotate around Z by az
+    const cz = Math.cos(tilt.az), sz = Math.sin(tilt.az);
+    const x2 = x * cz - y1 * sz;
+    const y2 = x * sz + y1 * cz;
+    return { x: x2, y: y2, z: z1 };
+  }
+
+  // ---- Atom view (3D) ----
   function drawAtomView() {
     hitTargets = [];
-    const cx = W / 2;
-    const cy = H / 2;
-    const nucleusR = Math.min(50, 14 + Math.sqrt(protons + neutrons) * 5);
+    const total = protons + neutrons;
+    const nucleusR = total > 0 ? Math.min(46, 12 + Math.cbrt(total) * 11) : 0;
 
-    // shells
-    ctx.lineWidth = 1;
+    // Everything is pushed into one list and depth-sorted so electrons
+    // really pass behind and in front of the nucleus.
+    const drawList = [];
+
+    // nucleus aura (drawn first, behind everything)
+    if (total > 0) {
+      const c = project(0, 0, 0);
+      const ar = (nucleusR + 14) * c.s;
+      const g = ctx.createRadialGradient(c.x, c.y, ar * 0.3, c.x, c.y, ar * 1.6);
+      g.addColorStop(0, 'rgba(255,230,0,0.10)');
+      g.addColorStop(1, 'rgba(255,230,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(c.x, c.y, ar * 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // shell rings + electrons
     let cumulative = 0;
     for (let s = 0; s < SHELL_CAPS.length; s++) {
-      const r = nucleusR + 35 + s * 38;
+      const radius = (nucleusR || 14) + 52 + s * 42;
       const electronsHere = Math.max(0, Math.min(SHELL_CAPS[s], electrons - cumulative));
-      ctx.strokeStyle = electronsHere > 0 ? '#444' : '#222';
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
+      const occupied = electronsHere > 0;
+
+      // ring as depth-sorted segments
+      const SEGS = 72;
+      let prev = null;
+      for (let i = 0; i <= SEGS; i++) {
+        const a = (i / SEGS) * Math.PI * 2;
+        const wp = shellPoint(s, radius, a);
+        const pp = project(wp.x, wp.y, wp.z);
+        if (prev) {
+          const p1 = prev, p2 = pp;
+          drawList.push({
+            z: (p1.z + p2.z) / 2 + 1000, // +1000: rings draw behind spheres at equal depth
+            draw() {
+              const dim = Math.max(0.12, Math.min(0.55, ((p1.s + p2.s) / 2) * 0.5));
+              ctx.strokeStyle = occupied
+                ? `rgba(107,209,255,${dim})`
+                : `rgba(255,255,255,${dim * 0.25})`;
+              ctx.lineWidth = occupied ? 1.4 : 1;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            },
+          });
+        }
+        prev = pp;
+      }
 
       // electrons on this shell
       for (let i = 0; i < electronsHere; i++) {
-        const speed = 0.0006 + s * 0.0001;
-        const angle = (i / SHELL_CAPS[s]) * Math.PI * 2 + t * speed;
-        const ex = cx + Math.cos(angle) * r;
-        const ey = cy + Math.sin(angle) * r;
-        // glow
-        ctx.fillStyle = 'rgba(107,209,255,0.25)';
-        ctx.beginPath(); ctx.arc(ex, ey, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#6bd1ff';
-        ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI * 2); ctx.fill();
-        hitTargets.push({ x: ex, y: ey, r: 8, tip: 'electron' });
+        const speed = 0.00055 - s * 0.00008;
+        const angle = (i / SHELL_CAPS[s]) * Math.PI * 2 + t * speed + s * 1.7;
+        const wp = shellPoint(s, radius, angle);
+        const pp = project(wp.x, wp.y, wp.z);
+        drawList.push({ z: pp.z, draw() { drawElectron3D(pp); } });
+        hitTargets.push({ x: pp.x, y: pp.y, r: Math.max(8, 10 * pp.s), tip: 'electron' });
       }
       cumulative += SHELL_CAPS[s];
     }
 
-    // nucleus boundary glow
-    ctx.fillStyle = 'rgba(255,230,0,0.05)';
-    ctx.beginPath(); ctx.arc(cx, cy, nucleusR + 6, 0, Math.PI * 2); ctx.fill();
-
-    // nucleons (interleaved for visual mix)
-    const total = protons + neutrons;
+    // nucleons packed in a 3D ball (fibonacci spiral fills the volume evenly)
     const order = [];
     let pi = 0, ni = 0;
     for (let i = 0; i < total; i++) {
-      // alternate but bias toward whichever has more remaining
       if (pi < protons && (ni >= neutrons || (i % 2 === 0))) { order.push('p'); pi++; }
       else { order.push('n'); ni++; }
     }
+    const GA = Math.PI * (3 - Math.sqrt(5)); // golden angle
     for (let i = 0; i < total; i++) {
       const seed = nucleonSeed[i];
-      const wobble = Math.sin(t * 0.003 + seed.phase) * 1.5;
-      const r = Math.sqrt(seed.r) * (nucleusR - 6) + wobble;
-      const a = seed.a + t * 0.0004;
-      const x = cx + Math.cos(a) * r;
-      const y = cy + Math.sin(a) * r;
+      const frac = total === 1 ? 0 : (i + 0.5) / total;
+      const rr = Math.cbrt(frac) * (nucleusR - 8);
+      const theta = Math.acos(1 - 2 * frac);
+      const phi = i * GA;
+      const wob = Math.sin(t * 0.0025 + seed.phase) * 1.2;
+      const wx = (rr + wob) * Math.sin(theta) * Math.cos(phi) + seed.jx;
+      const wy = (rr + wob) * Math.cos(theta) + seed.jy;
+      const wz = (rr + wob) * Math.sin(theta) * Math.sin(phi) + seed.jz;
+      // the whole nucleus slowly tumbles
+      const spin = t * 0.0003;
+      const cs = Math.cos(spin), sn = Math.sin(spin);
+      const rx = wx * cs - wz * sn;
+      const rz = wx * sn + wz * cs;
+      const pp = project(rx, wy, rz);
       const isP = order[i] === 'p';
-      ctx.fillStyle = isP ? '#ff4444' : '#aaaaaa';
-      ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = isP ? '#8a0000' : '#666';
-      ctx.beginPath(); ctx.arc(x - 2, y - 2, 2, 0, Math.PI * 2); ctx.fill();
-      // labels
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 8px Courier New';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(isP ? '+' : 'n', x, y + 1);
-      hitTargets.push({ x, y, r: 8, tip: isP ? 'proton' : 'neutron' });
+      drawList.push({
+        z: pp.z,
+        draw() {
+          drawSphere3D(pp, 8, isP ? '#ff7a6b' : '#cfcfcf', isP ? '#7a1010' : '#555', isP ? '+' : 'n');
+        },
+      });
+      hitTargets.push({ x: pp.x, y: pp.y, r: Math.max(8, 9 * pp.s), tip: isP ? 'proton' : 'neutron' });
     }
+
+    // far to near
+    drawList.sort((a, b) => b.z - a.z);
+    for (const d of drawList) d.draw();
+
     // nucleus area itself (lower priority — pushed last so individual nucleons win)
     if (total > 0) {
-      hitTargets.push({ x: cx, y: cy, r: nucleusR, tip: 'nucleus' });
+      const c = project(0, 0, 0);
+      hitTargets.push({ x: c.x, y: c.y, r: nucleusR * c.s, tip: 'nucleus' });
     }
 
     // central label if empty
     if (total === 0 && electrons === 0) {
-      ctx.fillStyle = '#444';
+      ctx.fillStyle = '#556';
       ctx.font = '14px Courier New';
       ctx.textAlign = 'center';
-      ctx.fillText('add particles to build an atom', cx, cy);
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('add particles to build an atom', W / 2, H / 2 - 8);
+      ctx.fillStyle = '#334';
+      ctx.fillText('then drag to spin it in 3D', W / 2, H / 2 + 14);
     }
   }
 
+  // ---- Quark view ----
   function drawQuarkView() {
     hitTargets = [];
     const cx = W / 2, cy = H / 2;
@@ -583,13 +1014,13 @@
     ctx.fillText('Inside a Proton & Neutron: Quarks', cx, 55);
 
     // Proton on the left (uud), Neutron on the right (udd)
-    drawNucleon(cx - 150, cy + 10, 'proton', ['u', 'u', 'd']);
-    drawNucleon(cx + 150, cy + 10, 'neutron', ['u', 'd', 'd']);
+    drawNucleon(cx - 160, cy + 10, 'proton', ['u', 'u', 'd']);
+    drawNucleon(cx + 160, cy + 10, 'neutron', ['u', 'd', 'd']);
 
     ctx.fillStyle = '#aaa';
     ctx.font = '11px Courier New';
-    ctx.fillText('charge:  +2/3 +2/3 -1/3 = +1', cx - 150, cy + 130);
-    ctx.fillText('charge:  +2/3 -1/3 -1/3 =  0', cx + 150, cy + 130);
+    ctx.fillText('charge:  +2/3 +2/3 -1/3 = +1', cx - 160, cy + 130);
+    ctx.fillText('charge:  +2/3 -1/3 -1/3 =  0', cx + 160, cy + 130);
 
     ctx.fillStyle = '#666';
     ctx.font = '11px Courier New';
@@ -599,7 +1030,15 @@
 
   function drawNucleon(cx, cy, kind, quarks) {
     const r = 80;
-    ctx.fillStyle = kind === 'proton' ? 'rgba(255,68,68,0.18)' : 'rgba(170,170,170,0.18)';
+    const bg = ctx.createRadialGradient(cx - 20, cy - 20, 10, cx, cy, r);
+    if (kind === 'proton') {
+      bg.addColorStop(0, 'rgba(255,120,100,0.30)');
+      bg.addColorStop(1, 'rgba(255,68,68,0.08)');
+    } else {
+      bg.addColorStop(0, 'rgba(220,220,220,0.28)');
+      bg.addColorStop(1, 'rgba(170,170,170,0.08)');
+    }
+    ctx.fillStyle = bg;
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = kind === 'proton' ? '#ff4444' : '#aaa';
     ctx.lineWidth = 2;
@@ -632,7 +1071,11 @@
 
     for (let i = 0; i < 3; i++) {
       const p = positions[i];
-      ctx.fillStyle = colors[i];
+      const qg = ctx.createRadialGradient(p.x - 4, p.y - 4, 2, p.x, p.y, 14);
+      qg.addColorStop(0, '#ffffff');
+      qg.addColorStop(0.35, colors[i]);
+      qg.addColorStop(1, colors[i]);
+      ctx.fillStyle = qg;
       ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#0f0f1a';
       ctx.font = 'bold 14px Courier New';
@@ -666,8 +1109,8 @@
   function loop() {
     requestAnimationFrame(loop);
     t += 16;
-    ctx.fillStyle = '#111125';
-    ctx.fillRect(0, 0, W, H);
+    if (autoSpin && !zoomMode) cam.yaw += 0.0012;
+    drawBackground();
     if (zoomMode && (protons > 0 || neutrons > 0)) {
       drawQuarkView();
     } else {
@@ -684,7 +1127,94 @@
     updateInfo();
   }
 
+  function setAtom(p, n, e) {
+    protons = Math.max(0, Math.min(MAX_P, p));
+    neutrons = Math.max(0, Math.min(MAX_N, n));
+    electrons = Math.max(0, Math.min(MAX_E, e));
+    reseed();
+    updateInfo();
+  }
+
+  // ---- Camera: drag rotates, wheel zooms, touch supported ----
+  let viewDrag = null; // { sx, sy, yaw0, pitch0, moved }
+
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  canvas.addEventListener('mousedown', e => {
+    if (zoomMode) return;
+    const rect = canvas.getBoundingClientRect();
+    viewDrag = {
+      sx: e.clientX - rect.left, sy: e.clientY - rect.top,
+      yaw0: cam.yaw, pitch0: cam.pitch, moved: false,
+    };
+    canvas.classList.add('dragging');
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!viewDrag) return;
+    const rect = canvas.getBoundingClientRect();
+    const dx = (e.clientX - rect.left) - viewDrag.sx;
+    const dy = (e.clientY - rect.top) - viewDrag.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 3) viewDrag.moved = true;
+    cam.yaw = viewDrag.yaw0 + dx * 0.006;
+    cam.pitch = clamp(viewDrag.pitch0 + dy * 0.006, MIN_PITCH, MAX_PITCH);
+    if (viewDrag.moved) { autoSpin = false; hideTip(); }
+  });
+
+  window.addEventListener('mouseup', () => {
+    viewDrag = null;
+    canvas.classList.remove('dragging');
+  });
+
+  canvas.addEventListener('wheel', e => {
+    if (zoomMode) return;
+    e.preventDefault();
+    cam.zoom = clamp(cam.zoom * (e.deltaY > 0 ? 0.92 : 1.08), 0.45, 2.4);
+  }, { passive: false });
+
+  // touch: one finger rotates, pinch zooms
+  let touchState = null;
+  canvas.addEventListener('touchstart', e => {
+    if (zoomMode) return;
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const rect = canvas.getBoundingClientRect();
+      touchState = {
+        kind: 'rotate',
+        sx: e.touches[0].clientX - rect.left, sy: e.touches[0].clientY - rect.top,
+        yaw0: cam.yaw, pitch0: cam.pitch,
+      };
+    } else if (e.touches.length === 2) {
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+      touchState = { kind: 'pinch', d0: d, zoom0: cam.zoom };
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    if (!touchState || zoomMode) return;
+    e.preventDefault();
+    if (touchState.kind === 'rotate' && e.touches.length === 1) {
+      const rect = canvas.getBoundingClientRect();
+      const dx = (e.touches[0].clientX - rect.left) - touchState.sx;
+      const dy = (e.touches[0].clientY - rect.top) - touchState.sy;
+      cam.yaw = touchState.yaw0 + dx * 0.006;
+      cam.pitch = clamp(touchState.pitch0 + dy * 0.006, MIN_PITCH, MAX_PITCH);
+      autoSpin = false;
+    } else if (touchState.kind === 'pinch' && e.touches.length === 2) {
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+      cam.zoom = clamp(touchState.zoom0 * (d / touchState.d0), 0.45, 2.4);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => { touchState = null; });
+
+  // hover tooltips on canvas (skipped while dragging)
   canvas.addEventListener('mousemove', e => {
+    if (viewDrag) return;
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (W / rect.width);
     const my = (e.clientY - rect.top) * (H / rect.height);
@@ -722,8 +1252,111 @@
 
   document.getElementById('challengeBtn').addEventListener('click', newChallenge);
 
+  // ---- Electron School ----
+  const SCHOOL_PAGES = [
+    {
+      title: 'Meet the Electron',
+      tryIt: { p: 1, n: 0, e: 1, label: 'TRY IT: build Hydrogen!' },
+      html: `An electron is a <strong>tiny</strong> particle with a charge of <em>−1</em>.
+        How tiny? It would take about <em>1,836 electrons</em> to weigh as much as ONE proton!<br><br>
+        Electrons zip around the nucleus incredibly fast — close to the speed of light.
+        They don't really fly in neat circles (it's more like a blurry cloud), but the
+        circle picture is a great way to count them.<br><br>
+        The simplest atom is <strong>hydrogen</strong>: 1 proton + 1 electron.`,
+    },
+    {
+      title: 'Shells: Electron Parking Lots',
+      tryIt: { p: 10, n: 10, e: 10, label: 'TRY IT: build Neon (2 full shells)!' },
+      html: `Electrons live in <strong>shells</strong> — like parking lots around the nucleus.
+        Each shell only has so many parking spots:
+        <div class="shellbar"><span>Shell 1: 2 spots</span><span>Shell 2: 8 spots</span><span>Shell 3: 8 spots</span><span>Shell 4: 2 spots</span></div>
+        Electrons always fill the <em>inner shell first</em>, because it's closest to the
+        positive nucleus that attracts them.<br><br>
+        Watch the 3D view: when shell 1 fills up with 2 electrons, the next ones
+        have to park in shell 2!`,
+    },
+    {
+      title: 'Ions: Losing & Gaining Electrons',
+      tryIt: { p: 11, n: 12, e: 10, label: 'TRY IT: build a Sodium ion (Na+)!' },
+      html: `Atoms can <strong>lose</strong> or <strong>gain</strong> electrons. When that happens,
+        the charges don't balance anymore and the atom becomes an <em>ion</em>:<br><br>
+        &bull; Lose an electron &rarr; more + than − &rarr; a <em>positive ion (cation)</em><br>
+        &bull; Gain an electron &rarr; more − than + &rarr; a <em>negative ion (anion)</em><br><br>
+        Sodium loves to lose 1 electron and become Na<sup>+</sup>. Chlorine loves to grab
+        one and become Cl<sup>−</sup>. Stick them together and you get... table salt!`,
+    },
+    {
+      title: 'Happy Atoms: Full Shells',
+      tryIt: { p: 18, n: 22, e: 18, label: 'TRY IT: build Argon (all shells full)!' },
+      html: `Here's the big secret of chemistry: atoms "want" a <strong>full outer shell</strong>.
+        A full outer shell = a calm, happy atom.<br><br>
+        Gases like helium, neon, and argon already have full shells, so they react with
+        almost <em>nothing</em>. They're called the <strong>noble gases</strong> — too fancy to mix!<br><br>
+        Atoms with almost-full or almost-empty outer shells (like sodium or chlorine)
+        react like crazy, trading electrons to get full. Every chemical reaction ever
+        is just atoms swapping or sharing electrons!`,
+    },
+    {
+      title: 'Electricity IS Electrons!',
+      tryIt: { p: 3, n: 4, e: 3, label: 'TRY IT: build Lithium (battery metal)!' },
+      html: `When you flip a light switch, you're commanding <strong>electrons</strong>!
+        Electric current is just electrons flowing through a wire, like water through a hose.<br><br>
+        &bull; <em>Lightning</em>: a giant jump of electrons between cloud and ground.<br>
+        &bull; <em>Static shock</em>: extra electrons you collected leaping off your finger.<br>
+        &bull; <em>Batteries</em>: chemicals (like lithium) that push electrons around a circuit.<br><br>
+        The word "electron" comes from the Greek word for <em>amber</em> — the stone
+        ancient Greeks rubbed to make static sparks 2,500 years ago.`,
+    },
+  ];
+
+  const school = document.getElementById('school');
+  const schoolTitle = document.getElementById('schoolTitle');
+  const schoolPageNum = document.getElementById('schoolPageNum');
+  const schoolBody = document.getElementById('schoolBody');
+  const schoolPrev = document.getElementById('schoolPrev');
+  const schoolNext = document.getElementById('schoolNext');
+  const schoolTry = document.getElementById('schoolTry');
+  let schoolPage = 0;
+
+  function renderSchool() {
+    const pg = SCHOOL_PAGES[schoolPage];
+    schoolTitle.innerHTML = '&#9889; ' + pg.title;
+    schoolPageNum.textContent = `LESSON ${schoolPage + 1} OF ${SCHOOL_PAGES.length}`;
+    schoolBody.innerHTML = pg.html;
+    schoolPrev.disabled = schoolPage === 0;
+    schoolNext.disabled = schoolPage === SCHOOL_PAGES.length - 1;
+    schoolTry.textContent = pg.tryIt.label;
+  }
+
+  function openSchool() {
+    school.classList.add('open');
+    hideTip();
+    renderSchool();
+  }
+
+  function closeSchool() { school.classList.remove('open'); }
+
+  document.getElementById('schoolBtn').addEventListener('click', openSchool);
+  document.getElementById('schoolClose').addEventListener('click', closeSchool);
+  school.addEventListener('click', e => { if (e.target === school) closeSchool(); });
+  schoolPrev.addEventListener('click', () => { if (schoolPage > 0) { schoolPage--; renderSchool(); } });
+  schoolNext.addEventListener('click', () => { if (schoolPage < SCHOOL_PAGES.length - 1) { schoolPage++; renderSchool(); } });
+  schoolTry.addEventListener('click', () => {
+    const pg = SCHOOL_PAGES[schoolPage];
+    setAtom(pg.tryIt.p, pg.tryIt.n, pg.tryIt.e);
+    zoomMode = false;
+    document.getElementById('zoomBtn').textContent = 'ZOOM IN ON QUARKS';
+    closeSchool();
+  });
+
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
+    if (school.classList.contains('open')) {
+      if (e.code === 'Escape') closeSchool();
+      if (e.code === 'ArrowLeft') schoolPrev.click();
+      if (e.code === 'ArrowRight') schoolNext.click();
+      return;
+    }
     const shift = e.shiftKey;
     switch (e.code) {
       case 'KeyP': e.preventDefault(); add('p', shift ? -1 : 1); break;

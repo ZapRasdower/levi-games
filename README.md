@@ -8,7 +8,7 @@ A static collection of small browser games made for/by Levi. Hosted via GitHub P
 
 - **Levi Leap** (`pixel-jump/`) — endless runner. Jump (and double-jump) over obstacles, collect coins.
 - **Levi Snake** (`snake/`) — classic snake with bonus snacks worth extra points.
-- **Atom Builder** (`atom-builder/`) — educational sandbox. Add protons, neutrons, and electrons to build atoms; the game identifies the element, isotope, and ion charge. Zoom in on the nucleus to see the quarks (uud / udd) inside protons and neutrons.
+- **Atom Builder** (`atom-builder/`) — educational sandbox in 3D. Add protons, neutrons, and electrons to build atoms; drag to spin the atom, scroll to zoom. The game identifies the element, isotope, and ion charge. Zoom in on the nucleus to see the quarks (uud / udd) inside protons and neutrons, take the Electron School mini-lessons, and build neutral atoms to discover all 20 elements in the badge collection (saved to `localStorage`).
 - **Solar System** (`solar-system/`) — interactive map of the planets. Click any planet (or the Sun) for facts, speed up time to watch orbits, toggle real-distance scale, and take a planet-spotting quiz.
 - **Squishy Pets** (`squishy-pets/`) — cozy idle collector. Open themed blind boxes, squish soft-body pets to earn Dough, buy upgrades, and collect all 32 pets across 4 categories (Dumpling, Sushi, Sweet, Critter). Progress saves to `localStorage`.
 
