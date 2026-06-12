@@ -26,6 +26,8 @@
   header{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;align-items:flex-start;justify-content:space-between;padding:14px 16px;pointer-events:none;}
   .title{font-family:'Fredoka';font-weight:700;font-size:clamp(19px,4.4vw,28px);line-height:1;color:var(--coral);text-shadow:0 2px 0 #fff,0 3px 0 rgba(216,84,58,.22);}
   .subtitle{font-size:11px;color:var(--ink-soft);font-weight:700;margin-top:2px;}
+  .home-link{display:inline-block;margin-top:7px;pointer-events:auto;background:#fff;border:2px solid #f0d9b3;border-radius:999px;padding:3px 11px;font-weight:800;font-size:11px;color:var(--ink-soft);box-shadow:0 3px 0 #ead7b3;text-decoration:none;}
+  .home-link:active{transform:translateY(2px);box-shadow:0 1px 0 #ead7b3;}
   .hud{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
   .dough{display:flex;align-items:center;gap:6px;background:#fff;border:2px solid #f0d9b3;border-radius:999px;padding:7px 14px;box-shadow:0 4px 0 #ead7b3;font-family:'Fredoka';font-weight:700;font-size:clamp(16px,4vw,21px);color:var(--ink);}
   .dough .ic{font-size:1.05em;}
@@ -119,6 +121,7 @@
   <div>
     <div class="title">Squishy Pets</div>
     <div class="subtitle">squish to earn &middot; open boxes &middot; collect</div>
+    <a class="home-link" href="../index.html">&larr; all games</a>
   </div>
   <div class="hud">
     <div class="dough"><span class="ic">🥟</span><span id="doughVal">0</span></div>
