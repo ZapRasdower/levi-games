@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Levi Crossing - Levi's Games</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f1a;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ffe600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .hud {
+      width: 100%;
+      max-width: 624px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: #1a1a2e;
+      border: 2px solid #333;
+      padding: 8px 14px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      color: #ccc;
+    }
+
+    .hud .val { color: #ffe600; font-size: 0.95rem; }
+    .hud .lives { color: #ff5b6b; font-size: 1rem; letter-spacing: 2px; }
+    .hud .homes { color: #6bffd1; }
+
+    #gameCanvas {
+      border: 3px solid #333;
+      background: #0a0a14;
+      display: block;
+      max-width: 100%;
+      touch-action: none;
+    }
+
+    .levelbar {
+      width: 100%;
+      max-width: 624px;
+      margin-top: 10px;
+      background: #1a1a2e;
+      border: 2px solid #333;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: #888;
+    }
+
+    .levelbar .lvls { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .levelbar button {
+      width: 32px;
+      padding: 5px 0;
+      font-size: 0.8rem;
+    }
+
+    button {
+      background: #2a2a4a;
+      color: #ffe600;
+      border: 2px solid #444;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    button:hover { border-color: #ffe600; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+    button.current { background: #4a4a1a; border-color: #ffe600; }
+
+    .legend {
+      width: 100%;
+      max-width: 624px;
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: #666;
+      letter-spacing: 1px;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .back-link {
+      margin-top: 24px;
+      color: #555;
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+    }
+
+    .back-link:hover { color: #ffe600; }
+  </style>
+</head>
+<body>
+
+  <h1>&#128056; Levi Crossing</h1>
+  <p class="subtitle">help Levi cross roads, rivers &amp; railways &middot; 10 levels, each crazier than the last</p>
+
+  <div class="hud">
+    <div>SCORE <span class="val" id="hudScore">0</span></div>
+    <div>BEST <span class="val" id="hudBest">0</span></div>
+    <div>LEVEL <span class="val" id="hudLevel">1</span>/10</div>
+    <div>HOMES <span class="homes" id="hudHomes">0/1</span></div>
+    <div class="lives" id="hudLives">&#9829;&#9829;&#9829;</div>
+  </div>
+
+  <canvas id="gameCanvas" width="624" height="624"></canvas>
+
+  <div class="levelbar">
+    <span>LEVELS:</span>
+    <span class="lvls" id="lvlBtns"></span>
+    <button id="restartBtn" style="margin-left:auto">RESTART</button>
+  </div>
+
+  <div class="legend">
+    arrows / WASD to hop &middot; swipe on touch &middot; ride logs, turtles &amp; croc backs (not the head!)<br>
+    watch for diving turtles, trains, slippery ice and the eagle when time runs out
+  </div>
+
+  <a class="back-link" href="../index.html">&larr; back to all games</a>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const COLS = 13, ROWS = 13, TILE = 48;
+  const W = COLS * TILE, H = ROWS * TILE;
+
+  // Load Levi sprite (same photo as Levi Leap)
+  const leviImg = new Image();
+  leviImg.src = 'levi.png';
+  let imgLoaded = false;
+  leviImg.onload = () => { imgLoaded = true; };
+
+  // ---- Level definitions ----
+  // Rows listed top-to-bottom for the 11 middle rows; row 0 is always the
+  // goal homes and row 12 the start grass. Speeds are tiles/second.
+  const road  = (kind, dir, speed, spacing) => ({ t: 'road', kind, dir, speed, spacing });
+  const river = (kind, dir, speed, spacing, dive) => ({ t: 'river', kind, dir, speed, spacing, dive: !!dive });
+  const rail  = (min, max) => ({ t: 'rail', min, max });
+  const grass = () => ({ t: 'grass' });
+  const ice   = () => ({ t: 'ice' });
+
+  // kind -> platform/vehicle length in tiles
+  const LEN = { car: 1, sport: 1, truck: 2, log2: 2, log3: 3, log4: 4, turtle2: 2, turtle3: 3, croc: 3 };
+
+  const LEVELS = [
+    { name: 'TRAINING WHEELS', time: 45, homes: 1, rows: [
+      grass(), grass(),
+      road('car', 1, 1.3, 4.5), grass(), road('car', -1, 1.3, 4.5),
+      grass(), grass(),
+      road('car', 1, 1.2, 5), grass(), road('car', -1, 1.2, 5),
+      grass(),
+    ]},
+    { name: 'BUSY STREET', time: 45, homes: 1, rows: [
+      grass(),
+      road('sport', 1, 2.2, 5), road('car', -1, 1.6, 4),
+      grass(),
+      road('truck', 1, 1.4, 5), road('car', -1, 1.8, 4.5),
+      grass(),
+      road('car', 1, 1.6, 4), road('truck', -1, 1.4, 5.5),
+      grass(), grass(),
+    ]},
+    { name: 'DOWN BY THE RIVER', time: 45, homes: 1, rows: [
+      river('log4', 1, 1.4, 6), river('turtle3', -1, 1.3, 5), river('log3', 1, 1.6, 5.5),
+      grass(), grass(),
+      road('car', -1, 1.8, 4.5), road('truck', 1, 1.5, 5.5),
+      grass(),
+      road('car', -1, 1.6, 4.5),
+      grass(), grass(),
+    ]},
+    { name: 'CLASSIC CROSSING', time: 40, homes: 2, rows: [
+      river('log3', -1, 1.6, 5), river('turtle3', 1, 1.5, 4.5), river('log4', -1, 1.8, 6.5),
+      river('turtle2', -1, 1.6, 4.5, true), river('log3', 1, 2.0, 5.5),
+      grass(),
+      road('truck', -1, 1.7, 5), road('sport', 1, 2.6, 5), road('car', -1, 2.0, 4.5), road('car', 1, 1.8, 4),
+      grass(),
+    ]},
+    { name: 'TRAIN YARD', time: 40, homes: 2, rows: [
+      grass(), rail(3, 6), grass(),
+      road('truck', 1, 1.8, 5), road('car', -1, 2.2, 4.5),
+      grass(), rail(2.5, 5.5), grass(),
+      road('sport', -1, 2.8, 5), road('car', 1, 2.0, 4.5),
+      grass(),
+    ]},
+    { name: 'CROC CREEK', time: 40, homes: 2, rows: [
+      river('croc', -1, 1.8, 6), river('turtle3', 1, 1.6, 4.5, true), river('log3', -1, 1.8, 5),
+      river('croc', 1, 1.6, 6.5), river('turtle2', -1, 1.8, 4, true),
+      grass(),
+      road('sport', 1, 2.8, 4.5), road('car', -1, 2.2, 4), road('truck', 1, 1.8, 5),
+      grass(), grass(),
+    ]},
+    { name: 'ICE WORLD', time: 35, homes: 3, rows: [
+      river('log3', 1, 1.9, 5), river('turtle2', -1, 1.8, 4.5, true), river('log2', 1, 2.1, 5),
+      ice(),
+      road('sport', -1, 3.0, 4.5),
+      ice(),
+      road('car', 1, 2.4, 4), road('car', -1, 2.2, 3.8),
+      ice(),
+      road('truck', 1, 2.0, 5),
+      ice(),
+    ]},
+    { name: 'NIGHT MOVES', time: 35, homes: 3, night: true, rows: [
+      river('turtle2', 1, 1.9, 4.5, true), river('log3', -1, 2.1, 5), river('croc', 1, 1.9, 6),
+      river('log2', -1, 2.3, 4.5), river('turtle2', 1, 2.0, 4, true),
+      grass(),
+      road('sport', -1, 3.2, 4.5), road('car', 1, 2.5, 3.8), road('truck', -1, 2.1, 4.8), road('car', 1, 2.6, 4),
+      grass(),
+    ]},
+    { name: 'THE GAUNTLET', time: 30, homes: 3, night: true, fog: true, rows: [
+      river('croc', -1, 2.2, 5.5), river('turtle2', 1, 2.0, 4, true), river('log2', -1, 2.4, 4.5),
+      rail(2.5, 5),
+      ice(),
+      road('sport', 1, 3.4, 4), road('car', -1, 2.8, 3.6),
+      ice(),
+      rail(2, 4.5),
+      road('truck', 1, 2.3, 4.6),
+      ice(),
+    ]},
+    { name: 'THE IMPOSSIBLE CROSSING', time: 28, homes: 4, night: true, crocSlots: true, rows: [
+      river('turtle2', -1, 2.2, 3.8, true), river('croc', 1, 2.4, 5), river('log2', -1, 2.6, 4.2),
+      river('turtle2', 1, 2.3, 3.6, true), river('croc', -1, 2.5, 5),
+      rail(2, 4),
+      road('sport', -1, 3.8, 3.6), road('sport', 1, 3.4, 3.8),
+      ice(),
+      road('truck', -1, 2.6, 4.2), road('car', 1, 3.0, 3.4),
+    ]},
+  ];
+
+  const GOAL_COLS = [1, 3, 6, 9, 11];
+  const CAR_COLORS = ['#ff5b6b', '#6bd1ff', '#ffe600', '#b06bff', '#6bff8e', '#ff9d4d'];
+
+  // ---- Persistent state ----
+  let best = +(localStorage.getItem('leviCrossingBest') || 0);
+  let unlocked = +(localStorage.getItem('leviCrossingUnlocked') || 1);
+
+  // ---- Game state ----
+  let state = 'title'; // title | play | dead | leveldone | gameover | win
+  let levelIdx = 0;
+  let rows = [];       // runtime row objects
+  let levi = null;
+  let lives = 3;
+  let score = 0;
+  let homesFilled = [];
+  let timer = 0, timerMax = 45;
+  let maxRowReached = 12;
+  let stateTimer = 0;  // generic timer for dead/leveldone screens
+  let deathKind = '';
+  let eagle = null;
+  let particles = [];
+  let pickups = [];    // { x, row, kind: 'coin' | 'star', taken }
+  let fogBlobs = [];
+  let queuedMove = null;
+  let lastTime = 0;
+  let t = 0;
+
+  // ---- HUD ----
+  const hud = {
+    score: document.getElementById('hudScore'),
+    best: document.getElementById('hudBest'),
+    level: document.getElementById('hudLevel'),
+    homes: document.getElementById('hudHomes'),
+    lives: document.getElementById('hudLives'),
+  };
+
+  function updateHud() {
+    hud.score.textContent = score;
+    hud.best.textContent = best;
+    hud.level.textContent = levelIdx + 1;
+    const need = LEVELS[levelIdx].homes;
+    hud.homes.textContent = `${homesFilled.filter(Boolean).length}/${need}`;
+    hud.lives.innerHTML = '&#9829;'.repeat(lives) + '<span style="color:#3a2a33">' + '&#9829;'.repeat(Math.max(0, 5 - lives)) + '</span>';
+  }
+
+  // level select buttons
+  const lvlBtnsEl = document.getElementById('lvlBtns');
+  const lvlBtns = [];
+  for (let i = 0; i < 10; i++) {
+    const b = document.createElement('button');
+    b.textContent = i + 1;
+    b.addEventListener('click', () => {
+      if (i + 1 > unlocked) return;
+      score = 0;
+      lives = 3;
+      startLevel(i);
+    });
+    lvlBtnsEl.appendChild(b);
+    lvlBtns.push(b);
+  }
+
+  function refreshLvlBtns() {
+    for (let i = 0; i < 10; i++) {
+      lvlBtns[i].disabled = i + 1 > unlocked;
+      lvlBtns[i].classList.toggle('current', state !== 'title' && i === levelIdx);
+    }
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    score = 0; lives = 3;
+    startLevel(levelIdx);
+  });
+
+  // ---- Level setup ----
+  function buildRows(def) {
+    const out = [];
+    out.push({ t: 'goal' });
+    for (const rd of def.rows) {
+      const r = { t: rd.t };
+      if (rd.t === 'road' || rd.t === 'river') {
+        r.kind = rd.kind;
+        r.dir = rd.dir;
+        r.speed = rd.speed;
+        r.dive = rd.dive;
+        const len = LEN[rd.kind];
+        r.len = len;
+        const spacing = Math.max(rd.spacing, len + 1.2);
+        const count = Math.ceil((COLS + 8) / spacing);
+        r.cycle = count * spacing;
+        r.items = [];
+        const off = Math.random() * spacing;
+        for (let i = 0; i < count; i++) {
+          r.items.push({
+            x: i * spacing + off,
+            color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
+            divePhase: Math.random() * 8,
+          });
+        }
+      } else if (rd.t === 'rail') {
+        r.min = rd.min; r.max = rd.max;
+        r.phase = 'idle';
+        r.timer = rd.min + Math.random() * (rd.max - rd.min);
+        r.dir = Math.random() < 0.5 ? 1 : -1;
+        r.trainX = 0;
+      }
+      out.push(r);
+    }
+    out.push({ t: 'start' });
+    return out;
+  }
+
+  function placePickups(def) {
+    pickups = [];
+    const safeRows = [];
+    rows.forEach((r, i) => {
+      if ((r.t === 'grass' || r.t === 'ice') && i > 0 && i < ROWS - 1) safeRows.push(i);
+    });
+    const spots = [];
+    for (const r of safeRows) for (let c = 0; c < COLS; c++) spots.push({ x: c, row: r });
+    // shuffle
+    for (let i = spots.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [spots[i], spots[j]] = [spots[j], spots[i]];
+    }
+    const nCoins = Math.min(3, spots.length);
+    for (let i = 0; i < nCoins; i++) pickups.push({ ...spots[i], kind: 'coin', taken: false });
+    if (levelIdx >= 3 && spots.length > nCoins) {
+      pickups.push({ ...spots[nCoins], kind: 'star', taken: false });
+    }
+  }
+
+  function startLevel(idx) {
+    levelIdx = idx;
+    const def = LEVELS[idx];
+    rows = buildRows(def);
+    homesFilled = GOAL_COLS.map(() => false);
+    timerMax = def.time;
+    timer = timerMax;
+    // bonus life entering the tough stretches
+    if (state !== 'title' && (idx === 3 || idx === 6 || idx === 8) && lives < 5) {
+      lives++;
+      toastMsg = '+1 LIFE!';
+      toastTimer = 2;
+    }
+    // croc-infested goal slots on the final level
+    if (def.crocSlots) {
+      rows[0].slotCrocs = GOAL_COLS.map(() => ({ on: false, timer: 2 + Math.random() * 5 }));
+    }
+    fogBlobs = [];
+    if (def.fog) {
+      for (let i = 0; i < 6; i++) {
+        fogBlobs.push({
+          x: Math.random() * W, y: Math.random() * H,
+          rx: 120 + Math.random() * 120, ry: 40 + Math.random() * 40,
+          v: 10 + Math.random() * 18,
+        });
+      }
+    }
+    placePickups(def);
+    spawnLevi();
+    eagle = null;
+    particles = [];
+    state = 'play';
+    refreshLvlBtns();
+    updateHud();
+  }
+
+  function spawnLevi() {
+    levi = {
+      x: 6, row: ROWS - 1,
+      hop: null,        // { fx, fy, tx, ty, t } in pixels
+      facing: 0,        // radians, 0 = up
+      shield: false,
+      slideDir: null, slideTimer: 0,
+    };
+    maxRowReached = ROWS - 1;
+    timer = timerMax;
+    queuedMove = null;
+  }
+
+  // ---- Toast text inside canvas ----
+  let toastMsg = '', toastTimer = 0;
+
+  // ---- Movement ----
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+  function tryMove(dir) {
+    if (state !== 'play') return;
+    if (levi.hop) { queuedMove = dir; return; }
+    doMove(dir);
+  }
+
+  function doMove(dir, isSlide) {
+    if (!isSlide) levi.justSlid = false;
+    const [dx, dy] = DIRS[dir];
+    const targetRow = levi.row + dy;
+    let targetX = levi.x + dx;
+    if (dy !== 0) {
+      // snap to grid when leaving a platform vertically
+      targetX = Math.max(0, Math.min(COLS - 1, Math.round(levi.x)));
+    }
+    if (targetRow < 0 || targetRow > ROWS - 1) return;
+    if (targetX < -0.2 || targetX > COLS - 0.8) return;
+    // hopping into the goal row: only open slots allowed
+    if (targetRow === 0) {
+      const c = Math.round(targetX);
+      const slot = GOAL_COLS.indexOf(c);
+      if (slot === -1) return;          // bushes block
+      if (homesFilled[slot]) {          // already filled — blocked
+        toastMsg = 'HOME FULL!'; toastTimer = 1;
+        return;
+      }
+      targetX = c;
+    }
+    levi.facing = dir === 'up' ? 0 : dir === 'down' ? Math.PI : dir === 'left' ? -Math.PI / 2 : Math.PI / 2;
+    levi.hop = {
+      fx: levi.x, fy: levi.row,
+      tx: targetX, ty: targetRow,
+      t: 0, dir,
+    };
+    levi.slideDir = null;
+  }
+
+  function landHop() {
+    const h = levi.hop;
+    levi.x = h.tx;
+    levi.row = h.ty;
+    levi.hop = null;
+
+    // step score (first time this far this crossing)
+    if (levi.row < maxRowReached) {
+      score += (maxRowReached - levi.row) * 10;
+      maxRowReached = levi.row;
+    }
+
+    // pickups
+    for (const p of pickups) {
+      if (!p.taken && p.row === levi.row && Math.abs(p.x - levi.x) < 0.6) {
+        p.taken = true;
+        if (p.kind === 'coin') { score += 50; toastMsg = '+50'; toastTimer = 1; }
+        else { levi.shield = true; toastMsg = 'SHIELD!'; toastTimer = 1.5; }
+        burst(p.x * TILE + TILE / 2, p.row * TILE + TILE / 2, p.kind === 'coin' ? '#ffe600' : '#6bffd1', 10);
+      }
+    }
+
+    const row = rows[levi.row];
+
+    // goal row
+    if (levi.row === 0) {
+      const slot = GOAL_COLS.indexOf(Math.round(levi.x));
+      if (row.slotCrocs && row.slotCrocs[slot].on) { die('croc'); return; }
+      homesFilled[slot] = true;
+      const bonus = 200 + Math.floor(timer) * 5;
+      score += bonus;
+      toastMsg = `HOME! +${bonus}`;
+      toastTimer = 1.5;
+      burst(levi.x * TILE + TILE / 2, TILE / 2, '#6bffd1', 16);
+      if (homesFilled.filter(Boolean).length >= LEVELS[levelIdx].homes) {
+        score += 500;
+        state = 'leveldone';
+        stateTimer = 0;
+      } else {
+        spawnLevi();
+      }
+      updateHud();
+      return;
+    }
+
+    // ice slip: skid one extra tile in the same direction, but only onto
+    // more ice — never into traffic or water the player can't react to
+    const landedRow = rows[levi.row];
+    if (landedRow.t === 'ice' && !levi.justSlid) {
+      const d = lastDirOf(levi);
+      const [dx, dy] = DIRS[d];
+      const tr = levi.row + dy;
+      const tx = Math.round(levi.x) + dx;
+      if (tr >= 1 && tr <= ROWS - 1 && tx >= 0 && tx <= COLS - 1 && rows[tr].t === 'ice') {
+        levi.slideDir = d;
+        levi.slideTimer = 0.07;
+      }
+    }
+
+    updateHud();
+  }
+
+  function lastDirOf(l) {
+    // direction of the hop that just landed (stored on facing)
+    if (l.facing === 0) return 'up';
+    if (l.facing === Math.PI) return 'down';
+    if (l.facing < 0) return 'left';
+    return 'right';
+  }
+
+  // ---- Death ----
+  function die(kind) {
+    if (state !== 'play') return;
+    if (levi.shield && kind !== 'eagle') {
+      levi.shield = false;
+      toastMsg = 'SHIELD SAVED YOU!';
+      toastTimer = 1.5;
+      burst(levi.x * TILE + TILE / 2, levi.row * TILE + TILE / 2, '#6bffd1', 14);
+      // bounce back down to the nearest safe row
+      levi.hop = null;
+      levi.slideDir = null;
+      let safe = ROWS - 1;
+      for (let r = levi.row + 1; r < ROWS; r++) {
+        const tt = rows[r].t;
+        if (tt === 'grass' || tt === 'ice' || tt === 'start') { safe = r; break; }
+      }
+      levi.row = safe;
+      levi.x = Math.max(0, Math.min(COLS - 1, Math.round(levi.x)));
+      return;
+    }
+    deathKind = kind;
+    state = 'dead';
+    stateTimer = 0;
+    const px = levi.x * TILE + TILE / 2, py = levi.row * TILE + TILE / 2;
+    if (kind === 'water') burst(px, py, '#6bd1ff', 16);
+    else if (kind === 'train') burst(px, py, '#ffe600', 20);
+    else burst(px, py, '#ff5b6b', 16);
+  }
+
+  function afterDeath() {
+    lives--;
+    updateHud();
+    if (lives <= 0) {
+      state = 'gameover';
+      stateTimer = 0;
+      if (score > best) {
+        best = score;
+        localStorage.setItem('leviCrossingBest', best);
+      }
+      updateHud();
+    } else {
+      spawnLevi();
+      state = 'play';
+    }
+  }
+
+  // ---- Particles ----
+  function burst(x, y, color, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 40 + Math.random() * 120;
+      particles.push({
+        x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
+        life: 0.5 + Math.random() * 0.4, color,
+        r: 2 + Math.random() * 3,
+      });
+    }
+  }
+
+  // ---- Update ----
+  function update(dt) {
+    t += dt;
+    if (toastTimer > 0) toastTimer -= dt;
+
+    // animate lanes & trains regardless of state (looks alive on overlays)
+    for (let ri = 0; ri < rows.length; ri++) {
+      const r = rows[ri];
+      if (r.items) {
+        for (const it of r.items) {
+          it.x += r.dir * r.speed * dt;
+          const buf = r.len + 4;
+          if (r.dir > 0 && it.x > COLS + buf) it.x -= r.cycle;
+          if (r.dir < 0 && it.x < -buf) it.x += r.cycle;
+          if (r.dive) it.divePhase = (it.divePhase + dt) % 8;
+        }
+      }
+      if (r.t === 'rail') {
+        r.timer -= dt;
+        if (r.phase === 'idle' && r.timer <= 0) { r.phase = 'warn'; r.timer = 1.1; }
+        else if (r.phase === 'warn' && r.timer <= 0) {
+          r.phase = 'train'; r.dir = Math.random() < 0.5 ? 1 : -1;
+          r.trainX = r.dir > 0 ? -17 : COLS + 17;
+        } else if (r.phase === 'train') {
+          r.trainX += r.dir * 20 * dt;
+          if ((r.dir > 0 && r.trainX > COLS + 18) || (r.dir < 0 && r.trainX < -18)) {
+            r.phase = 'idle';
+            r.timer = r.min + Math.random() * (r.max - r.min);
+          }
+        }
+      }
+      if (r.slotCrocs) {
+        for (const sc of r.slotCrocs) {
+          sc.timer -= dt;
+          if (sc.timer <= 0) {
+            sc.on = !sc.on;
+            sc.timer = sc.on ? 2.5 + Math.random() * 2 : 3 + Math.random() * 4;
+          }
+        }
+      }
+    }
+
+    // fog drift
+    for (const f of fogBlobs) {
+      f.x += f.v * dt;
+      if (f.x - f.rx > W) f.x = -f.rx;
+    }
+
+    // particles
+    for (const p of particles) {
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 220 * dt;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    if (state === 'dead') {
+      stateTimer += dt;
+      if (eagle) updateEagle(dt);
+      if (stateTimer > (deathKind === 'eagle' ? 1.6 : 0.9)) { eagle = null; afterDeath(); }
+      return;
+    }
+    if (state === 'leveldone') {
+      stateTimer += dt;
+      return;
+    }
+    if (state !== 'play') return;
+
+    // timer -> eagle!
+    timer -= dt;
+    if (timer <= 0) {
+      timer = 0;
+      eagle = { x: levi.x * TILE + TILE / 2, y: -60, ty: levi.row * TILE + TILE / 2, grab: false };
+      die('eagle');
+      return;
+    }
+
+    // hop animation
+    if (levi.hop) {
+      levi.hop.t += dt / 0.09;
+      if (levi.hop.t >= 1) {
+        landHop();
+        if (queuedMove && state === 'play' && !levi.hop) {
+          const m = queuedMove; queuedMove = null;
+          doMove(m);
+        }
+      }
+    } else if (levi.slideDir) {
+      // slipping on ice
+      levi.slideTimer -= dt;
+      if (levi.slideTimer <= 0) {
+        const d = levi.slideDir;
+        levi.slideDir = null;
+        doMove(d, true);
+        levi.justSlid = true;
+      }
+    }
+
+    // current logical position (interpolate during hop for fair collisions)
+    let lx = levi.x, lrow = levi.row;
+    if (levi.hop) {
+      const k = Math.min(1, levi.hop.t);
+      lx = levi.hop.fx + (levi.hop.tx - levi.hop.fx) * k;
+      lrow = k < 0.5 ? levi.hop.fy : levi.hop.ty;
+    }
+    const row = rows[lrow];
+    const center = lx + 0.5;
+
+    // vehicles
+    if (row && row.t === 'road') {
+      for (const it of row.items) {
+        if (center > it.x + 0.12 && center < it.x + row.len - 0.12) { die('squish'); return; }
+      }
+    }
+
+    // trains
+    if (row && row.t === 'rail' && row.phase === 'train') {
+      const head = row.trainX;
+      const lo = row.dir > 0 ? head - 16 : head;
+      const hi = row.dir > 0 ? head : head + 16;
+      if (center > lo && center < hi) { die('train'); return; }
+    }
+
+    // river riding (only when landed)
+    if (!levi.hop && row && row.t === 'river') {
+      let platform = null;
+      for (const it of row.items) {
+        const submerged = row.dive && (it.divePhase % 8) > 6.2;
+        if (submerged) continue;
+        if (center > it.x + 0.15 && center < it.x + row.len - 0.15) { platform = it; break; }
+      }
+      if (!platform) { die('water'); return; }
+      // croc head (front tile in travel direction) is deadly
+      if (row.kind === 'croc') {
+        const headLo = row.dir > 0 ? platform.x + row.len - 1 : platform.x;
+        if (center > headLo + 0.25 && center < headLo + 0.75 && Math.sin(t * 3 + platform.x) > 0.3) {
+          die('croc'); return;
+        }
+      }
+      levi.x += row.dir * row.speed * dt;
+      if (levi.x < -0.6 || levi.x > COLS - 0.4) { die('water'); return; }
+    }
+  }
+
+  function updateEagle(dt) {
+    if (!eagle) return;
+    if (!eagle.grab) {
+      eagle.y += 520 * dt;
+      if (eagle.y >= eagle.ty) { eagle.y = eagle.ty; eagle.grab = true; }
+    } else {
+      eagle.y -= 420 * dt;
+      eagle.x += 60 * dt;
+    }
+  }
+
+  // ---- Drawing ----
+  function draw() {
+    const def = LEVELS[levelIdx] || LEVELS[0];
+
+    // rows
+    for (let ri = 0; ri < ROWS; ri++) {
+      drawRow(rows[ri] || { t: 'grass' }, ri);
+    }
+
+    // pickups
+    for (const p of pickups) {
+      if (p.taken) continue;
+      const px = p.x * TILE + TILE / 2, py = p.row * TILE + TILE / 2;
+      if (p.kind === 'coin') {
+        const bob = Math.sin(t * 4 + p.x) * 3;
+        ctx.fillStyle = '#b8860b';
+        ctx.beginPath(); ctx.arc(px, py + bob + 2, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffe600';
+        ctx.beginPath(); ctx.arc(px, py + bob, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#b8860b';
+        ctx.font = 'bold 11px Courier New';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('$', px, py + bob + 1);
+      } else {
+        drawStar(px, py + Math.sin(t * 4) * 3, 10, '#6bffd1');
+      }
+    }
+
+    // Levi (unless eagle carried him away)
+    if (levi && !(state === 'dead' && deathKind === 'eagle' && eagle && eagle.grab)) {
+      drawLevi();
+    }
+
+    // eagle
+    if (eagle) drawEagle();
+
+    // particles
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life * 2);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // night spotlight
+    if (def.night && state !== 'title') {
+      const lx = levi ? (levi.hop
+        ? (levi.hop.fx + (levi.hop.tx - levi.hop.fx) * Math.min(1, levi.hop.t)) * TILE + TILE / 2
+        : levi.x * TILE + TILE / 2) : W / 2;
+      const ly = levi ? (levi.hop
+        ? (levi.hop.fy + (levi.hop.ty - levi.hop.fy) * Math.min(1, levi.hop.t)) * TILE + TILE / 2
+        : levi.row * TILE + TILE / 2) : H / 2;
+      const g = ctx.createRadialGradient(lx, ly, 60, lx, ly, 220);
+      g.addColorStop(0, 'rgba(4,4,12,0)');
+      g.addColorStop(0.55, 'rgba(4,4,12,0.55)');
+      g.addColorStop(1, 'rgba(4,4,12,0.86)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // fog
+    for (const f of fogBlobs) {
+      const g = ctx.createRadialGradient(f.x, f.y, 10, f.x, f.y, f.rx);
+      g.addColorStop(0, 'rgba(200,210,230,0.16)');
+      g.addColorStop(1, 'rgba(200,210,230,0)');
+      ctx.fillStyle = g;
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.scale(1, f.ry / f.rx);
+      ctx.beginPath(); ctx.arc(0, 0, f.rx, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // timer bar
+    if (state === 'play' || state === 'dead') {
+      const frac = timer / timerMax;
+      ctx.fillStyle = '#000a';
+      ctx.fillRect(0, H - 8, W, 8);
+      ctx.fillStyle = frac < 0.25 ? '#ff5b6b' : frac < 0.5 ? '#ffe600' : '#6bffd1';
+      ctx.fillRect(0, H - 8, W * Math.max(0, frac), 8);
+      if (frac < 0.25 && Math.sin(t * 10) > 0) {
+        ctx.fillStyle = '#ff5b6b';
+        ctx.font = 'bold 12px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('HURRY! THE EAGLE IS WATCHING', W / 2, H - 14);
+      }
+    }
+
+    // toast
+    if (toastTimer > 0) {
+      ctx.globalAlpha = Math.min(1, toastTimer * 2);
+      ctx.fillStyle = '#6bffd1';
+      ctx.font = 'bold 18px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(toastMsg, W / 2, H / 2 - 80);
+      ctx.globalAlpha = 1;
+    }
+
+    // overlays
+    if (state === 'title') drawTitle();
+    if (state === 'leveldone') drawLevelDone();
+    if (state === 'gameover') drawCenterCard('GAME OVER', `score ${score}` + (score >= best ? ' — NEW BEST!' : ` · best ${best}`), 'press any key to try again');
+    if (state === 'win') drawWin();
+  }
+
+  function drawRow(r, ri) {
+    const y = ri * TILE;
+    if (r.t === 'grass' || r.t === 'start') {
+      ctx.fillStyle = ri % 2 ? '#1e4a23' : '#235427';
+      ctx.fillRect(0, y, W, TILE);
+      // speckles
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      for (let c = 0; c < COLS; c++) {
+        if ((c * 7 + ri * 13) % 3 === 0) ctx.fillRect(c * TILE + 8, y + 12, 3, 3);
+        if ((c * 5 + ri * 11) % 4 === 0) ctx.fillRect(c * TILE + 30, y + 32, 3, 3);
+      }
+    } else if (r.t === 'ice') {
+      ctx.fillStyle = '#9fd4e8';
+      ctx.fillRect(0, y, W, TILE);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      for (let c = 0; c < COLS; c++) {
+        if ((c + ri) % 2 === 0) {
+          ctx.fillRect(c * TILE + 6, y + 10 + (c % 3) * 8, 18, 2);
+        }
+      }
+      ctx.fillStyle = 'rgba(60,120,160,0.35)';
+      ctx.fillRect(0, y + TILE - 3, W, 3);
+    } else if (r.t === 'road') {
+      ctx.fillStyle = '#23232e';
+      ctx.fillRect(0, y, W, TILE);
+      // lane dashes
+      ctx.fillStyle = '#3c3c4a';
+      for (let c = 0; c < COLS; c++) ctx.fillRect(c * TILE + 6, y + TILE / 2 - 1.5, 22, 3);
+      for (const it of r.items) drawVehicle(r, it, y);
+    } else if (r.t === 'river') {
+      ctx.fillStyle = '#10355e';
+      ctx.fillRect(0, y, W, TILE);
+      // ripples
+      ctx.strokeStyle = 'rgba(120,180,255,0.18)';
+      ctx.lineWidth = 1.5;
+      for (let c = 0; c < 5; c++) {
+        const rx = ((c * 140 + t * 24 * (r.dir || 1)) % (W + 80)) - 40;
+        ctx.beginPath();
+        ctx.arc(rx, y + 14 + (c % 3) * 10, 9, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+      }
+      for (const it of r.items) drawPlatform(r, it, y);
+    } else if (r.t === 'rail') {
+      ctx.fillStyle = '#2e2a26';
+      ctx.fillRect(0, y, W, TILE);
+      // sleepers + rails
+      ctx.fillStyle = '#4a4038';
+      for (let c = 0; c < COLS * 2; c++) ctx.fillRect(c * 24 + 6, y + 8, 10, TILE - 16);
+      ctx.fillStyle = '#7a7066';
+      ctx.fillRect(0, y + 12, W, 4);
+      ctx.fillRect(0, y + TILE - 16, W, 4);
+      // warning light
+      if (r.phase === 'warn' && Math.sin(t * 16) > 0) {
+        ctx.fillStyle = '#ff2222';
+        ctx.beginPath(); ctx.arc(14, y + TILE / 2, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(W - 14, y + TILE / 2, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,40,40,0.12)';
+        ctx.fillRect(0, y, W, TILE);
+      }
+      if (r.phase === 'train') drawTrain(r, y);
+    } else if (r.t === 'goal') {
+      // bushes with home slots
+      ctx.fillStyle = '#14381a';
+      ctx.fillRect(0, y, W, TILE);
+      for (let c = 0; c < COLS; c++) {
+        if (GOAL_COLS.indexOf(c) === -1) {
+          ctx.fillStyle = '#2a6b33';
+          ctx.beginPath();
+          ctx.arc(c * TILE + 14, y + 20, 12, 0, Math.PI * 2);
+          ctx.arc(c * TILE + 32, y + 26, 13, 0, Math.PI * 2);
+          ctx.arc(c * TILE + 22, y + 34, 11, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      // slots
+      GOAL_COLS.forEach((c, si) => {
+        const sx = c * TILE;
+        ctx.fillStyle = '#0c2a40';
+        ctx.fillRect(sx + 3, y + 3, TILE - 6, TILE - 6);
+        ctx.strokeStyle = homesFilled[si] ? '#6bffd1' : '#ffe60066';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sx + 3, y + 3, TILE - 6, TILE - 6);
+        if (homesFilled[si]) {
+          drawLeviSprite(sx + TILE / 2, y + TILE - 4, TILE * 0.8, 0);
+        } else if (rows[0].slotCrocs && rows[0].slotCrocs[si].on) {
+          // croc lurking in the home!
+          ctx.fillStyle = '#1d5c2a';
+          ctx.fillRect(sx + 8, y + 16, TILE - 16, 18);
+          ctx.fillStyle = '#ffe600';
+          ctx.beginPath();
+          ctx.arc(sx + 16, y + 18, 3.5, 0, Math.PI * 2);
+          ctx.arc(sx + TILE - 16, y + 18, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          for (let k = 0; k < 4; k++) ctx.fillRect(sx + 12 + k * 7, y + 30, 4, 5);
+        } else {
+          ctx.fillStyle = '#ffe60044';
+          ctx.font = 'bold 18px Courier New';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('?', sx + TILE / 2, y + TILE / 2);
+        }
+      });
+    }
+    if (r.t === 'start') {
+      ctx.fillStyle = 'rgba(255,230,0,0.25)';
+      ctx.font = 'bold 11px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('— START —', W / 2, y + TILE - 8);
+    }
+  }
+
+  function drawVehicle(r, it, y) {
+    const x = it.x * TILE;
+    const w = r.len * TILE;
+    const night = LEVELS[levelIdx].night;
+    if (x + w < -TILE || x > W + TILE) return;
+    ctx.save();
+    // headlight cones at night
+    if (night) {
+      const hx = r.dir > 0 ? x + w : x;
+      const g = ctx.createLinearGradient(hx, 0, hx + r.dir * 90, 0);
+      g.addColorStop(0, 'rgba(255,250,200,0.30)');
+      g.addColorStop(1, 'rgba(255,250,200,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(hx, y + 12);
+      ctx.lineTo(hx + r.dir * 90, y + 2);
+      ctx.lineTo(hx + r.dir * 90, y + TILE - 2);
+      ctx.lineTo(hx, y + TILE - 12);
+      ctx.fill();
+    }
+    const body = it.color;
+    if (r.kind === 'truck') {
+      const cabX = r.dir > 0 ? x + w - 24 : x + 2;
+      const trailX = r.dir > 0 ? x + 2 : x + 24;
+      ctx.fillStyle = '#ccc';
+      ctx.fillRect(trailX, y + 8, w - 26, TILE - 16);
+      ctx.fillStyle = body;
+      ctx.fillRect(cabX, y + 10, 22, TILE - 20);
+      ctx.fillStyle = '#16213a';
+      ctx.fillRect(cabX + (r.dir > 0 ? 12 : 2), y + 13, 8, 10);
+    } else {
+      // car / sport
+      ctx.fillStyle = body;
+      const m = r.kind === 'sport' ? 4 : 6;
+      ctx.fillRect(x + m, y + 10, w - m * 2, TILE - 20);
+      ctx.fillStyle = '#16213a';
+      const winW = (w - m * 2) * 0.32;
+      ctx.fillRect(x + w / 2 - winW + (r.dir > 0 ? 4 : -4), y + 13, winW * 1.6, 9);
+      if (r.kind === 'sport') {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(x + m + 3, y + TILE / 2 - 1, w - m * 2 - 6, 2);
+      }
+    }
+    // wheels
+    ctx.fillStyle = '#0a0a14';
+    ctx.fillRect(x + 6, y + 6, 9, 5);
+    ctx.fillRect(x + w - 15, y + 6, 9, 5);
+    ctx.fillRect(x + 6, y + TILE - 11, 9, 5);
+    ctx.fillRect(x + w - 15, y + TILE - 11, 9, 5);
+    // lights
+    ctx.fillStyle = '#fffbcc';
+    const lx = r.dir > 0 ? x + w - 4 : x + 1;
+    ctx.fillRect(lx, y + 12, 3, 5);
+    ctx.fillRect(lx, y + TILE - 17, 3, 5);
+    ctx.restore();
+  }
+
+  function drawPlatform(r, it, y) {
+    const x = it.x * TILE;
+    const w = r.len * TILE;
+    if (x + w < -TILE || x > W + TILE) return;
+    if (r.kind.startsWith('log')) {
+      ctx.fillStyle = '#6b4423';
+      ctx.fillRect(x + 2, y + 10, w - 4, TILE - 20);
+      ctx.fillStyle = '#8a5a2e';
+      ctx.fillRect(x + 2, y + 12, w - 4, 8);
+      ctx.fillStyle = '#4a2f17';
+      for (let k = 1; k < r.len; k++) ctx.fillRect(x + k * TILE - 1, y + 12, 2, TILE - 24);
+      // end rings
+      ctx.fillStyle = '#d2a878';
+      ctx.beginPath(); ctx.arc(x + 8, y + TILE / 2, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8a5a2e';
+      ctx.beginPath(); ctx.arc(x + 8, y + TILE / 2, 5, 0, Math.PI * 2); ctx.fill();
+    } else if (r.kind.startsWith('turtle')) {
+      const submerged = r.dive && (it.divePhase % 8) > 6.2;
+      const warning = r.dive && (it.divePhase % 8) > 5.2 && !submerged;
+      for (let k = 0; k < r.len; k++) {
+        const cx = x + k * TILE + TILE / 2;
+        const cy = y + TILE / 2;
+        let alpha = 1;
+        if (submerged) alpha = 0.18;
+        else if (warning) alpha = Math.sin(t * 14) > 0 ? 1 : 0.4;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#1d6e3a';
+        ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#2f9c54';
+        ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#1d6e3a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, cy); ctx.lineTo(cx + 10, cy);
+        ctx.moveTo(cx - 5, cy - 9); ctx.lineTo(cx - 5, cy + 9);
+        ctx.moveTo(cx + 5, cy - 9); ctx.lineTo(cx + 5, cy + 9);
+        ctx.stroke();
+        // little head
+        const hd = r.dir > 0 ? 1 : -1;
+        ctx.fillStyle = '#2f9c54';
+        if (k === (r.dir > 0 ? r.len - 1 : 0)) {
+          ctx.beginPath(); ctx.arc(cx + hd * 18, cy, 5, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (submerged) {
+        ctx.strokeStyle = 'rgba(150,200,255,0.4)';
+        ctx.beginPath(); ctx.arc(x + w / 2, y + TILE / 2, 14 + Math.sin(t * 5) * 3, 0, Math.PI * 2); ctx.stroke();
+      }
+    } else if (r.kind === 'croc') {
+      const headX = r.dir > 0 ? x + w - TILE : x;
+      const bodyX = r.dir > 0 ? x : x + TILE;
+      const snap = Math.sin(t * 3 + it.x) > 0.3;
+      // body (safe to stand on)
+      ctx.fillStyle = '#1d5c2a';
+      ctx.fillRect(bodyX + 2, y + 12, w - TILE - 4, TILE - 24);
+      ctx.fillStyle = '#2a7a3a';
+      ctx.fillRect(bodyX + 2, y + 14, w - TILE - 4, 7);
+      // ridges
+      ctx.fillStyle = '#164a20';
+      for (let k = 0; k < r.len - 1; k++) {
+        ctx.fillRect(bodyX + 10 + k * 26, y + 10, 6, 4);
+      }
+      // head
+      ctx.fillStyle = snap ? '#3a8a4a' : '#1d5c2a';
+      ctx.fillRect(headX + 2, y + 14, TILE - 4, TILE - 28);
+      // jaw
+      if (snap) {
+        ctx.fillStyle = '#7a1622';
+        const jx = r.dir > 0 ? headX + TILE / 2 : headX + 2;
+        ctx.fillRect(jx, y + 18, TILE / 2 - 4, 12);
+        ctx.fillStyle = '#fff';
+        for (let k = 0; k < 3; k++) {
+          ctx.fillRect(jx + 3 + k * 7, y + 18, 3, 4);
+          ctx.fillRect(jx + 5 + k * 7, y + 26, 3, 4);
+        }
+      }
+      // eyes
+      ctx.fillStyle = '#ffe600';
+      const ex = r.dir > 0 ? headX + 6 : headX + TILE - 10;
+      ctx.beginPath();
+      ctx.arc(ex, y + 13, 3.5, 0, Math.PI * 2);
+      ctx.arc(ex, y + TILE - 13, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTrain(r, y) {
+    const headPx = r.trainX * TILE;
+    const lenPx = 16 * TILE;
+    const x0 = r.dir > 0 ? headPx - lenPx : headPx;
+    // speed blur
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(x0 - r.dir * 30, y + 8, lenPx + 60, TILE - 16);
+    for (let k = 0; k < 8; k++) {
+      const cx = x0 + k * (lenPx / 8);
+      ctx.fillStyle = k === (r.dir > 0 ? 7 : 0) ? '#ffe600' : (k % 2 ? '#7a2a35' : '#5a2a4a');
+      ctx.fillRect(cx + 2, y + 6, lenPx / 8 - 4, TILE - 12);
+      ctx.fillStyle = '#fffbcc';
+      ctx.fillRect(cx + 8, y + 12, 10, 8);
+      ctx.fillRect(cx + lenPx / 8 - 18, y + 12, 10, 8);
+    }
+  }
+
+  function drawStar(x, y, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      const rr = i % 2 === 0 ? r : r * 0.45;
+      const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Draws the Levi photo sprite with feet at (cx, footY), given height.
+  function drawLeviSprite(cx, footY, h, angle) {
+    const aspect = imgLoaded ? leviImg.width / leviImg.height : 0.33;
+    const w = h * aspect;
+    ctx.save();
+    ctx.translate(cx, footY);
+    if (angle) ctx.rotate(angle * 0.12); // subtle lean only
+    if (imgLoaded) {
+      ctx.drawImage(leviImg, -w / 2, -h, w, h);
+    } else {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-w / 2, -h, w, h);
+    }
+    ctx.restore();
+  }
+
+  function drawLevi() {
+    let lx = levi.x, lrow = levi.row, hopK = 0;
+    if (levi.hop) {
+      const k = Math.min(1, levi.hop.t);
+      lx = levi.hop.fx + (levi.hop.tx - levi.hop.fx) * k;
+      lrow = levi.hop.fy + (levi.hop.ty - levi.hop.fy) * k;
+      hopK = Math.sin(k * Math.PI);
+    }
+    const px = lx * TILE + TILE / 2;
+    const py = (lrow + 1) * TILE - 4 - hopK * 14;
+    const h = TILE * 1.1 * (1 + hopK * 0.12);
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(px, (lrow + 1) * TILE - 5, 13 * (1 - hopK * 0.3), 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // shield ring
+    if (levi.shield) {
+      ctx.strokeStyle = `rgba(107,255,209,${0.5 + Math.sin(t * 6) * 0.3})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(px, py - h / 2, h * 0.55, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    if (state === 'dead' && deathKind !== 'eagle') {
+      ctx.globalAlpha = Math.max(0, 1 - stateTimer * 1.6);
+      drawLeviSprite(px, py, h, 0);
+      ctx.globalAlpha = 1;
+      return;
+    }
+    drawLeviSprite(px, py, h, levi.facing === 0 || levi.facing === Math.PI ? 0 : levi.facing > 0 ? 1 : -1);
+  }
+
+  function drawEagle() {
+    const flap = Math.sin(t * 18) * 14;
+    ctx.save();
+    ctx.translate(eagle.x, eagle.y);
+    // body
+    ctx.fillStyle = '#5a3a22';
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 18, 0, 0, Math.PI * 2); ctx.fill();
+    // head
+    ctx.fillStyle = '#f0ead8';
+    ctx.beginPath(); ctx.arc(0, -18, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffb000';
+    ctx.beginPath();
+    ctx.moveTo(-2, -16); ctx.lineTo(2, -16); ctx.lineTo(0, -10);
+    ctx.fill();
+    // wings
+    ctx.fillStyle = '#6b4628';
+    ctx.beginPath();
+    ctx.moveTo(-8, -4); ctx.quadraticCurveTo(-46, -18 + flap, -54, 4 + flap);
+    ctx.quadraticCurveTo(-34, 6, -8, 8);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(8, -4); ctx.quadraticCurveTo(46, -18 - flap, 54, 4 - flap);
+    ctx.quadraticCurveTo(34, 6, 8, 8);
+    ctx.fill();
+    // carrying Levi
+    if (eagle.grab && imgLoaded) {
+      const h = TILE;
+      const w = h * (leviImg.width / leviImg.height);
+      ctx.drawImage(leviImg, -w / 2, 14, w, h);
+    }
+    ctx.restore();
+  }
+
+  function drawCenterCard(title, line2, line3) {
+    ctx.fillStyle = 'rgba(10,10,20,0.82)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 34px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, W / 2, H / 2 - 40);
+    ctx.fillStyle = '#ccc';
+    ctx.font = '16px Courier New';
+    ctx.fillText(line2, W / 2, H / 2);
+    ctx.fillStyle = '#888';
+    ctx.font = '13px Courier New';
+    if (Math.sin(t * 4) > -0.2) ctx.fillText(line3, W / 2, H / 2 + 40);
+  }
+
+  function drawTitle() {
+    ctx.fillStyle = 'rgba(10,10,20,0.75)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 40px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('LEVI CROSSING', W / 2, H / 2 - 110);
+    if (imgLoaded) {
+      const h = 120;
+      const w = h * (leviImg.width / leviImg.height);
+      ctx.drawImage(leviImg, W / 2 - w / 2, H / 2 - 90, w, h);
+    }
+    ctx.fillStyle = '#ccc';
+    ctx.font = '15px Courier New';
+    ctx.fillText('hop across roads, rivers and railways', W / 2, H / 2 + 60);
+    ctx.fillText('10 levels — the last two are LEGENDARY hard', W / 2, H / 2 + 84);
+    ctx.fillStyle = '#888';
+    ctx.font = '13px Courier New';
+    ctx.fillText('arrows / WASD / swipe to hop', W / 2, H / 2 + 116);
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 16px Courier New';
+    if (Math.sin(t * 4) > -0.2) ctx.fillText('PRESS ANY KEY OR TAP TO START', W / 2, H / 2 + 156);
+  }
+
+  function drawLevelDone() {
+    const def = LEVELS[levelIdx];
+    const last = levelIdx === LEVELS.length - 1;
+    drawCenterCard(
+      last ? 'YOU BEAT THE GAME!' : `LEVEL ${levelIdx + 1} CLEAR!`,
+      `${def.name} — +500 pts`,
+      last ? 'press any key for the victory lap' : 'press any key for the next level'
+    );
+  }
+
+  function drawWin() {
+    ctx.fillStyle = 'rgba(10,10,20,0.85)';
+    ctx.fillRect(0, 0, W, H);
+    // confetti
+    for (let i = 0; i < 60; i++) {
+      const cx = (i * 97 + t * 40 * ((i % 3) + 1)) % W;
+      const cy = (i * 53 + t * (60 + (i % 5) * 20)) % H;
+      ctx.fillStyle = CAR_COLORS[i % CAR_COLORS.length];
+      ctx.fillRect(cx, cy, 6, 6);
+    }
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 36px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('CHAMPION CROSSER!', W / 2, H / 2 - 80);
+    if (imgLoaded) {
+      const h = 140;
+      const w = h * (leviImg.width / leviImg.height);
+      ctx.drawImage(leviImg, W / 2 - w / 2, H / 2 - 60, w, h);
+    }
+    ctx.fillStyle = '#6bffd1';
+    ctx.font = 'bold 20px Courier New';
+    ctx.fillText(`FINAL SCORE: ${score}`, W / 2, H / 2 + 110);
+    ctx.fillStyle = '#888';
+    ctx.font = '13px Courier New';
+    if (Math.sin(t * 4) > -0.2) ctx.fillText('press any key to play again', W / 2, H / 2 + 145);
+  }
+
+  // ---- State transitions on "any key" ----
+  function anyKey() {
+    if (state === 'title') {
+      score = 0; lives = 3;
+      startLevel(0);
+    } else if (state === 'leveldone') {
+      if (levelIdx === LEVELS.length - 1) {
+        state = 'win';
+        if (score > best) { best = score; localStorage.setItem('leviCrossingBest', best); }
+        unlocked = 10;
+        localStorage.setItem('leviCrossingUnlocked', unlocked);
+        updateHud();
+      } else {
+        if (levelIdx + 2 > unlocked) {
+          unlocked = levelIdx + 2;
+          localStorage.setItem('leviCrossingUnlocked', unlocked);
+        }
+        startLevel(levelIdx + 1);
+      }
+      refreshLvlBtns();
+    } else if (state === 'gameover') {
+      state = 'title';
+      refreshLvlBtns();
+    } else if (state === 'win') {
+      state = 'title';
+    }
+  }
+
+  // ---- Input ----
+  document.addEventListener('keydown', e => {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+    if (state !== 'play') {
+      if (state !== 'dead') anyKey();
+      return;
+    }
+    switch (e.code) {
+      case 'ArrowUp': case 'KeyW': tryMove('up'); break;
+      case 'ArrowDown': case 'KeyS': tryMove('down'); break;
+      case 'ArrowLeft': case 'KeyA': tryMove('left'); break;
+      case 'ArrowRight': case 'KeyD': tryMove('right'); break;
+    }
+  });
+
+  // touch: swipe to hop, tap = forward
+  let touchStart = null;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    if (state !== 'play') { if (state !== 'dead') anyKey(); touchStart = null; return; }
+    if (!touchStart) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x;
+    const dy = e.changedTouches[0].clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) < 24 && Math.abs(dy) < 24) { tryMove('up'); return; }
+    if (Math.abs(dx) > Math.abs(dy)) tryMove(dx > 0 ? 'right' : 'left');
+    else tryMove(dy > 0 ? 'down' : 'up');
+  }, { passive: false });
+
+  canvas.addEventListener('mousedown', () => {
+    if (state !== 'play' && state !== 'dead') anyKey();
+  });
+
+  // ---- Main loop ----
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (now - lastTime) / 1000 || 0.016);
+    lastTime = now;
+    update(dt);
+    draw();
+  }
+
+  // boot: build level 1 rows so the title screen has a living background
+  rows = buildRows(LEVELS[0]);
+  homesFilled = GOAL_COLS.map(() => false);
+  spawnLevi();
+  state = 'title';
+  hud.best.textContent = best;
+  refreshLvlBtns();
+  updateHud();
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>
