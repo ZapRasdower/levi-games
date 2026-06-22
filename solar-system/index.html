@@ -387,6 +387,17 @@
   let aiming = null;      // { x0, z0, x1, z1 } on the ecliptic plane
   const GM = 950;         // Sun's gravitational parameter, tuned for the scene
   let sunFlash = 0;       // brief flash when a comet falls into the Sun
+
+  // Calibration: with GM=950 and Earth's orbit radius (125 world units), a
+  // circular orbit velocity is sqrt(950/125) ≈ 2.76 units/frame. At 60fps
+  // that's ~166 units/sec, and Earth's real orbital speed is 29.8 km/s, so
+  // each unit-per-second is about 0.18 km/s. This calibration also gives
+  // realistic readouts at other radii (Mercury ~47, asteroid belt ~20).
+  const KM_PER_UNIT_PER_SEC = 0.18;
+  const COMET_FPS = 60;
+  function speedKmS(vx, vz) {
+    return Math.hypot(vx, vz) * COMET_FPS * KM_PER_UNIT_PER_SEC;
+  }
   let impacts = [];       // expanding rings where a comet hit a planet
 
   // Per-frame screen positions for hit-testing, populated by the renderer.
@@ -1032,6 +1043,13 @@
       ctx.beginPath();
       ctx.arc(head.x, head.y, Math.max(1.5, 3 * head.s), 0, Math.PI * 2);
       ctx.fill();
+      // Live speed readout (notice how it climbs as the comet falls toward
+      // the Sun and drops as it swings back out — that's Kepler's 2nd law)
+      ctx.fillStyle = 'rgba(220,240,255,0.9)';
+      ctx.font = '10px Courier New';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(speedKmS(c.vx, c.vz).toFixed(1) + ' km/s', head.x + 6, head.y - 6);
     }
     // Aiming arrow while dragging (lives on the ecliptic plane)
     if (aiming) {
@@ -1059,6 +1077,14 @@
       ctx.lineTo(a1.x - 8 * Math.cos(ang + 0.4), a1.y - 8 * Math.sin(ang + 0.4));
       ctx.closePath();
       ctx.fill();
+      // Launch-speed preview at the arrowhead, using the same VEL_SCALE
+      // as launchComet so the number matches what the comet starts with.
+      const previewVx = (aiming.x1 - aiming.x0) * 0.05;
+      const previewVz = (aiming.z1 - aiming.z0) * 0.05;
+      ctx.fillStyle = '#6bd1ff';
+      ctx.font = 'bold 11px Courier New';
+      ctx.textAlign = 'left';
+      ctx.fillText(speedKmS(previewVx, previewVz).toFixed(1) + ' km/s', a1.x + 8, a1.y + 4);
     }
   }
 
@@ -1219,10 +1245,12 @@
     if (hit) {
       if (hit.type === 'sun') {
         hoverSun = true;
-        showTip('Sun', e.clientX, e.clientY);
+        showTip('Sun — surface rotates at ~2 km/s', e.clientX, e.clientY);
       } else {
         hoverIndex = hit.index;
-        showTip(hit.planet.name, e.clientX, e.clientY);
+        const ex = EXTRA[hit.planet.name];
+        const label = ex ? `${hit.planet.name} — ${ex.orbitKmS} km/s` : hit.planet.name;
+        showTip(label, e.clientX, e.clientY);
       }
       canvas.style.cursor = 'pointer';
     } else {
