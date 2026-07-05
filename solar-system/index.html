@@ -7,152 +7,219 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html, body { height: 100%; }
+
     body {
       background: #04040c;
       color: #fff;
       font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    /* The sim fills the whole screen; all chrome floats above it. */
+    #gameCanvas {
+      position: fixed;
+      inset: 0;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 5;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
+      align-items: baseline;
+      gap: 14px;
+      padding: 10px 16px 26px;
+      pointer-events: none;
+      background: linear-gradient(rgba(4,4,12,0.9), rgba(4,4,12,0));
     }
 
     h1 {
-      font-size: 1.8rem;
+      font-size: 1.15rem;
       color: #ffe600;
-      letter-spacing: 4px;
+      letter-spacing: 3px;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      text-shadow: 0 0 18px rgba(255,230,0,0.35);
     }
 
-    .subtitle {
-      color: #666;
-      font-size: 0.85rem;
+    .subtitle { color: #8a93b0; font-size: 0.72rem; letter-spacing: 1px; }
+    @media (max-width: 760px) { .subtitle { display: none; } }
+
+    .back-link {
+      position: fixed;
+      top: 12px; right: 14px;
+      z-index: 6;
+      color: #667;
+      text-decoration: none;
+      font-size: 0.75rem;
       letter-spacing: 2px;
-      margin-bottom: 20px;
-      text-align: center;
     }
+    .back-link:hover { color: #ffe600; }
 
     #questionBar {
-      width: 100%;
-      max-width: 720px;
-      min-height: 28px;
-      margin-bottom: 8px;
-      padding: 8px 12px;
-      background: #1a1a2e;
+      position: fixed;
+      top: 44px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      max-width: min(720px, 92vw);
+      padding: 8px 14px;
+      background: rgba(26,26,46,0.92);
       border: 2px solid #ffe60055;
+      border-radius: 8px;
       color: #ffe600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       letter-spacing: 1px;
       text-align: center;
       display: none;
+      backdrop-filter: blur(4px);
     }
 
     #questionBar.show { display: block; }
     #questionBar.right { border-color: #6bffd1; color: #6bffd1; }
     #questionBar.wrong { border-color: #ff6b6b; color: #ff6b6b; }
 
-    #gameCanvas {
-      border: 3px solid #1a1a2e;
-      background: #04040c;
-      display: block;
-      cursor: grab;
-      touch-action: none;
-      max-width: 100%;
+    /* Bottom toolbar: grouped controls over the sim */
+    #toolbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 9; /* above the info drawer so controls always stay clickable */
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      padding: 26px 10px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(rgba(4,4,12,0), rgba(4,4,12,0.92) 55%);
+      pointer-events: none;
     }
 
-    .controls {
-      width: 100%;
-      max-width: 720px;
-      margin-top: 12px;
+    .tgroup {
       display: flex;
-      gap: 8px;
       flex-wrap: wrap;
-      justify-content: center;
+      gap: 5px;
+      align-items: center;
+      background: rgba(14,14,28,0.78);
+      border: 1px solid #23233a;
+      border-radius: 10px;
+      padding: 5px 6px;
+      pointer-events: auto;
+      backdrop-filter: blur(5px);
     }
 
     button {
-      background: #1a1a2e;
+      background: #16162c;
       color: #ffe600;
-      border: 2px solid #333;
-      padding: 6px 12px;
+      border: 1px solid #33334d;
+      border-radius: 6px;
+      padding: 6px 10px;
       font-family: inherit;
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       cursor: pointer;
       letter-spacing: 1px;
+      transition: border-color 0.12s, box-shadow 0.12s;
     }
 
-    button:hover { border-color: #ffe600; }
-    button.active { background: #2a2a4a; border-color: #ffe600; }
+    button:hover { border-color: #ffe600; box-shadow: 0 0 10px rgba(255,230,0,0.25); }
+    button.active { background: #2a2a4a; border-color: #ffe600; box-shadow: 0 0 10px rgba(255,230,0,0.3); }
 
-    .panel {
-      width: 100%;
-      max-width: 720px;
-      margin-top: 14px;
-      background: #0e0e1c;
-      border: 2px solid #222;
-      padding: 16px;
-      min-height: 140px;
+    .sliderWrap {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      color: #8ac6ff;
+      font-size: 0.7rem;
+      letter-spacing: 1px;
+      padding: 0 4px;
+    }
+    .sliderWrap.show { display: flex; }
+    input[type=range] { width: 110px; accent-color: #ffe600; cursor: pointer; }
+
+    /* Info drawer: slides in from the right (bottom sheet on phones) */
+    #panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 350px;
+      max-width: 90vw;
+      z-index: 8;
+      background: rgba(10,10,24,0.95);
+      border-left: 2px solid #2a2a44;
+      padding: 20px 18px 26px;
+      overflow-y: auto;
+      transform: translateX(105%);
+      transition: transform 0.25s ease;
+      backdrop-filter: blur(8px);
+    }
+    #panel.open { transform: none; box-shadow: -12px 0 40px rgba(0,0,0,0.55); }
+
+    @media (max-width: 760px) {
+      #panel {
+        top: auto; left: 0; right: 0; bottom: 0;
+        width: auto; max-width: none;
+        max-height: 54vh;
+        border-left: none;
+        border-top: 2px solid #2a2a44;
+        border-radius: 14px 14px 0 0;
+        transform: translateY(108%);
+        z-index: 10; /* the bottom sheet covers the toolbar; close it to get controls back */
+      }
     }
 
-    .panel h2 {
+    #panelClose {
+      position: absolute;
+      top: 10px; right: 10px;
+      padding: 4px 9px;
+      color: #aaa;
+    }
+
+    #panel h2 {
       color: #ffe600;
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       letter-spacing: 2px;
       margin-bottom: 4px;
+      padding-right: 34px;
     }
 
-    .panel .ptype {
+    #panel .ptype {
       color: #888;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       letter-spacing: 2px;
       margin-bottom: 12px;
     }
 
-    .panel .stats {
+    #panel .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 8px 16px;
+      grid-template-columns: 1fr;
+      gap: 7px;
       margin-bottom: 10px;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
+    }
+    @media (max-width: 760px) {
+      #panel .stats { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
     }
 
-    .panel .stats .k { color: #888; letter-spacing: 1px; }
-    .panel .stats .v { color: #fff; }
+    #panel .stats .k { color: #888; letter-spacing: 1px; }
+    #panel .stats .v { color: #fff; }
 
-    .panel .fact {
+    #panel .fact {
       color: #ccc;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       line-height: 1.5;
       border-left: 3px solid #ffe600;
       padding-left: 10px;
       margin-top: 10px;
     }
 
-    .placeholder {
-      color: #666;
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .back-link {
-      margin-top: 28px;
-      color: #555;
-      text-decoration: none;
-      font-size: 0.8rem;
-      letter-spacing: 2px;
-    }
-
-    .back-link:hover { color: #ffe600; }
+    #panel .panelBtns { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
 
     #tooltip {
       position: fixed;
       pointer-events: none;
       background: #1a1a2e;
       border: 2px solid #ffe600;
+      border-radius: 6px;
       color: #ffe600;
       padding: 4px 8px;
       font-family: 'Courier New', monospace;
@@ -168,42 +235,64 @@
 </head>
 <body>
 
-  <h1>&#128640; Solar System</h1>
-  <p class="subtitle">Drag to spin the view in 3D &middot; scroll to zoom &middot; click a planet to learn about it &middot; launch comets &middot; quiz yourself!</p>
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="hud">
+    <h1>&#128640; Solar System</h1>
+    <span class="subtitle">drag to spin in 3D &middot; scroll to zoom &middot; click a planet to learn &middot; launch comets &middot; quiz yourself</span>
+  </div>
+  <a class="back-link" href="../index.html">&larr; all games</a>
 
   <div id="questionBar"></div>
 
-  <canvas id="gameCanvas" width="720" height="500"></canvas>
-
-  <div class="controls">
-    <button id="pauseBtn">PAUSE</button>
-    <button data-speed="0.5">0.5×</button>
-    <button data-speed="1" class="active">1×</button>
-    <button data-speed="5">5×</button>
-    <button data-speed="20">20×</button>
-    <button id="viewBtn">RESET VIEW</button>
-    <button id="scaleBtn">SHOW REAL DISTANCES</button>
-    <button id="labelBtn">SHOW NAMES</button>
-    <button id="compareBtn">SIZE COMPARE</button>
-    <button id="cometBtn">LAUNCH COMET</button>
-    <button id="quizBtn">QUIZ ME</button>
+  <div id="toolbar">
+    <div class="tgroup">
+      <button id="pauseBtn" title="pause / play">&#9208;</button>
+      <button data-speed="0.5">0.5&times;</button>
+      <button data-speed="1" class="active">1&times;</button>
+      <button data-speed="5">5&times;</button>
+      <button data-speed="20">20&times;</button>
+    </div>
+    <div class="tgroup orbitOnly">
+      <button id="viewBtn">RESET VIEW</button>
+      <button id="scaleBtn">REAL DISTANCES</button>
+      <button id="labelBtn">NAMES</button>
+      <button id="trailBtn">TRAILS</button>
+    </div>
+    <div class="tgroup orbitOnly">
+      <button id="cometBtn">&#9732; COMETS</button>
+      <span class="sliderWrap" id="gravWrap">SUN GRAVITY
+        <input type="range" id="gravSlider" min="25" max="400" value="100">
+        <span id="gravVal">1.0&times;</span>
+      </span>
+    </div>
+    <div class="tgroup">
+      <button id="compareBtn">SIZES</button>
+      <button id="gravityBtn">GRAVITY LAB</button>
+      <button id="graphBtn">SPEED GRAPH</button>
+      <button id="quizBtn">QUIZ ME</button>
+      <span class="sliderWrap" id="weightWrap">YOUR MASS
+        <input type="range" id="weightSlider" min="20" max="100" value="30">
+        <span id="weightVal">30 kg</span>
+      </span>
+    </div>
   </div>
 
-  <div class="panel" id="panel">
-    <div class="placeholder">Click a planet to see its info, or hit <strong style="color:#ffe600">QUIZ ME</strong> to test yourself.</div>
+  <div id="panel">
+    <button id="panelClose">&#10005;</button>
+    <div id="panelBody"></div>
   </div>
-
-  <a class="back-link" href="../index.html">&larr; back to all games</a>
 
   <div id="tooltip"></div>
 
 <script>
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const cx = W / 2, cy = H / 2;
+  let W = 720, H = 500, cx = 360, cy = 250; // updated by resizeCanvas()
   const tooltip = document.getElementById('tooltip');
   const panel = document.getElementById('panel');
+  const panelBody = document.getElementById('panelBody');
+  const panelClose = document.getElementById('panelClose');
   const questionBar = document.getElementById('questionBar');
   const pauseBtn = document.getElementById('pauseBtn');
   const viewBtn = document.getElementById('viewBtn');
@@ -211,6 +300,15 @@
   const compareBtn = document.getElementById('compareBtn');
   const cometBtn = document.getElementById('cometBtn');
   const quizBtn = document.getElementById('quizBtn');
+  const gravityBtn = document.getElementById('gravityBtn');
+  const graphBtn = document.getElementById('graphBtn');
+  const trailBtn = document.getElementById('trailBtn');
+  const gravWrap = document.getElementById('gravWrap');
+  const gravSlider = document.getElementById('gravSlider');
+  const gravVal = document.getElementById('gravVal');
+  const weightWrap = document.getElementById('weightWrap');
+  const weightSlider = document.getElementById('weightSlider');
+  const weightVal = document.getElementById('weightVal');
 
   const QUIZ_BEST_KEY = 'solarSystem.quizBest';
 
@@ -313,7 +411,16 @@
     Neptune: { tempC: '−200°C',                             madeOf: 'Icy water, methane, ammonia', orbitKmS: 5.4 },
     Pluto:   { tempC: '−230°C',                             madeOf: 'Nitrogen ice & rock',   orbitKmS: 4.7 },
   };
-  const KID_KG = 30; // a typical 10-year-old, for the "you'd weigh" stat
+  let userKg = 30; // adjustable with the YOUR MASS slider (Gravity Lab)
+
+  // Subtle atmosphere glows, keyed by planet name.
+  const ATMO = {
+    Venus:   'rgba(235,195,120,',
+    Earth:   'rgba(90,170,255,',
+    Mars:    'rgba(255,150,100,',
+    Uranus:  'rgba(150,225,235,',
+    Neptune: 'rgba(100,140,230,',
+  };
 
   // State
   let simDays = 0;
@@ -327,8 +434,12 @@
   let stars = [];
   let quiz = null;        // { target: planet, score, best }
   let quizFlash = 0;      // 0=none, +ve=correct, -ve=wrong (counts down)
-  let mode = 'orbit';     // 'orbit' or 'compare'
+  let mode = 'orbit';     // 'orbit' | 'compare' | 'gravity' | 'graph'
   let showLabels = false;
+  let showTrails = false;
+  let planetTrails = PLANETS.map(() => []);
+  let gravMult = 1;       // Sun gravity multiplier for the comet sandbox
+  let frameNo = 0;
 
   // ---- 3D camera ----
   // The solar system lives in 3D world space: the Sun at the origin, planets
@@ -337,16 +448,22 @@
   // between near-edge-on and top-down, dist zooms.
   const DEFAULT_CAM = { yaw: 0, pitch: 0.58, dist: 1150 };
   let cam = { ...DEFAULT_CAM };
-  const FOCAL = 900;
+  let FOCAL = 900; // scales with the window so the system fills the screen
   const MIN_PITCH = 0.12, MAX_PITCH = 1.5;
   const MIN_DIST = 400, MAX_DIST = 3000;
 
   function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
+  // Follow-cam: when following a planet, the whole world is shifted so the
+  // planet sits at the origin — the camera math never has to change.
+  let followIndex = -1;
+  let fo = { wx: 0, wy: 0, wz: 0 };
+
   // World point -> screen point with perspective. Returns the screen x/y,
   // the perspective scale s (1 = "actual size" at the Sun's distance when
   // fully zoomed to default), and depth from the camera (for sorting).
   function project(wx, wy, wz) {
+    wx -= fo.wx; wy -= fo.wy; wz -= fo.wz;
     const cyaw = Math.cos(cam.yaw), syaw = Math.sin(cam.yaw);
     const x1 = wx * cyaw - wz * syaw;
     const z1 = wx * syaw + wz * cyaw;
@@ -378,7 +495,8 @@
     const t = -camY / dy;
     const wx = camX + dx * t, wz = camZ + dz * t;
     if (Math.abs(wx) > 4000 || Math.abs(wz) > 4000) return null;
-    return { x: wx, z: wz };
+    // The camera math is follow-relative, so convert back to true world space.
+    return { x: wx + fo.wx, z: wz + fo.wz };
   }
 
   // ---- Comet physics sandbox ----
@@ -406,30 +524,57 @@
   let sunScreenPos = { x: cx, y: cy, r: SUN.r };
   let sunScr = { x: cx, y: cy, s: 1, depth: DEFAULT_CAM.dist };
 
+  // World-space scale is fixed (referenced to the original 720px layout) so
+  // physics and camera distances stay identical on every screen size — the
+  // projection's FOCAL length is what adapts to the window instead.
   const MAX_COMPRESSED = Math.max(...PLANETS.map(p => p.compressedR));
-  const ORBIT_SCALE = (W / 2 - 14) / MAX_COMPRESSED;
+  const WORLD_SCALE = (720 / 2 - 14) / MAX_COMPRESSED;
+  const REAL_MAX_R = 346; // world-units radius that Pluto's real-scale orbit maps to
   const MAX_AU = 40; // real-scale mode maps 0..40 AU (Pluto included)
 
   const STAR_TINTS = ['255,255,255', '255,255,255', '205,222,255', '255,232,205'];
-  for (let i = 0; i < 230; i++) {
-    stars.push({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      brightness: Math.random() * 0.6 + 0.2,
-      twinkle: Math.random() * Math.PI * 2,
-      size: Math.random() < 0.12 ? 2 : 1,
-      tint: STAR_TINTS[Math.floor(Math.random() * STAR_TINTS.length)],
-    });
+  function makeStars() {
+    stars = [];
+    const count = Math.min(700, Math.floor(W * H / 2400) + 140);
+    for (let i = 0; i < count; i++) {
+      // Two depth layers; the far layer drifts slower for parallax.
+      const layer = Math.random() < 0.55 ? 0.4 : 1;
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        brightness: (Math.random() * 0.6 + 0.2) * (layer === 1 ? 1 : 0.7),
+        twinkle: Math.random() * Math.PI * 2,
+        size: Math.random() < (layer === 1 ? 0.14 : 0.05) ? 2 : 1,
+        tint: STAR_TINTS[Math.floor(Math.random() * STAR_TINTS.length)],
+        layer,
+      });
+    }
   }
   let shootingStar = null;
+
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W / 2;
+    cy = H / 2;
+    FOCAL = 900 * clamp(Math.min(W, H) / 520, 0.85, 2.4);
+    makeStars();
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
 
   // ---- Coordinates ----
   function orbitRadius(p) {
     if (realScale) {
-      const maxR = W / 2 - 14;
-      return 30 + (p.orbitAU / MAX_AU) * (maxR - 30);
+      return 30 + (p.orbitAU / MAX_AU) * (REAL_MAX_R - 30);
     }
-    return p.compressedR * ORBIT_SCALE;
+    return p.compressedR * WORLD_SCALE;
   }
 
   // 3D world position of a planet on its (inclined) orbit.
@@ -449,10 +594,25 @@
 
   // ---- Drawing ----
   function drawStars(t) {
+    // Faint milky-way band across the sky
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.5);
+    const diag = Math.hypot(W, H);
+    const mg = ctx.createLinearGradient(0, -H * 0.20, 0, H * 0.20);
+    mg.addColorStop(0, 'rgba(170,180,255,0)');
+    mg.addColorStop(0.5, 'rgba(190,200,255,0.05)');
+    mg.addColorStop(1, 'rgba(170,180,255,0)');
+    ctx.fillStyle = mg;
+    ctx.fillRect(-diag, -H * 0.20, diag * 2, H * 0.40);
+    ctx.restore();
+    // Two star layers, drifting at different rates as the camera spins (parallax)
     for (const s of stars) {
       const b = s.brightness * (0.7 + 0.3 * Math.sin(t * 0.001 + s.twinkle));
+      const px = ((s.x - cam.yaw * 90 * s.layer) % W + W) % W;
+      const py = ((s.y + cam.pitch * 50 * s.layer) % H + H) % H;
       ctx.fillStyle = `rgba(${s.tint},${b})`;
-      ctx.fillRect(s.x, s.y, s.size, s.size);
+      ctx.fillRect(px, py, s.size, s.size);
     }
     drawShootingStar();
   }
@@ -547,8 +707,8 @@
 
   function drawAsteroidBelt() {
     // Between Mars and Jupiter
-    const r1 = realScale ? orbitRadius({ orbitAU: 2.2 }) : (PLANETS[3].compressedR + 18) * ORBIT_SCALE;
-    const r2 = realScale ? orbitRadius({ orbitAU: 3.2 }) : (PLANETS[3].compressedR + 30) * ORBIT_SCALE;
+    const r1 = realScale ? orbitRadius({ orbitAU: 2.2 }) : (PLANETS[3].compressedR + 18) * WORLD_SCALE;
+    const r2 = realScale ? orbitRadius({ orbitAU: 3.2 }) : (PLANETS[3].compressedR + 30) * WORLD_SCALE;
     ctx.fillStyle = 'rgba(170,170,170,0.45)';
     // Deterministic dots so they don't shimmer; small Y jitter gives the belt
     // a little real thickness in 3D.
@@ -559,6 +719,32 @@
       const pt = project(Math.cos(a) * r, yj, Math.sin(a) * r);
       const sz = Math.max(1, pt.s);
       ctx.fillRect(pt.x, pt.y, sz, sz);
+    }
+  }
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+  }
+
+  // Recent path of each planet, glowing in the planet's own color.
+  function drawTrails() {
+    for (let i = 0; i < PLANETS.length; i++) {
+      const tr = planetTrails[i];
+      if (tr.length < 2) continue;
+      const rgb = hexToRgb(PLANETS[i].color);
+      let prev = project(tr[0].wx, tr[0].wy, tr[0].wz);
+      for (let k = 1; k < tr.length; k++) {
+        const pt = project(tr[k].wx, tr[k].wy, tr[k].wz);
+        const a = k / tr.length;
+        ctx.strokeStyle = `rgba(${rgb},${a * 0.55})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(pt.x, pt.y);
+        ctx.stroke();
+        prev = pt;
+      }
     }
   }
 
@@ -617,6 +803,18 @@
 
     // Saturn rings, far half (drawn behind the body)
     if (p.rings) drawSaturnRings(scr.x, scr.y, pr, 'back', ringSquash());
+
+    // Soft atmosphere glow
+    const atmo = ATMO[p.name];
+    if (atmo) {
+      const ag = ctx.createRadialGradient(scr.x, scr.y, pr * 0.7, scr.x, scr.y, pr * 2.1);
+      ag.addColorStop(0, atmo + '0.28)');
+      ag.addColorStop(1, atmo + '0)');
+      ctx.fillStyle = ag;
+      ctx.beginPath();
+      ctx.arc(scr.x, scr.y, pr * 2.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Body
     ctx.fillStyle = p.color;
@@ -716,12 +914,21 @@
 
     if (mode === 'compare') {
       renderCompare(t);
+    } else if (mode === 'gravity') {
+      renderGravity(t);
+    } else if (mode === 'graph') {
+      renderGraph(t);
     } else {
+      // Follow-cam: keep the tracked planet centered
+      if (followIndex >= 0) fo = planetPos3D(PLANETS[followIndex], followIndex);
+      else fo = { wx: 0, wy: 0, wz: 0 };
+
       // Orbit paths
       for (let i = 0; i < PLANETS.length; i++) {
         drawOrbit(PLANETS[i], hoverIndex === i || selected === PLANETS[i]);
       }
       drawAsteroidBelt();
+      if (showTrails) drawTrails();
 
       sunScr = project(0, 0, 0);
 
@@ -746,11 +953,13 @@
       screenPos = [];
       for (const b of bodies) screenPos[b.i] = { x: b.scr.x, y: b.scr.y, r: b.p.r * b.scr.s };
 
-      // Control hint
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '10px Courier New';
-      ctx.textAlign = 'left';
-      ctx.fillText('DRAG: SPIN VIEW · SCROLL/PINCH: ZOOM', 10, H - 10);
+      // Follow banner
+      if (followIndex >= 0) {
+        ctx.fillStyle = 'rgba(255,230,0,0.75)';
+        ctx.font = 'bold 11px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('FOLLOWING ' + PLANETS[followIndex].name.toUpperCase() + ' — RESET VIEW to stop', cx, 96);
+      }
     }
 
     if (quizFlash > 0) quizFlash--;
@@ -769,10 +978,9 @@
     const totalPlanetsWidth = radii.reduce((a, b) => a + b * 2, 0) + gap * (PLANETS.length - 1);
     const sunSliceWidth = 110; // visible portion of the Sun's curve on the left
     const startX = sunSliceWidth + 30;
-    const planetsTotalEnd = startX + totalPlanetsWidth;
-    // If overflowing, scale everything down
-    const overflow = Math.max(0, planetsTotalEnd - (W - 16));
-    const scale = overflow > 0 ? (W - 16 - sunSliceWidth - 30) / totalPlanetsWidth : 1;
+    // Scale to fill whatever width we have (shrink on phones, grow on desktops)
+    const avail = W - 16 - sunSliceWidth - 30;
+    const scale = clamp(avail / totalPlanetsWidth, 0.3, 1.7);
     const scaledRadii = radii.map(r => r * scale);
     const scaledGap = gap * scale;
 
@@ -903,12 +1111,12 @@
 
     // ----- Header text -----
     ctx.fillStyle = '#ffe600';
-    ctx.font = 'bold 14px Courier New';
+    ctx.font = 'bold 16px Courier New';
     ctx.textAlign = 'center';
-    ctx.fillText('PLANETS AT TRUE RELATIVE SIZE', W / 2, 28);
+    ctx.fillText('PLANETS AT TRUE RELATIVE SIZE', W / 2, 58);
     ctx.fillStyle = '#888';
-    ctx.font = '11px Courier New';
-    ctx.fillText('Jupiter is ~11× wider than Earth · the Sun is ~109× wider', W / 2, 46);
+    ctx.font = '12px Courier New';
+    ctx.fillText('Jupiter is ~11× wider than Earth · the Sun is ~109× wider', W / 2, 78);
 
     // "How many Earths fit across?" callouts on a couple of bodies
     const earthDiam = 12742;
@@ -924,6 +1132,207 @@
     callout(5, `${earthsAcross(PLANETS[5].diameterKm)} Earths wide`); // Saturn
   }
 
+  // ---- Educational mode: Gravity Lab ----
+  // Bar chart of what you'd weigh on every world. Weight = mass × gravity,
+  // so the same kid weighs 5 kg on the Moon and 76 kg on Jupiter.
+  function renderGravity(t) {
+    sunScreenPos = { x: -9999, y: -9999, r: 0 };
+    screenPos = [];
+    const entries = [
+      { name: 'MOON', g: 0.17, color: '#c8c8c8' },
+      ...PLANETS.map((p, i) => ({ name: p.name.toUpperCase(), g: p.gravityG, color: p.color, idx: i })),
+      { name: 'SUN', g: SUN.gravityG, color: '#ffe066', sun: true },
+    ];
+    const L = Math.max(30, W * 0.05), R = Math.max(20, W * 0.03);
+    const top = 118, bottom = H - 168;
+    const chartH = bottom - top;
+    const n = entries.length;
+    const slot = (W - L - R) / n;
+    const barW = Math.min(64, slot * 0.6);
+    const maxVal = userKg * 3; // Jupiter (2.53×) is the tallest un-clipped bar
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 16px Courier New';
+    ctx.fillText('GRAVITY LAB — WHAT WOULD YOU WEIGH?', cx, 58);
+    ctx.fillStyle = '#8a93b0';
+    ctx.font = '12px Courier New';
+    ctx.fillText(`Same you (${userKg} kg of mass), different gravity. Weight = mass × gravity!`, cx, 78);
+
+    // Your-weight-on-Earth reference line
+    const earthY = bottom - (userKg / maxVal) * chartH;
+    ctx.strokeStyle = 'rgba(90,160,230,0.5)';
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(L, earthY);
+    ctx.lineTo(W - R, earthY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(90,160,230,0.85)';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'left';
+    ctx.fillText('YOUR WEIGHT ON EARTH', L + 4, earthY - 5);
+
+    for (let k = 0; k < n; k++) {
+      const e = entries[k];
+      const val = userKg * e.g;
+      const x = L + slot * k + slot / 2;
+      const clipped = val > maxVal;
+      const h = clipped ? chartH : Math.max(3, (val / maxVal) * chartH);
+      const y = bottom - h;
+
+      ctx.fillStyle = e.color;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x - barW / 2, y, barW, h, [6, 6, 0, 0]);
+      else ctx.rect(x - barW / 2, y, barW, h);
+      ctx.fill();
+
+      if (clipped) {
+        // Jagged break: the Sun's bar is WAY off this chart (28× Earth!)
+        ctx.fillStyle = '#04040c';
+        ctx.beginPath();
+        ctx.moveTo(x - barW / 2, y + 14);
+        ctx.lineTo(x + barW / 2, y + 14);
+        for (let zz = 6; zz >= 0; zz--) {
+          ctx.lineTo(x - barW / 2 + (barW / 6) * zz, y + 26 + (zz % 2 === 0 ? 0 : 9));
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(val) + ' kg', x, y - 6);
+
+      ctx.fillStyle = '#aab';
+      ctx.font = '10px Courier New';
+      ctx.save();
+      ctx.translate(x, bottom + 14);
+      if (slot < 58) { ctx.rotate(-0.7); ctx.textAlign = 'right'; }
+      ctx.fillText(e.name, 0, 0);
+      ctx.restore();
+
+      const hitR = Math.max(barW * 0.7, 16);
+      if (e.idx !== undefined) screenPos[e.idx] = { x, y: y + h / 2, r: hitR };
+      if (e.sun) sunScreenPos = { x, y: y + h / 2, r: hitR };
+    }
+
+    ctx.fillStyle = '#667';
+    ctx.font = '11px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('Slide YOUR MASS below · click a bar to learn about that world', cx, bottom + 44);
+  }
+
+  // ---- Educational mode: Orbit Speedometer (Kepler) ----
+  // Orbital speed vs. distance, with the v = 29.8/√AU curve the planets
+  // actually sit on. Closer to the Sun = stronger pull = faster orbit.
+  function renderGraph(t) {
+    sunScreenPos = { x: -9999, y: -9999, r: 0 };
+    screenPos = [];
+    const L = Math.max(56, W * 0.07), R = Math.max(24, W * 0.035);
+    const top = 118, bottom = H - 150;
+    const plotW = W - L - R, plotH = bottom - top;
+    const MAXAU = 41, MAXV = 50;
+    const xOf = au => L + (Math.sqrt(au) / Math.sqrt(MAXAU)) * plotW;
+    const yOf = v => bottom - (v / MAXV) * plotH;
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 16px Courier New';
+    ctx.fillText('ORBIT SPEEDOMETER — WHY OUTER PLANETS ARE SLOW', cx, 58);
+    ctx.fillStyle = '#8a93b0';
+    ctx.font = '12px Courier New';
+    ctx.fillText('Farther from the Sun, gravity pulls less — so planets cruise slower. Kepler figured this out in 1619!', cx, 78);
+
+    // Grid + axes
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillStyle = '#667';
+    ctx.font = '10px Courier New';
+    for (let v = 0; v <= MAXV; v += 10) {
+      ctx.beginPath();
+      ctx.moveTo(L, yOf(v));
+      ctx.lineTo(W - R, yOf(v));
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(String(v), L - 6, yOf(v) + 3);
+    }
+    for (const au of [1, 5, 10, 20, 30, 40]) {
+      ctx.beginPath();
+      ctx.moveTo(xOf(au), top);
+      ctx.lineTo(xOf(au), bottom);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(au + ' AU', xOf(au), bottom + 14);
+    }
+    ctx.save();
+    ctx.translate(Math.max(14, L - 38), (top + bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#8a93b0';
+    ctx.font = '11px Courier New';
+    ctx.fillText('ORBITAL SPEED (km/s)', 0, 0);
+    ctx.restore();
+    ctx.fillStyle = '#8a93b0';
+    ctx.textAlign = 'center';
+    ctx.font = '11px Courier New';
+    ctx.fillText('DISTANCE FROM SUN (1 AU = Earth–Sun distance)', cx, bottom + 30);
+
+    // The Kepler curve every planet sits on
+    ctx.strokeStyle = 'rgba(255,230,0,0.6)';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let first = true;
+    for (let au = 0.35; au <= MAXAU; au *= 1.06) {
+      const v = 29.78 / Math.sqrt(au);
+      if (v > MAXV) continue;
+      const px = xOf(au), py = yOf(v);
+      if (first) { ctx.moveTo(px, py); first = false; }
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffe600';
+    ctx.font = 'bold 12px Courier New';
+    ctx.textAlign = 'left';
+    ctx.fillText('speed ≈ 29.8 ÷ √distance', xOf(6), yOf(29.78 / Math.sqrt(6)) - 14);
+
+    // Planet dots on the curve
+    for (let i = 0; i < PLANETS.length; i++) {
+      const p = PLANETS[i];
+      const v = EXTRA[p.name].orbitKmS;
+      const x = xOf(p.orbitAU), y = yOf(v);
+      const hot = hoverIndex === i || selected === p;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(x, y, hot ? 10 : 7, 0, Math.PI * 2);
+      ctx.fill();
+      if (hot) {
+        ctx.strokeStyle = '#ffe600';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      const above = i % 2 === 0;
+      ctx.fillStyle = '#dde';
+      ctx.font = 'bold 10px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.name.toUpperCase(), x, above ? y - 21 : y + 22);
+      ctx.fillStyle = '#889';
+      ctx.font = '9px Courier New';
+      ctx.fillText(v + ' km/s', x, above ? y - 11 : y + 32);
+      screenPos[i] = { x, y, r: 12 };
+    }
+
+    ctx.fillStyle = '#667';
+    ctx.font = '11px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click a planet dot to learn more', cx, bottom + 46);
+  }
+
   // ---- Loop ----
   let lastTime = 0;
   function loop(now) {
@@ -933,6 +1342,14 @@
     if (!paused) {
       simDays += (dt / 1000) * timePerSec * speed;
       if (comets.length) stepComets(speed);
+      if (showTrails && mode === 'orbit' && (frameNo++ % 2 === 0)) {
+        for (let i = 0; i < PLANETS.length; i++) {
+          const w = planetPos3D(PLANETS[i], i);
+          const tr = planetTrails[i];
+          tr.push({ wx: w.wx, wy: w.wy, wz: w.wz });
+          if (tr.length > 110) tr.shift();
+        }
+      }
     }
     if (sunFlash > 0) sunFlash--;
     render(now);
@@ -956,7 +1373,7 @@
         const r2 = c.x * c.x + c.z * c.z;
         const r = Math.sqrt(r2);
         if (r < SUN.r) { alive = false; sunFlash = 12; break; }   // fell into the Sun
-        const a = GM / r2;                 // acceleration magnitude (inverse square)
+        const a = GM * gravMult / r2;      // acceleration magnitude (inverse square)
         c.vx += a * (-c.x / r) * h;
         c.vz += a * (-c.z / r) * h;
         c.x += c.vx * h;
@@ -1109,9 +1526,10 @@
   }
 
   function selectBody(body) {
+    hideTip();
     if (!body) {
       selected = null;
-      panel.innerHTML = '<div class="placeholder">Click a planet to see its info.</div>';
+      panel.classList.remove('open');
       return;
     }
     if (body.type === 'sun') {
@@ -1119,11 +1537,12 @@
       renderPanel(SUN, true);
     } else {
       selected = body.planet;
-      renderPanel(body.planet, false);
+      renderPanel(body.planet, false, body.index);
     }
+    panel.classList.add('open');
   }
 
-  function renderPanel(p, isSun) {
+  function renderPanel(p, isSun, idx) {
     let stats;
     if (isSun) {
       stats = [
@@ -1131,7 +1550,7 @@
         ['SURFACE TEMP', '~5,500°C (15,000,000°C core)'],
         ['MADE OF',      'Hydrogen (73%) & helium (25%)'],
         ['GRAVITY',      p.gravityG + '× Earth'],
-        ['YOU’D WEIGH', `${Math.round(KID_KG * p.gravityG)} kg (from ${KID_KG} kg)`],
+        ['YOU’D WEIGH', `${Math.round(userKg * p.gravityG)} kg (from ${userKg} kg)`],
         ['AGE',          p.ageBy + ' billion years'],
       ];
     } else {
@@ -1140,7 +1559,7 @@
                                            : `${(p.periodDays / 365).toFixed(1)} Earth years`;
       const dayText = p.dayHours < 100 ? `${p.dayHours} hrs`
                                        : `${(p.dayHours / 24).toFixed(0)} Earth days`;
-      const weighKg = (KID_KG * p.gravityG).toFixed(1);
+      const weighKg = (userKg * p.gravityG).toFixed(1);
       const lightMin = p.orbitAU * 8.317;
       stats = [
         ['DISTANCE FROM SUN', `${p.orbitAU} AU (${formatNum(Math.round(p.orbitAU * 149.6))} mil km)`],
@@ -1153,18 +1572,27 @@
         ['ORBITAL SPEED',     ex.orbitKmS ? `${ex.orbitKmS} km/s around the Sun` : '—'],
         ['ORBIT TILT',        `${p.inclDeg}° vs. Earth's orbit`],
         ['GRAVITY',           p.gravityG + '× Earth'],
-        ['YOU’D WEIGH',  `${weighKg} kg (from ${KID_KG} kg)`],
+        ['YOU’D WEIGH',  `${weighKg} kg (from ${userKg} kg)`],
         ['MOONS',             p.moons],
       ];
     }
-    panel.innerHTML = `
+    panelBody.innerHTML = `
       <h2>${p.name}</h2>
       <div class="ptype">${p.type.toUpperCase()}</div>
       <div class="stats">
         ${stats.map(s => `<div><span class="k">${s[0]}:</span> <span class="v">${s[1]}</span></div>`).join('')}
       </div>
       <div class="fact">${p.fact}</div>
+      ${(!isSun && mode === 'orbit')
+        ? `<div class="panelBtns"><button id="followBtn">${followIndex === idx ? '&#9632; UNFOLLOW' : '&#9654; FOLLOW'} ${p.name.toUpperCase()}</button></div>`
+        : ''}
     `;
+    const fb = document.getElementById('followBtn');
+    if (fb) fb.onclick = () => {
+      followIndex = (followIndex === idx) ? -1 : idx;
+      if (followIndex >= 0) cam.dist = Math.min(cam.dist, 620);
+      fb.innerHTML = (followIndex === idx ? '&#9632; UNFOLLOW ' : '&#9654; FOLLOW ') + p.name.toUpperCase();
+    };
   }
 
   function formatNum(n) {
@@ -1278,6 +1706,7 @@
       return;
     }
     if (hit) selectBody(hit);
+    else selectBody(null); // click empty space -> close the info drawer
   });
 
   canvas.addEventListener('wheel', e => {
@@ -1369,7 +1798,7 @@
   // ---- Controls ----
   pauseBtn.addEventListener('click', () => {
     paused = !paused;
-    pauseBtn.textContent = paused ? 'PLAY' : 'PAUSE';
+    pauseBtn.innerHTML = paused ? '&#9654;' : '&#9208;';
     pauseBtn.classList.toggle('active', paused);
   });
 
@@ -1383,40 +1812,70 @@
 
   viewBtn.addEventListener('click', () => {
     cam = { ...DEFAULT_CAM };
+    followIndex = -1;
   });
 
   scaleBtn.addEventListener('click', () => {
     realScale = !realScale;
-    scaleBtn.textContent = realScale ? 'SHOW COMPRESSED' : 'SHOW REAL DISTANCES';
+    scaleBtn.textContent = realScale ? 'COMPRESSED' : 'REAL DISTANCES';
     scaleBtn.classList.toggle('active', realScale);
   });
 
   const labelBtn = document.getElementById('labelBtn');
   labelBtn.addEventListener('click', () => {
     showLabels = !showLabels;
-    labelBtn.textContent = showLabels ? 'HIDE NAMES' : 'SHOW NAMES';
     labelBtn.classList.toggle('active', showLabels);
   });
 
-  compareBtn.addEventListener('click', () => {
-    mode = mode === 'compare' ? 'orbit' : 'compare';
-    compareBtn.textContent = mode === 'compare' ? 'BACK TO ORBITS' : 'SIZE COMPARE';
-    compareBtn.classList.toggle('active', mode === 'compare');
-    // Hide controls that only make sense in orbit view
-    scaleBtn.style.display = mode === 'compare' ? 'none' : '';
-    viewBtn.style.display = mode === 'compare' ? 'none' : '';
-    canvas.style.cursor = mode === 'compare' ? 'default' : 'grab';
-    if (mode === 'compare' && cometMode) stopComet(); // comets only make sense in orbit view
+  trailBtn.addEventListener('click', () => {
+    showTrails = !showTrails;
+    trailBtn.classList.toggle('active', showTrails);
+    if (!showTrails) planetTrails = PLANETS.map(() => []);
   });
+
+  // One toggle per full-screen mode; clicking the active one returns to orbits.
+  function setMode(m) {
+    mode = (mode === m) ? 'orbit' : m;
+    if (mode !== 'orbit' && cometMode) stopComet();
+    selectBody(null); // stale info (e.g. a FOLLOW button) doesn't carry across modes
+    compareBtn.textContent = mode === 'compare' ? 'BACK TO ORBITS' : 'SIZES';
+    gravityBtn.textContent = mode === 'gravity' ? 'BACK TO ORBITS' : 'GRAVITY LAB';
+    graphBtn.textContent = mode === 'graph' ? 'BACK TO ORBITS' : 'SPEED GRAPH';
+    compareBtn.classList.toggle('active', mode === 'compare');
+    gravityBtn.classList.toggle('active', mode === 'gravity');
+    graphBtn.classList.toggle('active', mode === 'graph');
+    document.querySelectorAll('.orbitOnly').forEach(el => {
+      el.style.display = mode === 'orbit' ? '' : 'none';
+    });
+    weightWrap.classList.toggle('show', mode === 'gravity');
+    canvas.style.cursor = mode === 'orbit' ? 'grab' : 'default';
+  }
+  compareBtn.addEventListener('click', () => setMode('compare'));
+  gravityBtn.addEventListener('click', () => setMode('gravity'));
+  graphBtn.addEventListener('click', () => setMode('graph'));
+
+  gravSlider.addEventListener('input', () => {
+    gravMult = gravSlider.value / 100;
+    gravVal.textContent = gravMult.toFixed(gravMult < 1 ? 2 : 1) + '×';
+  });
+
+  weightSlider.addEventListener('input', () => {
+    userKg = parseInt(weightSlider.value, 10);
+    weightVal.textContent = userKg + ' kg';
+    if (selected) renderPanel(selected, selected === SUN, PLANETS.indexOf(selected));
+  });
+
+  panelClose.addEventListener('click', () => selectBody(null));
 
   function startComet() {
     if (quiz) stopQuiz();
     cometMode = true;
     canvas.style.cursor = 'crosshair';
-    cometBtn.textContent = 'STOP COMETS';
+    cometBtn.innerHTML = '&#9732; STOP COMETS';
     cometBtn.classList.add('active');
+    gravWrap.classList.add('show');
     questionBar.className = 'show';
-    questionBar.textContent = 'Drag and release to fling a comet — the Sun\'s gravity does the rest! (Stop comets to spin the view again.)';
+    questionBar.textContent = 'Drag and release to fling a comet — the Sun\'s gravity does the rest! Try the SUN GRAVITY slider below.';
   }
 
   function stopComet() {
@@ -1424,8 +1883,9 @@
     comets = [];
     aiming = null;
     canvas.style.cursor = 'grab';
-    cometBtn.textContent = 'LAUNCH COMET';
+    cometBtn.innerHTML = '&#9732; COMETS';
     cometBtn.classList.remove('active');
+    gravWrap.classList.remove('show');
     questionBar.classList.remove('show');
     questionBar.textContent = '';
   }
