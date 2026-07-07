@@ -8,7 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #0f0f1a;
+      background: radial-gradient(900px 500px at 50% -80px, #191932, #0f0f1a 70%);
       color: #fff;
       font-family: 'Courier New', monospace;
       display: flex;
@@ -24,6 +24,7 @@
       letter-spacing: 4px;
       text-transform: uppercase;
       margin-bottom: 8px;
+      text-shadow: 0 0 18px rgba(255,230,0,0.35);
     }
 
     .subtitle {
@@ -44,11 +45,18 @@
       flex-wrap: wrap;
       background: #1a1a2e;
       border: 2px solid #333;
+      border-radius: 10px;
       padding: 8px 14px;
       margin-bottom: 10px;
       font-size: 0.8rem;
       letter-spacing: 1px;
       color: #ccc;
+    }
+
+    .hud #muteBtn {
+      padding: 3px 10px;
+      font-size: 0.85rem;
+      border-radius: 999px;
     }
 
     .hud .val { color: #ffe600; font-size: 0.95rem; }
@@ -57,10 +65,12 @@
 
     #gameCanvas {
       border: 3px solid #333;
+      border-radius: 10px;
       background: #0a0a14;
       display: block;
       max-width: 100%;
       touch-action: none;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
     }
 
     .levelbar {
@@ -69,6 +79,7 @@
       margin-top: 10px;
       background: #1a1a2e;
       border: 2px solid #333;
+      border-radius: 10px;
       padding: 10px 14px;
       display: flex;
       align-items: center;
@@ -91,14 +102,16 @@
       background: #2a2a4a;
       color: #ffe600;
       border: 2px solid #444;
+      border-radius: 8px;
       padding: 6px 12px;
       font-family: inherit;
       font-size: 0.9rem;
       cursor: pointer;
       letter-spacing: 1px;
+      transition: border-color 0.12s, box-shadow 0.12s;
     }
 
-    button:hover { border-color: #ffe600; }
+    button:hover { border-color: #ffe600; box-shadow: 0 0 10px rgba(255,230,0,0.25); }
     button:active { transform: translateY(1px); }
     button:disabled { opacity: 0.35; cursor: not-allowed; }
     button.current { background: #4a4a1a; border-color: #ffe600; }
@@ -136,6 +149,7 @@
     <div>LEVEL <span class="val" id="hudLevel">1</span>/10</div>
     <div>HOMES <span class="homes" id="hudHomes">0/1</span></div>
     <div class="lives" id="hudLives">&#9829;&#9829;&#9829;</div>
+    <button id="muteBtn" title="toggle sound">&#128266;</button>
   </div>
 
   <canvas id="gameCanvas" width="624" height="624"></canvas>
@@ -158,6 +172,58 @@
   const ctx = canvas.getContext('2d');
   const COLS = 13, ROWS = 13, TILE = 48;
   const W = COLS * TILE, H = ROWS * TILE;
+
+  // ---- SOUND (tiny WebAudio synth — no audio files) ----
+  const MUTE_KEY = 'leviCrossing.muted';
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  let audio = null;
+  function ac() {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    return audio;
+  }
+  function beep(freq, dur, type = 'sine', vol = 0.07, slide = 0) {
+    if (muted) return;
+    try {
+      const a = ac();
+      const o = a.createOscillator();
+      const g = a.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, a.currentTime);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), a.currentTime + dur);
+      g.gain.setValueAtTime(vol, a.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+      o.connect(g).connect(a.destination);
+      o.start();
+      o.stop(a.currentTime + dur);
+    } catch (e) { /* audio blocked — stay silent */ }
+  }
+  const sfx = {
+    hop()    { beep(500, 0.06, 'square', 0.03, 120); },
+    coin()   { beep(980, 0.12, 'sine', 0.08); },
+    shield() { beep(620, 0.1); setTimeout(() => beep(930, 0.14), 80); },
+    home()   { beep(660, 0.1, 'square', 0.06); setTimeout(() => beep(880, 0.14, 'square', 0.06), 90); },
+    clear()  { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'square', 0.06), i * 110)); },
+    horn()   { beep(330, 0.16, 'square', 0.045); setTimeout(() => beep(330, 0.16, 'square', 0.045), 220); },
+    death(kind) {
+      if (kind === 'water') beep(420, 0.35, 'sine', 0.08, -320);
+      else if (kind === 'train') beep(200, 0.4, 'sawtooth', 0.09, -90);
+      else if (kind === 'eagle') beep(1300, 0.5, 'sawtooth', 0.05, -900);
+      else beep(260, 0.3, 'square', 0.08, -180);
+    },
+    win()    { [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'triangle', 0.07), i * 130)); },
+  };
+
+  const muteBtn = document.getElementById('muteBtn');
+  function refreshMute() { muteBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; }
+  muteBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    refreshMute();
+    muteBtn.blur(); // so the next keypress moves Levi instead of the button
+  });
+  refreshMute();
 
   // Load Levi sprite (same photo as Levi Leap)
   const leviImg = new Image();
@@ -481,6 +547,7 @@
       t: 0, dir,
     };
     levi.slideDir = null;
+    if (!isSlide) sfx.hop();
   }
 
   function landHop() {
@@ -499,8 +566,8 @@
     for (const p of pickups) {
       if (!p.taken && p.row === levi.row && Math.abs(p.x - levi.x) < 0.6) {
         p.taken = true;
-        if (p.kind === 'coin') { score += 50; toastMsg = '+50'; toastTimer = 1; }
-        else { levi.shield = true; toastMsg = 'SHIELD!'; toastTimer = 1.5; }
+        if (p.kind === 'coin') { score += 50; toastMsg = '+50'; toastTimer = 1; sfx.coin(); }
+        else { levi.shield = true; toastMsg = 'SHIELD!'; toastTimer = 1.5; sfx.shield(); }
         burst(p.x * TILE + TILE / 2, p.row * TILE + TILE / 2, p.kind === 'coin' ? '#ffe600' : '#6bffd1', 10);
       }
     }
@@ -521,7 +588,9 @@
         score += 500;
         state = 'leveldone';
         stateTimer = 0;
+        sfx.clear();
       } else {
+        sfx.home();
         spawnLevi();
       }
       updateHud();
@@ -560,6 +629,7 @@
       levi.shield = false;
       toastMsg = 'SHIELD SAVED YOU!';
       toastTimer = 1.5;
+      sfx.shield();
       burst(levi.x * TILE + TILE / 2, levi.row * TILE + TILE / 2, '#6bffd1', 14);
       // bounce back down to the nearest safe row
       levi.hop = null;
@@ -576,6 +646,7 @@
     deathKind = kind;
     state = 'dead';
     stateTimer = 0;
+    sfx.death(kind);
     const px = levi.x * TILE + TILE / 2, py = levi.row * TILE + TILE / 2;
     if (kind === 'water') burst(px, py, '#6bd1ff', 16);
     else if (kind === 'train') burst(px, py, '#ffe600', 20);
@@ -631,7 +702,7 @@
       }
       if (r.t === 'rail') {
         r.timer -= dt;
-        if (r.phase === 'idle' && r.timer <= 0) { r.phase = 'warn'; r.timer = 1.1; }
+        if (r.phase === 'idle' && r.timer <= 0) { r.phase = 'warn'; r.timer = 1.1; if (state === 'play') sfx.horn(); }
         else if (r.phase === 'warn' && r.timer <= 0) {
           r.phase = 'train'; r.dir = Math.random() < 0.5 ? 1 : -1;
           r.trainX = r.dir > 0 ? -17 : COLS + 17;
@@ -1327,6 +1398,7 @@
     } else if (state === 'leveldone') {
       if (levelIdx === LEVELS.length - 1) {
         state = 'win';
+        sfx.win();
         if (score > best) { best = score; localStorage.setItem('leviCrossingBest', best); }
         unlocked = 10;
         localStorage.setItem('leviCrossingUnlocked', unlocked);
