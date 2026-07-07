@@ -8,7 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #04040c;
+      background: radial-gradient(1100px 560px at 50% -100px, #12122a, #04040c 70%);
       color: #fff;
       font-family: 'Courier New', monospace;
       display: flex;
@@ -25,6 +25,7 @@
       text-transform: uppercase;
       margin-bottom: 8px;
       text-align: center;
+      text-shadow: 0 0 18px rgba(255,230,0,0.35);
     }
 
     .subtitle {
@@ -49,6 +50,7 @@
       background: #1a1a2e;
       color: #ffe600;
       border: 2px solid #333;
+      border-radius: 8px;
       padding: 6px 10px;
       font-family: inherit;
       font-size: 0.85rem;
@@ -63,13 +65,15 @@
       background: #1a1a2e;
       color: #ffe600;
       border: 2px solid #333;
+      border-radius: 8px;
       padding: 6px 12px;
       font-family: inherit;
       font-size: 0.85rem;
       cursor: pointer;
       letter-spacing: 1px;
+      transition: border-color 0.12s, box-shadow 0.12s;
     }
-    button:hover { border-color: #ffe600; }
+    button:hover { border-color: #ffe600; box-shadow: 0 0 10px rgba(255,230,0,0.25); }
     button.active { background: #2a2a4a; border-color: #ffe600; }
 
     #questionBar {
@@ -368,6 +372,7 @@
     <button id="randomBtn">Random element</button>
     <button id="colorBtn">Color: category</button>
     <button id="quizBtn">Quiz me</button>
+    <button id="muteBtn" title="toggle sound">&#128266;</button>
   </div>
 
   <div id="questionBar"></div>
@@ -559,6 +564,48 @@ function gridPos(el) {
   return { row: period, col: group };
 }
 
+// ---- SOUND (tiny WebAudio synth — no audio files) ----
+const MUTE_KEY = 'periodicTable.muted';
+let muted = localStorage.getItem(MUTE_KEY) === '1';
+let audio = null;
+function ac() {
+  if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+  if (audio.state === 'suspended') audio.resume();
+  return audio;
+}
+function beep(freq, dur, type = 'sine', vol = 0.07, slide = 0) {
+  if (muted) return;
+  try {
+    const a = ac();
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, a.currentTime);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), a.currentTime + dur);
+    g.gain.setValueAtTime(vol, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g).connect(a.destination);
+    o.start();
+    o.stop(a.currentTime + dur);
+  } catch (e) { /* audio blocked — stay silent */ }
+}
+const sfx = {
+  open()   { beep(600, 0.08, 'sine', 0.06, 150); },
+  tick()   { beep(440, 0.05, 'square', 0.04); },
+  right(n) { beep(880 + Math.min(8, n) * 60, 0.12, 'sine', 0.08); },
+  wrong()  { beep(180, 0.3, 'sawtooth', 0.08, -60); },
+};
+
+const muteBtn = document.getElementById('muteBtn');
+function refreshMute() { muteBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; }
+muteBtn.addEventListener('click', () => {
+  muted = !muted;
+  localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+  refreshMute();
+  muteBtn.blur();
+});
+refreshMute();
+
 const ptable = document.getElementById('ptable');
 const cells = {};
 
@@ -583,7 +630,7 @@ ELEMENTS.forEach(el => {
   `;
   div.addEventListener('click', () => {
     if (quiz) answerQuiz(el, div);
-    else showModal(el);
+    else { sfx.open(); showModal(el); }
   });
   ptable.appendChild(div);
   cells[n] = div;
@@ -672,6 +719,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 document.getElementById('randomBtn').addEventListener('click', () => {
   const el = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
+  sfx.open();
   showModal(el);
 });
 
@@ -815,6 +863,7 @@ function showModal(el) {
 // Prev/next element navigation (buttons or arrow keys)
 function stepElement(delta) {
   const next = (currentIndex + delta + ELEMENTS.length) % ELEMENTS.length;
+  sfx.tick();
   showModal(ELEMENTS[next]);
 }
 document.getElementById('prevBtn').addEventListener('click', () => stepElement(-1));
@@ -873,6 +922,7 @@ function answerQuiz(el, cell) {
       quiz.best = quiz.score;
       localStorage.setItem(QUIZ_BEST_KEY, quiz.best);
     }
+    sfx.right(quiz.score);
     cell.classList.add('right');
     questionBar.className = 'show right';
     questionBar.textContent = `✓ Correct — ${el[2]}!  Score: ${quiz.score}  Best: ${quiz.best}`;
@@ -882,6 +932,7 @@ function answerQuiz(el, cell) {
     }, 1000);
   } else {
     quiz.score = 0;
+    sfx.wrong();
     cell.classList.add('wrong');
     // Light up every element that would have been a correct answer
     const answers = ELEMENTS.filter(e2 => quiz.current.test(e2));

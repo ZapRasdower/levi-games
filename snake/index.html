@@ -8,7 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #0f0f1a;
+      background: radial-gradient(900px 500px at 50% -80px, #191932, #0f0f1a 70%);
       color: #fff;
       font-family: 'Courier New', monospace;
       display: flex;
@@ -25,6 +25,7 @@
       letter-spacing: 4px;
       text-transform: uppercase;
       margin-bottom: 8px;
+      text-shadow: 0 0 18px rgba(255,230,0,0.35);
     }
 
     .subtitle {
@@ -37,24 +38,50 @@
 
     #gameCanvas {
       border: 3px solid #333;
+      border-radius: 10px;
       background: #111125;
       display: block;
       touch-action: none;
+      max-width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55);
     }
 
     #ui {
       display: flex;
-      justify-content: space-between;
-      gap: 20px;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
       width: 100%;
       max-width: 480px;
-      margin-top: 12px;
-      font-size: 0.85rem;
-      color: #aaa;
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: #99a;
       letter-spacing: 1px;
     }
 
-    #ui span { color: #ffe600; }
+    #ui .pill {
+      background: #1a1a2e;
+      border: 1px solid #2e2e4e;
+      border-radius: 999px;
+      padding: 6px 14px;
+    }
+
+    #ui span { color: #ffe600; font-size: 0.95rem; margin-left: 5px; }
+
+    #muteBtn {
+      background: #1a1a2e;
+      border: 1px solid #2e2e4e;
+      border-radius: 999px;
+      color: #ffe600;
+      font-size: 0.9rem;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.12s;
+    }
+
+    #muteBtn:hover { border-color: #ffe600; }
 
     #message {
       margin-top: 16px;
@@ -84,9 +111,10 @@
   <canvas id="gameCanvas" width="480" height="480"></canvas>
 
   <div id="ui">
-    <div>SCORE: <span id="score">0</span></div>
-    <div>LEN: <span id="len">3</span></div>
-    <div>BEST: <span id="best">0</span></div>
+    <div class="pill">SCORE<span id="score">0</span></div>
+    <div class="pill">LEN<span id="len">3</span></div>
+    <div class="pill">BEST<span id="best">0</span></div>
+    <button id="muteBtn" title="toggle sound">&#128266;</button>
   </div>
 
   <div id="message">Press an arrow key to start</div>
@@ -102,6 +130,48 @@
   const msgEl = document.getElementById('message');
 
   const BEST_KEY = 'leviSnake.best';
+  const MUTE_KEY = 'leviSnake.muted';
+
+  // ---- SOUND (tiny WebAudio synth — no audio files) ----
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  let audio = null;
+  function ac() {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    return audio;
+  }
+  function beep(freq, dur, type = 'sine', vol = 0.07, slide = 0) {
+    if (muted) return;
+    try {
+      const a = ac();
+      const o = a.createOscillator();
+      const g = a.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, a.currentTime);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), a.currentTime + dur);
+      g.gain.setValueAtTime(vol, a.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+      o.connect(g).connect(a.destination);
+      o.start();
+      o.stop(a.currentTime + dur);
+    } catch (e) { /* audio blocked — stay silent */ }
+  }
+  const sfx = {
+    eat(len)  { beep(520 + Math.min(20, len) * 18, 0.1, 'square', 0.06); },
+    bonus()   { beep(780, 0.09); setTimeout(() => beep(1170, 0.14), 80); },
+    die()     { beep(280, 0.45, 'sawtooth', 0.08, -220); },
+    best()    { beep(660, 0.1, 'square', 0.06); setTimeout(() => beep(880, 0.12, 'square', 0.06), 90); setTimeout(() => beep(1108, 0.18, 'square', 0.06), 200); },
+  };
+
+  const muteBtn = document.getElementById('muteBtn');
+  function refreshMute() { muteBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; }
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    refreshMute();
+    muteBtn.blur(); // so SPACE restarts the game instead of re-toggling
+  });
+  refreshMute();
 
   const CELL = 24;
   const COLS = canvas.width / CELL;
@@ -213,12 +283,14 @@
     if (willEat) {
       score += 10;
       burst(food.x, food.y, C.food, 12);
+      sfx.eat(snake.length);
       placeFood();
       maybePlaceBonus();
       tickMs = Math.max(55, tickMs - 2);
     } else if (bonus && nh.x === bonus.x && nh.y === bonus.y) {
       score += 50;
       burst(bonus.x, bonus.y, C.bonus, 20);
+      sfx.bonus();
       bonus = null;
       bonusTimer = 0;
       snake.pop(); // bonus doesn't grow
@@ -237,11 +309,13 @@
 
   function die() {
     state = 'dead';
+    sfx.die();
     if (score > best) {
       best = score;
       bestEl.textContent = best;
       localStorage.setItem(BEST_KEY, best);
       msgEl.textContent = `NEW BEST: ${score}! Press SPACE to play again`;
+      setTimeout(() => sfx.best(), 480);
     } else {
       msgEl.textContent = `Game over — score ${score}. SPACE to play again`;
     }
