@@ -90,7 +90,7 @@ canvas { display: block; }
 <div id="tooltip"></div>
 <div id="instructions">Select a part, then click the assembly to place it</div>
 <div id="complete-overlay"><div id="complete-text">MASTERPIECE</div><div id="complete-sub">Your watch is alive</div></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
 <script>
 // ─── CONFIG ───
 const PARTS = [
@@ -174,11 +174,15 @@ function init() {
   updateCamera();
 
   // Events
+  renderer.domElement.style.touchAction = 'none';
   renderer.domElement.addEventListener('mousedown', onMouseDown);
   renderer.domElement.addEventListener('mousemove', onMouseMove);
   renderer.domElement.addEventListener('mouseup', onMouseUp);
   renderer.domElement.addEventListener('wheel', onWheel);
   renderer.domElement.addEventListener('click', onCanvasClick);
+  renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
+  renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
+  renderer.domElement.addEventListener('touchend', onTouchEnd, { passive: false });
   window.addEventListener('resize', onResize);
   document.getElementById('reset-btn').addEventListener('click', resetGame);
 
@@ -809,11 +813,65 @@ function onWheel(e) {
 }
 
 function onCanvasClick(e) {
+  placeAtScreen(e.clientX, e.clientY);
+}
+
+// ─── TOUCH: one finger orbits, two fingers pinch-zoom, tap places parts ───
+let touchState = null;
+
+function onTouchStart(e) {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    touchState = {
+      kind: 'orbit',
+      sx: e.touches[0].clientX, sy: e.touches[0].clientY,
+      lx: e.touches[0].clientX, ly: e.touches[0].clientY,
+      moved: false,
+    };
+  } else if (e.touches.length === 2) {
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY);
+    touchState = { kind: 'pinch', d0: d, r0: cameraR };
+  }
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (!touchState) return;
+  if (touchState.kind === 'orbit' && e.touches.length === 1) {
+    const tx = e.touches[0].clientX, ty = e.touches[0].clientY;
+    cameraTheta -= (tx - touchState.lx) * 0.008;
+    cameraPhi -= (ty - touchState.ly) * 0.008;
+    updateCamera();
+    if (Math.abs(tx - touchState.sx) + Math.abs(ty - touchState.sy) > 10) touchState.moved = true;
+    touchState.lx = tx; touchState.ly = ty;
+  } else if (touchState.kind === 'pinch' && e.touches.length === 2) {
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY);
+    if (d > 0) {
+      cameraR = touchState.r0 * (touchState.d0 / d);
+      updateCamera();
+    }
+  }
+}
+
+function onTouchEnd(e) {
+  e.preventDefault();
+  if (touchState && touchState.kind === 'orbit' && !touchState.moved) {
+    // Tap: place the selected part, same as a mouse click
+    placeAtScreen(touchState.sx, touchState.sy);
+  }
+  touchState = null;
+}
+
+function placeAtScreen(clientX, clientY) {
   if (selectedPart === null) return;
 
   const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
 
