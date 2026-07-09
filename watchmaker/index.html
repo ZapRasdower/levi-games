@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Watchmaker - Levi's Games</title>
+<link rel="icon" href="data:,">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -705,10 +706,10 @@ function placePart(partId) {
   const mesh = createPartMesh(partId);
   mesh.userData.partId = partId;
 
-  // Start position (above)
+  // Start position (above) — offset only the group; animateSnapIn lowers it
+  // back to origPos, so offsetting children too would leave them floating.
   const startY = 6;
-  mesh.children.forEach(c => { c.userData.origY = c.position.y; c.position.y += startY; });
-  if (mesh.position) mesh.userData.origPos = mesh.position.clone();
+  mesh.userData.origPos = mesh.position.clone();
   mesh.position.y += startY;
 
   assemblyGroup.add(mesh);
@@ -1023,8 +1024,9 @@ function animate() {
 }
 
 // ─── TOOLTIP ───
-renderer.domElement && document.addEventListener('mousemove', (e) => {
-  if (!renderer) return;
+// (registered before init() runs, so the handler must guard on renderer)
+document.addEventListener('mousemove', (e) => {
+  if (!renderer || !raycaster) return;
   const tooltip = document.getElementById('tooltip');
 
   const rect = renderer.domElement.getBoundingClientRect();
