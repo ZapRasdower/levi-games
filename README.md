@@ -13,6 +13,7 @@ A static collection of small browser games made for/by Levi. Hosted via GitHub P
 - **Solar System** (`solar-system/`) — interactive map of the planets. Click any planet (or the Sun) for facts, speed up time to watch orbits, toggle real-distance scale, and take a planet-spotting quiz.
 - **Squishy Pets** (`squishy-pets/`) — cozy idle collector. Open themed blind boxes, squish soft-body pets to earn Dough, buy upgrades, and collect all 32 pets across 4 categories (Dumpling, Sushi, Sweet, Critter). Progress saves to `localStorage`.
 - **Brick Breaker** (`brick-breaker/`) — classic paddle-and-ball brick breaker where the spinning Levi sprite IS the ball. Six level layouts (checkerboard, pyramid, fortress…), two-hit bricks with cracks, falling power-ups (wide paddle, triple ball, slow-mo, extra life), combo pitch on brick streaks, synth sound with mute, and endless faster loops after you beat level 6. Best score persists.
+- **Watchmaker** (`watchmaker/`) — 3D mechanical watch assembly. Place all 8 movement parts in order (mainplate, barrel & mainspring, gear train, escape wheel, pallet fork, balance wheel, dial, hands), each with a real-horology description — then the finished watch comes alive: the balance oscillates, the escapement ticks, the gear train spins, and the hands run. Drag to orbit, scroll to zoom. Uses Three.js (loaded from CDN), so this one needs an internet connection. Desktop/mouse recommended.
 
 ## Run locally
 

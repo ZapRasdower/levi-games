@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watchmaker - Levi's Games</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a0f; color: #c0c0c0; font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden; height: 100vh; width: 100vw; user-select: none;
+}
+#title {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+  font-size: 28px; letter-spacing: 12px; font-weight: 200; color: #d4af37;
+  text-shadow: 0 0 20px rgba(212,175,55,0.3);
+}
+#progress {
+  position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 100;
+  font-size: 13px; letter-spacing: 3px; color: #888;
+}
+#tray {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 50;
+  background: linear-gradient(to right, rgba(15,15,25,0.95), rgba(15,15,25,0.8));
+  border-right: 1px solid rgba(212,175,55,0.15);
+  overflow-y: auto; padding: 100px 12px 20px;
+  scrollbar-width: thin; scrollbar-color: #333 transparent;
+}
+.part-card {
+  padding: 14px; margin-bottom: 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s;
+  background: rgba(255,255,255,0.02);
+}
+.part-card:hover { background: rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.2); }
+.part-card.selected { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.5); }
+.part-card.placed { opacity: 0.4; cursor: default; border-color: rgba(100,200,100,0.3); }
+.part-card.placed .part-status { color: #5a5; }
+.part-card.locked { opacity: 0.25; cursor: not-allowed; }
+.part-name { font-size: 14px; font-weight: 600; color: #ddd; margin-bottom: 4px; }
+.part-desc { font-size: 11px; color: #777; line-height: 1.4; }
+.part-status { font-size: 10px; margin-top: 6px; color: #d4af37; letter-spacing: 1px; }
+#reset-btn {
+  position: fixed; bottom: 20px; left: 20px; z-index: 100;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: #888; padding: 8px 20px; border-radius: 4px; cursor: pointer;
+  font-size: 12px; letter-spacing: 2px; transition: all 0.3s;
+}
+#reset-btn:hover { background: rgba(212,175,55,0.1); border-color: rgba(212,175,55,0.3); color: #d4af37; }
+#tooltip {
+  position: fixed; z-index: 200; background: rgba(0,0,0,0.85); color: #d4af37;
+  padding: 6px 14px; border-radius: 4px; font-size: 12px; letter-spacing: 1px;
+  pointer-events: none; display: none; border: 1px solid rgba(212,175,55,0.3);
+}
+#instructions {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+  font-size: 12px; color: #555; letter-spacing: 1px; text-align: center;
+}
+.back-link {
+  position: fixed; top: 24px; right: 24px; z-index: 100;
+  color: #666; text-decoration: none; font-size: 12px; letter-spacing: 2px;
+  transition: color 0.3s;
+}
+.back-link:hover { color: #d4af37; }
+#complete-overlay {
+  position: fixed; inset: 0; z-index: 300; display: none;
+  background: rgba(0,0,0,0); pointer-events: none;
+  justify-content: center; align-items: center; flex-direction: column;
+}
+#complete-overlay.show { display: flex; animation: overlayIn 2s forwards; }
+#complete-text {
+  font-size: 36px; letter-spacing: 14px; color: #d4af37; opacity: 0;
+  animation: textIn 1.5s 1s forwards;
+  text-shadow: 0 0 40px rgba(212,175,55,0.5);
+}
+#complete-sub {
+  font-size: 14px; letter-spacing: 4px; color: #888; opacity: 0; margin-top: 12px;
+  animation: textIn 1.5s 1.8s forwards;
+}
+@keyframes overlayIn { to { background: rgba(0,0,0,0.4); } }
+@keyframes textIn { to { opacity: 1; } }
+canvas { display: block; }
+</style>
+</head>
+<body>
+<div id="title">WATCHMAKER</div>
+<div id="progress">0 / 8 ASSEMBLED</div>
+<a class="back-link" href="../index.html">&larr; ALL GAMES</a>
+<div id="tray"></div>
+<button id="reset-btn">RESET</button>
+<div id="tooltip"></div>
+<div id="instructions">Select a part, then click the assembly to place it</div>
+<div id="complete-overlay"><div id="complete-text">MASTERPIECE</div><div id="complete-sub">Your watch is alive</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── CONFIG ───
+const PARTS = [
+  { id:'mainplate', name:'Mainplate', desc:'The foundation — houses all jewel bearings and pivot points', color:0x8888aa, placed:false },
+  { id:'barrel', name:'Barrel & Mainspring', desc:'Cylindrical power source storing energy in a coiled spring', color:0xb8960c, placed:false },
+  { id:'geartrain', name:'Gear Train', desc:'Three wheels converting slow barrel rotation to fast hand motion', color:0xccaa33, placed:false },
+  { id:'escape', name:'Escape Wheel', desc:'Star-shaped wheel with pointed teeth — controls energy release', color:0xc0c0c0, placed:false },
+  { id:'pallet', name:'Pallet Fork', desc:'T-shaped lever with ruby jewels that locks and unlocks the escapement', color:0xaaaacc, placed:false },
+  { id:'balance', name:'Balance Wheel', desc:'The beating heart — oscillates 8 times per second with its hairspring', color:0xddddee, placed:false },
+  { id:'dial', name:'Dial', desc:'The watch face with hour markers and minute track', color:0xf5f0e8, placed:false },
+  { id:'hands', name:'Hands', desc:'Hour, minute, and second hands to display the time', color:0x222244, placed:false },
+];
+
+let scene, camera, renderer, clock;
+let assemblyGroup, partsGroup;
+let selectedPart = null;
+let placedCount = 0;
+let isComplete = false;
+let animating = false;
+let ghostMeshes = {};
+let placedMeshes = {};
+let mouseDown = false, mouseX = 0, mouseY = 0;
+let cameraTheta = Math.PI/4, cameraPhi = Math.PI/4, cameraR = 12;
+let targetTheta = cameraTheta, targetPhi = cameraPhi, targetR = cameraR;
+let raycaster, mouse;
+let balanceAngle = 0, balanceDir = 1;
+let tickTime = 0;
+
+// ─── INIT ───
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x08080f);
+  scene.fog = new THREE.FogExp2(0x08080f, 0.02);
+
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  clock = new THREE.Clock();
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0x334466, 0.4);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+  keyLight.position.set(5, 8, 5);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(1024,1024);
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8899bb, 0.4);
+  fillLight.position.set(-5, 3, -3);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0xd4af37, 0.3);
+  rimLight.position.set(0, -2, -5);
+  scene.add(rimLight);
+
+  // Ground plane
+  const groundGeo = new THREE.PlaneGeometry(40, 40);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a12, roughness: 0.9 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  assemblyGroup = new THREE.Group();
+  scene.add(assemblyGroup);
+
+  buildUI();
+  createGhosts();
+  updateCamera();
+
+  // Events
+  renderer.domElement.addEventListener('mousedown', onMouseDown);
+  renderer.domElement.addEventListener('mousemove', onMouseMove);
+  renderer.domElement.addEventListener('mouseup', onMouseUp);
+  renderer.domElement.addEventListener('wheel', onWheel);
+  renderer.domElement.addEventListener('click', onCanvasClick);
+  window.addEventListener('resize', onResize);
+  document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+  animate();
+}
+
+// ─── GEAR GEOMETRY ───
+function createGearShape(innerR, outerR, teeth, toothDepth) {
+  const shape = new THREE.Shape();
+  const steps = teeth * 2;
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * Math.PI * 2;
+    const r = (i % 2 === 0) ? outerR : outerR - toothDepth;
+    const x = Math.cos(angle) * r;
+    const y = Math.sin(angle) * r;
+    if (i === 0) shape.moveTo(x, y);
+    else shape.lineTo(x, y);
+  }
+  // Cut center hole
+  const holePath = new THREE.Path();
+  const hSteps = 32;
+  for (let i = 0; i <= hSteps; i++) {
+    const a = (i / hSteps) * Math.PI * 2;
+    const x = Math.cos(a) * innerR;
+    const y = Math.sin(a) * innerR;
+    if (i === 0) holePath.moveTo(x, y);
+    else holePath.lineTo(x, y);
+  }
+  shape.holes.push(holePath);
+  return shape;
+}
+
+function createGearMesh(innerR, outerR, teeth, toothDepth, thickness, color, metalness) {
+  const shape = createGearShape(innerR, outerR, teeth, toothDepth);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false });
+  const mat = new THREE.MeshStandardMaterial({
+    color, metalness: metalness || 0.8, roughness: 0.3
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  return mesh;
+}
+
+// ─── CREATE PART MESHES ───
+function createMainplate() {
+  const group = new THREE.Group();
+  // Main disc
+  const geo = new THREE.CylinderGeometry(3.5, 3.5, 0.2, 64);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x8888aa, metalness: 0.7, roughness: 0.4 });
+  const plate = new THREE.Mesh(geo, mat);
+  plate.castShadow = true;
+  group.add(plate);
+
+  // Jewel bearings (ruby dots)
+  const jewelPositions = [[0,0],[1.2,0.8],[-0.8,1.5],[1.8,-0.5],[-1.5,-1.0],[0.5,-1.8],[-2.0,0.5]];
+  jewelPositions.forEach(([x,z]) => {
+    const jGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.22, 12);
+    const jMat = new THREE.MeshStandardMaterial({ color: 0xff3366, metalness: 0.5, roughness: 0.2, transparent: true, opacity: 0.8 });
+    const jewel = new THREE.Mesh(jGeo, jMat);
+    jewel.position.set(x, 0.1, z);
+    group.add(jewel);
+  });
+
+  // Pivot holes
+  const holePositions = [[2.2,1.0],[-1.2,-2.0],[2.5,-1.5]];
+  holePositions.forEach(([x,z]) => {
+    const hGeo = new THREE.RingGeometry(0.1, 0.18, 16);
+    const hMat = new THREE.MeshStandardMaterial({ color: 0x555577, metalness: 0.9, roughness: 0.2 });
+    const hole = new THREE.Mesh(hGeo, hMat);
+    hole.rotation.x = -Math.PI/2;
+    hole.position.set(x, 0.12, z);
+    group.add(hole);
+  });
+
+  group.userData.partId = 'mainplate';
+  return group;
+}
+
+function createBarrel() {
+  const group = new THREE.Group();
+  // Barrel drum
+  const drumGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.5, 32);
+  const drumMat = new THREE.MeshStandardMaterial({ color: 0xb8960c, metalness: 0.85, roughness: 0.2 });
+  const drum = new THREE.Mesh(drumGeo, drumMat);
+  drum.castShadow = true;
+  group.add(drum);
+
+  // Gear teeth on barrel edge
+  const gear = createGearMesh(0.9, 1.15, 40, 0.12, 0.3, 0xb8960c, 0.85);
+  gear.rotation.x = -Math.PI/2;
+  gear.position.y = -0.15;
+  group.add(gear);
+
+  // Arbor
+  const arborGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8, 8);
+  const arborMat = new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.9, roughness: 0.15 });
+  const arbor = new THREE.Mesh(arborGeo, arborMat);
+  group.add(arbor);
+
+  // Mainspring visible on top
+  const springCurve = [];
+  for (let i = 0; i < 100; i++) {
+    const t = i/100;
+    const a = t * Math.PI * 6;
+    const r = 0.15 + t * 0.65;
+    springCurve.push(new THREE.Vector3(Math.cos(a)*r, 0.26, Math.sin(a)*r));
+  }
+  const springGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(springCurve), 80, 0.02, 4, false);
+  const springMat = new THREE.MeshStandardMaterial({ color: 0x4477bb, metalness: 0.7, roughness: 0.3 });
+  const spring = new THREE.Mesh(springGeo, springMat);
+  group.add(spring);
+
+  group.position.set(-1.2, 0.35, 0.8);
+  group.userData.partId = 'barrel';
+  return group;
+}
+
+function createGearTrain() {
+  const group = new THREE.Group();
+
+  // Second wheel
+  const g2 = createGearMesh(0.1, 0.7, 30, 0.08, 0.15, 0xccaa33, 0.85);
+  g2.rotation.x = -Math.PI/2;
+  g2.position.set(1.2, 0.4, 0.8);
+  g2.userData.gearId = 'second';
+  group.add(g2);
+  // Pinion
+  const p2 = createGearMesh(0.05, 0.2, 10, 0.06, 0.18, 0xddbb44, 0.85);
+  p2.rotation.x = -Math.PI/2;
+  p2.position.set(1.2, 0.55, 0.8);
+  group.add(p2);
+
+  // Third wheel
+  const g3 = createGearMesh(0.1, 0.55, 24, 0.07, 0.12, 0xccaa33, 0.85);
+  g3.rotation.x = -Math.PI/2;
+  g3.position.set(-0.8, 0.4, 1.5);
+  g3.userData.gearId = 'third';
+  group.add(g3);
+  // Pinion
+  const p3 = createGearMesh(0.05, 0.18, 8, 0.05, 0.15, 0xddbb44, 0.85);
+  p3.rotation.x = -Math.PI/2;
+  p3.position.set(-0.8, 0.52, 1.5);
+  group.add(p3);
+
+  // Fourth wheel (center)
+  const g4 = createGearMesh(0.06, 0.45, 20, 0.06, 0.1, 0xccaa33, 0.85);
+  g4.rotation.x = -Math.PI/2;
+  g4.position.set(0, 0.4, 0);
+  g4.userData.gearId = 'fourth';
+  group.add(g4);
+  // Long arbor for seconds
+  const aGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.5, 8);
+  const aMat = new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.9, roughness: 0.15 });
+  const fourthArbor = new THREE.Mesh(aGeo, aMat);
+  fourthArbor.position.set(0, 0.3, 0);
+  group.add(fourthArbor);
+
+  group.userData.partId = 'geartrain';
+  return group;
+}
+
+function createEscapeWheel() {
+  const group = new THREE.Group();
+  const teeth = 15;
+  const shape = new THREE.Shape();
+
+  for (let i = 0; i < teeth; i++) {
+    const a1 = (i/teeth) * Math.PI * 2;
+    const a2 = ((i+0.15)/teeth) * Math.PI * 2;
+    const a3 = ((i+0.5)/teeth) * Math.PI * 2;
+    const innerR = 0.3, outerR = 0.6;
+
+    if (i === 0) shape.moveTo(Math.cos(a1)*innerR, Math.sin(a1)*innerR);
+    else shape.lineTo(Math.cos(a1)*innerR, Math.sin(a1)*innerR);
+    shape.lineTo(Math.cos(a2)*outerR, Math.sin(a2)*outerR);
+    shape.lineTo(Math.cos(a3)*innerR, Math.sin(a3)*innerR);
+  }
+  shape.closePath();
+
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.08, bevelEnabled: false });
+  const mat = new THREE.MeshStandardMaterial({ color: 0xd0d0e0, metalness: 0.85, roughness: 0.2 });
+  const wheel = new THREE.Mesh(geo, mat);
+  wheel.rotation.x = -Math.PI/2;
+  wheel.position.set(1.8, 0.5, -0.5);
+  wheel.castShadow = true;
+  wheel.userData.gearId = 'escape';
+  group.add(wheel);
+
+  // Hub
+  const hubGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.3, 16);
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.9, roughness: 0.15 });
+  const hub = new THREE.Mesh(hubGeo, hubMat);
+  hub.position.set(1.8, 0.5, -0.5);
+  group.add(hub);
+
+  // Upper pinion gear
+  const pinion = createGearMesh(0.05, 0.2, 8, 0.05, 0.1, 0xccccdd, 0.9);
+  pinion.rotation.x = -Math.PI/2;
+  pinion.position.set(1.8, 0.65, -0.5);
+  group.add(pinion);
+
+  group.userData.partId = 'escape';
+  return group;
+}
+
+function createPalletFork() {
+  const group = new THREE.Group();
+
+  // Fork body - T shape
+  const bodyGeo = new THREE.BoxGeometry(0.08, 0.12, 0.8);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x9999bb, metalness: 0.8, roughness: 0.25 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.set(1.8, 0.5, -1.3);
+  body.castShadow = true;
+  group.add(body);
+
+  // Cross bar
+  const crossGeo = new THREE.BoxGeometry(0.6, 0.1, 0.08);
+  const cross = new THREE.Mesh(crossGeo, bodyMat);
+  cross.position.set(1.8, 0.5, -0.95);
+  group.add(cross);
+
+  // Ruby jewels at ends
+  const jewel1Geo = new THREE.BoxGeometry(0.12, 0.12, 0.1);
+  const jewelMat = new THREE.MeshStandardMaterial({
+    color: 0xff2255, metalness: 0.4, roughness: 0.15, transparent: true, opacity: 0.85
+  });
+  const jewel1 = new THREE.Mesh(jewel1Geo, jewelMat);
+  jewel1.position.set(2.1, 0.5, -0.92);
+  group.add(jewel1);
+
+  const jewel2 = new THREE.Mesh(jewel1Geo.clone(), jewelMat);
+  jewel2.position.set(1.5, 0.5, -0.92);
+  group.add(jewel2);
+
+  // Tail with notch
+  const tailGeo = new THREE.CylinderGeometry(0.06, 0.04, 0.15, 8);
+  const tail = new THREE.Mesh(tailGeo, bodyMat);
+  tail.position.set(1.8, 0.5, -1.7);
+  group.add(tail);
+
+  group.userData.partId = 'pallet';
+  return group;
+}
+
+function createBalanceWheel() {
+  const group = new THREE.Group();
+
+  // Balance wheel rim
+  const rimGeo = new THREE.TorusGeometry(0.8, 0.05, 8, 48);
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0xddddee, metalness: 0.85, roughness: 0.2 });
+  const rim = new THREE.Mesh(rimGeo, rimMat);
+  rim.rotation.x = Math.PI/2;
+  rim.position.set(-1.5, 0.6, -1.0);
+  rim.castShadow = true;
+  group.add(rim);
+
+  // Spokes
+  for (let i = 0; i < 4; i++) {
+    const a = (i/4)*Math.PI*2;
+    const spokeGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.75, 6);
+    const spoke = new THREE.Mesh(spokeGeo, rimMat);
+    spoke.rotation.z = Math.PI/2;
+    spoke.rotation.y = a;
+    spoke.position.set(-1.5 + Math.cos(a)*0.37, 0.6, -1.0 + Math.sin(a)*0.37);
+    group.add(spoke);
+  }
+
+  // Hub
+  const hubGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.25, 16);
+  const hub = new THREE.Mesh(hubGeo, rimMat);
+  hub.position.set(-1.5, 0.6, -1.0);
+  group.add(hub);
+
+  // Hairspring (spiral)
+  const hairCurve = [];
+  for (let i = 0; i < 200; i++) {
+    const t = i/200;
+    const a = t * Math.PI * 12;
+    const r = 0.12 + t * 0.55;
+    hairCurve.push(new THREE.Vector3(
+      -1.5 + Math.cos(a)*r, 0.72, -1.0 + Math.sin(a)*r
+    ));
+  }
+  const hairGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hairCurve), 150, 0.008, 4, false);
+  const hairMat = new THREE.MeshStandardMaterial({ color: 0x5588cc, metalness: 0.6, roughness: 0.3 });
+  const hairspring = new THREE.Mesh(hairGeo, hairMat);
+  hairspring.userData.isHairspring = true;
+  group.add(hairspring);
+
+  // Jewel roller
+  const rollerGeo = new THREE.SphereGeometry(0.06, 12, 12);
+  const rollerMat = new THREE.MeshStandardMaterial({ color: 0xff3366, metalness: 0.4, roughness: 0.2, transparent: true, opacity: 0.85 });
+  const roller = new THREE.Mesh(rollerGeo, rollerMat);
+  roller.position.set(-1.5, 0.55, -0.2);
+  group.add(roller);
+
+  group.userData.partId = 'balance';
+  return group;
+}
+
+function createDial() {
+  const group = new THREE.Group();
+
+  // Dial face
+  const dialGeo = new THREE.CylinderGeometry(3.2, 3.2, 0.08, 64);
+  const dialMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, metalness: 0.1, roughness: 0.6 });
+  const dial = new THREE.Mesh(dialGeo, dialMat);
+  dial.position.y = 0.9;
+  dial.castShadow = true;
+  group.add(dial);
+
+  // Hour markers
+  for (let i = 0; i < 12; i++) {
+    const a = (i/12)*Math.PI*2;
+    const markerGeo = new THREE.BoxGeometry(0.08, 0.05, i%3===0 ? 0.35 : 0.2);
+    const markerMat = new THREE.MeshStandardMaterial({ color: 0x222244, metalness: 0.8, roughness: 0.3 });
+    const marker = new THREE.Mesh(markerGeo, markerMat);
+    const r = 2.7;
+    marker.position.set(Math.sin(a)*r, 0.96, -Math.cos(a)*r);
+    marker.rotation.y = a;
+    group.add(marker);
+  }
+
+  // Minute ticks
+  for (let i = 0; i < 60; i++) {
+    if (i % 5 === 0) continue;
+    const a = (i/60)*Math.PI*2;
+    const tickGeo = new THREE.BoxGeometry(0.03, 0.04, 0.1);
+    const tickMat = new THREE.MeshStandardMaterial({ color: 0x555577, metalness: 0.6, roughness: 0.4 });
+    const tick = new THREE.Mesh(tickGeo, tickMat);
+    const r = 2.85;
+    tick.position.set(Math.sin(a)*r, 0.96, -Math.cos(a)*r);
+    tick.rotation.y = a;
+    group.add(tick);
+  }
+
+  // Date window cutout visual
+  const dateGeo = new THREE.BoxGeometry(0.4, 0.06, 0.25);
+  const dateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0, roughness: 0.8 });
+  const dateWin = new THREE.Mesh(dateGeo, dateMat);
+  dateWin.position.set(2.0, 0.96, 0);
+  group.add(dateWin);
+
+  group.userData.partId = 'dial';
+  return group;
+}
+
+function createHands() {
+  const group = new THREE.Group();
+  const handMat = new THREE.MeshStandardMaterial({ color: 0x111133, metalness: 0.85, roughness: 0.25 });
+
+  // Hour hand
+  const hourShape = new THREE.Shape();
+  hourShape.moveTo(-0.06, 0); hourShape.lineTo(0, 1.6);
+  hourShape.lineTo(0.06, 0); hourShape.closePath();
+  const hourGeo = new THREE.ExtrudeGeometry(hourShape, { depth: 0.04, bevelEnabled: false });
+  const hourHand = new THREE.Mesh(hourGeo, handMat);
+  hourHand.rotation.x = -Math.PI/2;
+  hourHand.position.set(0, 1.05, 0);
+  hourHand.userData.handType = 'hour';
+  group.add(hourHand);
+
+  // Minute hand
+  const minShape = new THREE.Shape();
+  minShape.moveTo(-0.04, 0); minShape.lineTo(0, 2.3);
+  minShape.lineTo(0.04, 0); minShape.closePath();
+  const minGeo = new THREE.ExtrudeGeometry(minShape, { depth: 0.03, bevelEnabled: false });
+  const minHand = new THREE.Mesh(minGeo, handMat);
+  minHand.rotation.x = -Math.PI/2;
+  minHand.position.set(0, 1.1, 0);
+  minHand.userData.handType = 'minute';
+  group.add(minHand);
+
+  // Second hand
+  const secMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, metalness: 0.8, roughness: 0.3 });
+  const secShape = new THREE.Shape();
+  secShape.moveTo(-0.015, -0.3); secShape.lineTo(0, 2.5);
+  secShape.lineTo(0.015, -0.3); secShape.closePath();
+  const secGeo = new THREE.ExtrudeGeometry(secShape, { depth: 0.02, bevelEnabled: false });
+  const secHand = new THREE.Mesh(secGeo, secMat);
+  secHand.rotation.x = -Math.PI/2;
+  secHand.position.set(0, 1.15, 0);
+  secHand.userData.handType = 'second';
+  group.add(secHand);
+
+  // Center cap
+  const capGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16);
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.15 });
+  const cap = new THREE.Mesh(capGeo, capMat);
+  cap.position.set(0, 1.15, 0);
+  group.add(cap);
+
+  group.userData.partId = 'hands';
+  return group;
+}
+
+// ─── CREATE GHOST INDICATORS ───
+function createGhosts() {
+  const ghostMat = new THREE.MeshStandardMaterial({
+    color: 0xd4af37, transparent: true, opacity: 0.12, wireframe: true
+  });
+
+  const positions = {
+    mainplate: [0, 0, 0],
+    barrel: [-1.2, 0.35, 0.8],
+    geartrain: [0, 0, 0],
+    escape: [1.8, 0.5, -0.5],
+    pallet: [1.8, 0.5, -1.3],
+    balance: [-1.5, 0.6, -1.0],
+    dial: [0, 0.9, 0],
+    hands: [0, 1.1, 0],
+  };
+
+  const sizes = {
+    mainplate: [3.5, 0.2, 3.5],
+    barrel: [1.0, 0.5, 1.0],
+    geartrain: [1.5, 0.3, 1.5],
+    escape: [0.6, 0.15, 0.6],
+    pallet: [0.5, 0.15, 0.8],
+    balance: [0.9, 0.15, 0.9],
+    dial: [3.2, 0.1, 3.2],
+    hands: [0.5, 0.1, 2.5],
+  };
+
+  PARTS.forEach(part => {
+    const s = sizes[part.id];
+    const p = positions[part.id];
+    let geo;
+    if (['mainplate','barrel','dial','balance','escape'].includes(part.id)) {
+      geo = new THREE.CylinderGeometry(s[0], s[0], s[1], 32);
+    } else {
+      geo = new THREE.BoxGeometry(s[0]*2, s[1]*2, s[2]*2);
+    }
+    const ghost = new THREE.Mesh(geo, ghostMat.clone());
+    ghost.position.set(p[0], p[1], p[2]);
+    ghost.visible = false;
+    ghost.userData.ghostFor = part.id;
+    assemblyGroup.add(ghost);
+    ghostMeshes[part.id] = ghost;
+  });
+}
+
+// ─── PART CREATION MAP ───
+function createPartMesh(partId) {
+  switch(partId) {
+    case 'mainplate': return createMainplate();
+    case 'barrel': return createBarrel();
+    case 'geartrain': return createGearTrain();
+    case 'escape': return createEscapeWheel();
+    case 'pallet': return createPalletFork();
+    case 'balance': return createBalanceWheel();
+    case 'dial': return createDial();
+    case 'hands': return createHands();
+  }
+}
+
+// ─── UI ───
+function buildUI() {
+  const tray = document.getElementById('tray');
+  tray.innerHTML = '';
+  PARTS.forEach((part, idx) => {
+    const card = document.createElement('div');
+    card.className = 'part-card' + (part.placed ? ' placed' : (idx > 0 && !PARTS[idx-1].placed ? ' locked' : ''));
+    card.innerHTML = `
+      <div class="part-name">${part.name}</div>
+      <div class="part-desc">${part.desc}</div>
+      <div class="part-status">${part.placed ? 'PLACED' : (idx > 0 && !PARTS[idx-1].placed ? 'LOCKED' : 'READY')}</div>
+    `;
+    card.addEventListener('click', () => selectPart(idx));
+    tray.appendChild(card);
+  });
+}
+
+function selectPart(idx) {
+  const part = PARTS[idx];
+  if (part.placed) return;
+  if (idx > 0 && !PARTS[idx-1].placed) return;
+
+  // Deselect previous
+  document.querySelectorAll('.part-card').forEach(c => c.classList.remove('selected'));
+  Object.values(ghostMeshes).forEach(g => { g.visible = false; });
+
+  if (selectedPart === idx) {
+    selectedPart = null;
+    return;
+  }
+
+  selectedPart = idx;
+  document.querySelectorAll('.part-card')[idx].classList.add('selected');
+
+  // Show ghost
+  const ghost = ghostMeshes[part.id];
+  if (ghost) {
+    ghost.visible = true;
+    ghost.material.opacity = 0.2;
+    animateGhostPulse(ghost);
+  }
+}
+
+function animateGhostPulse(ghost) {
+  if (!ghost.visible) return;
+  const t = Date.now() * 0.003;
+  ghost.material.opacity = 0.1 + Math.sin(t) * 0.08;
+  requestAnimationFrame(() => animateGhostPulse(ghost));
+}
+
+function placePart(partId) {
+  const idx = PARTS.findIndex(p => p.id === partId);
+  if (idx < 0 || PARTS[idx].placed) return;
+
+  PARTS[idx].placed = true;
+  placedCount++;
+  selectedPart = null;
+
+  // Hide ghost
+  if (ghostMeshes[partId]) ghostMeshes[partId].visible = false;
+
+  // Create and add mesh with animation
+  const mesh = createPartMesh(partId);
+  mesh.userData.partId = partId;
+
+  // Start position (above)
+  const startY = 6;
+  mesh.children.forEach(c => { c.userData.origY = c.position.y; c.position.y += startY; });
+  if (mesh.position) mesh.userData.origPos = mesh.position.clone();
+  mesh.position.y += startY;
+
+  assemblyGroup.add(mesh);
+  placedMeshes[partId] = mesh;
+
+  // Animate snap-in
+  animateSnapIn(mesh, startY);
+
+  // Update UI
+  document.getElementById('progress').textContent = `${placedCount} / 8 ASSEMBLED`;
+  buildUI();
+
+  // Check completion
+  if (placedCount === 8) {
+    setTimeout(onComplete, 1500);
+  }
+}
+
+function animateSnapIn(mesh, offset) {
+  const duration = 800;
+  const start = Date.now();
+
+  function tick() {
+    const t = Math.min((Date.now() - start) / duration, 1);
+    // Ease out bounce
+    const ease = t < 0.7 ? (t/0.7)*(t/0.7) : 1 - Math.pow((t-0.7)/0.3, 2)*0.15 + 0.15*(t-0.7)/0.3;
+    const y = offset * (1 - Math.min(ease * 1.1, 1));
+
+    mesh.position.y = (mesh.userData.origPos ? mesh.userData.origPos.y : 0) + y;
+
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ─── COMPLETION ───
+function onComplete() {
+  isComplete = true;
+  document.getElementById('complete-overlay').classList.add('show');
+  document.getElementById('instructions').textContent = 'Your mechanical watch is running';
+
+  // Create particles
+  createParticles();
+}
+
+let particles = null;
+function createParticles() {
+  const count = 200;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count*3);
+  const velocities = [];
+
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = 0;
+    positions[i*3+1] = 1;
+    positions[i*3+2] = 0;
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.random()*Math.PI;
+    const speed = 2 + Math.random()*4;
+    velocities.push(
+      Math.sin(phi)*Math.cos(theta)*speed,
+      Math.cos(phi)*speed*0.5 + 2,
+      Math.sin(phi)*Math.sin(theta)*speed
+    );
+  }
+
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xd4af37, size: 0.06, transparent: true, opacity: 1 });
+  particles = new THREE.Points(geo, mat);
+  particles.userData.velocities = velocities;
+  particles.userData.life = 0;
+  scene.add(particles);
+}
+
+// ─── CAMERA ORBIT ───
+function updateCamera() {
+  cameraPhi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, cameraPhi));
+  cameraR = Math.max(5, Math.min(25, cameraR));
+  camera.position.x = cameraR * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+  camera.position.y = cameraR * Math.cos(cameraPhi);
+  camera.position.z = cameraR * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+  camera.lookAt(0, 0.5, 0);
+}
+
+function onMouseDown(e) {
+  if (e.target !== renderer.domElement) return;
+  mouseDown = true; mouseX = e.clientX; mouseY = e.clientY;
+}
+function onMouseMove(e) {
+  if (!mouseDown) return;
+  const dx = e.clientX - mouseX;
+  const dy = e.clientY - mouseY;
+  cameraTheta -= dx * 0.008;
+  cameraPhi -= dy * 0.008;
+  updateCamera();
+  mouseX = e.clientX; mouseY = e.clientY;
+}
+function onMouseUp() { mouseDown = false; }
+function onWheel(e) {
+  cameraR += e.deltaY * 0.01;
+  updateCamera();
+}
+
+function onCanvasClick(e) {
+  if (selectedPart === null) return;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const partId = PARTS[selectedPart].id;
+  const ghost = ghostMeshes[partId];
+
+  if (ghost && ghost.visible) {
+    const intersects = raycaster.intersectObject(ghost);
+    if (intersects.length > 0) {
+      placePart(partId);
+      return;
+    }
+  }
+
+  // Also allow clicking anywhere in assembly area for convenience
+  const allGhosts = Object.values(ghostMeshes).filter(g => g.visible);
+  const hits = raycaster.intersectObjects(allGhosts);
+  if (hits.length > 0) {
+    const hitPartId = hits[0].object.userData.ghostFor;
+    if (hitPartId === partId) {
+      placePart(partId);
+    }
+  }
+
+  // Click on assembly area = place if only one option
+  if (ghost && ghost.visible) {
+    const assemblyHits = raycaster.intersectObjects(assemblyGroup.children, true);
+    if (assemblyHits.length > 0) {
+      placePart(partId);
+    }
+  }
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ─── RESET ───
+function resetGame() {
+  PARTS.forEach(p => p.placed = false);
+  placedCount = 0;
+  selectedPart = null;
+  isComplete = false;
+
+  // Remove placed meshes
+  Object.values(placedMeshes).forEach(m => assemblyGroup.remove(m));
+  placedMeshes = {};
+
+  // Remove particles
+  if (particles) { scene.remove(particles); particles = null; }
+
+  document.getElementById('complete-overlay').classList.remove('show');
+  document.getElementById('progress').textContent = '0 / 8 ASSEMBLED';
+  document.getElementById('instructions').textContent = 'Select a part, then click the assembly to place it';
+
+  buildUI();
+}
+
+// ─── ANIMATE ───
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const time = clock.getElapsedTime();
+
+  if (isComplete) {
+    tickTime += dt;
+
+    // Balance wheel oscillation (4Hz = 8 beats/sec)
+    const balanceMesh = placedMeshes['balance'];
+    if (balanceMesh) {
+      balanceAngle = Math.sin(time * Math.PI * 8) * 0.4;
+      balanceMesh.rotation.y = balanceAngle;
+    }
+
+    // Escape wheel ticking
+    const escapeMesh = placedMeshes['escape'];
+    if (escapeMesh) {
+      const tickPhase = Math.floor(time * 8) * (Math.PI * 2 / 15);
+      escapeMesh.children.forEach(c => {
+        if (c.userData && c.userData.gearId === 'escape') {
+          // noop, rotate parent
+        }
+      });
+      escapeMesh.rotation.y = tickPhase * 0.3;
+    }
+
+    // Pallet fork oscillation
+    const palletMesh = placedMeshes['pallet'];
+    if (palletMesh) {
+      palletMesh.rotation.y = Math.sin(time * Math.PI * 8) * 0.15;
+    }
+
+    // Gear train rotation (increasing speed)
+    const gearMesh = placedMeshes['geartrain'];
+    if (gearMesh) {
+      gearMesh.children.forEach(c => {
+        if (c.userData.gearId === 'second') c.rotation.z = time * 0.5;
+        if (c.userData.gearId === 'third') c.rotation.z = time * 1.5;
+        if (c.userData.gearId === 'fourth') c.rotation.z = time * 4;
+      });
+    }
+
+    // Barrel slow rotation
+    const barrelMesh = placedMeshes['barrel'];
+    if (barrelMesh) {
+      barrelMesh.rotation.y = time * 0.1;
+    }
+
+    // Hands rotation
+    const handsMesh = placedMeshes['hands'];
+    if (handsMesh) {
+      handsMesh.children.forEach(c => {
+        if (c.userData.handType === 'second') c.rotation.y = time * (Math.PI*2/60) * 20; // accelerated
+        if (c.userData.handType === 'minute') c.rotation.y = time * (Math.PI*2/3600) * 20;
+        if (c.userData.handType === 'hour') c.rotation.y = time * (Math.PI*2/43200) * 20;
+      });
+    }
+
+    // Particles
+    if (particles && particles.userData.life < 3) {
+      particles.userData.life += dt;
+      const pos = particles.geometry.attributes.position.array;
+      const vel = particles.userData.velocities;
+      for (let i = 0; i < pos.length/3; i++) {
+        pos[i*3] += vel[i*3] * dt;
+        pos[i*3+1] += vel[i*3+1] * dt;
+        pos[i*3+2] += vel[i*3+2] * dt;
+        vel[i*3+1] -= 5 * dt; // gravity
+      }
+      particles.geometry.attributes.position.needsUpdate = true;
+      particles.material.opacity = Math.max(0, 1 - particles.userData.life / 3);
+
+      if (particles.userData.life >= 3) {
+        scene.remove(particles);
+        particles = null;
+      }
+    }
+  }
+
+  // Subtle ambient rotation when not dragging
+  if (!mouseDown && !isComplete) {
+    cameraTheta += dt * 0.05;
+    updateCamera();
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ─── TOOLTIP ───
+renderer.domElement && document.addEventListener('mousemove', (e) => {
+  if (!renderer) return;
+  const tooltip = document.getElementById('tooltip');
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const placed = Object.values(placedMeshes);
+  const allChildren = [];
+  placed.forEach(m => m.traverse(c => { if(c.isMesh) allChildren.push(c); }));
+
+  const hits = raycaster.intersectObjects(allChildren);
+  if (hits.length > 0) {
+    let obj = hits[0].object;
+    while (obj.parent && !obj.userData.partId) obj = obj.parent;
+    if (obj.userData.partId) {
+      const part = PARTS.find(p => p.id === obj.userData.partId);
+      if (part) {
+        tooltip.textContent = part.name;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY - 10) + 'px';
+        return;
+      }
+    }
+  }
+  tooltip.style.display = 'none';
+});
+
+// Start
+init();
+</script>
+</body>
+</html>
