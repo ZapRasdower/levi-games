@@ -7,118 +7,385 @@
 <link rel="icon" href="data:,">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --gold: #d4af37;
+  --gold-dim: rgba(212,175,55,0.3);
+  --bg: #0a0a0f;
+  --panel: rgba(15,15,25,0.94);
+  --tray-w: 250px;
+}
 body {
-  background: #0a0a0f; color: #c0c0c0; font-family: 'Segoe UI', system-ui, sans-serif;
-  overflow: hidden; height: 100vh; width: 100vw; user-select: none;
+  background: var(--bg); color: #c0c0c0; font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden; height: 100vh; width: 100vw; user-select: none; -webkit-user-select: none;
 }
+canvas { display: block; }
 #title {
-  position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
-  font-size: 28px; letter-spacing: 12px; font-weight: 200; color: #d4af37;
-  text-shadow: 0 0 20px rgba(212,175,55,0.3);
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100;
+  font-size: 26px; letter-spacing: 12px; font-weight: 200; color: var(--gold);
+  text-shadow: 0 0 20px var(--gold-dim); white-space: nowrap; pointer-events: none;
 }
-#progress {
-  position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 100;
-  font-size: 13px; letter-spacing: 3px; color: #888;
+#hud {
+  position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 100;
+  display: flex; gap: 18px; font-size: 12px; letter-spacing: 3px; color: #888;
+  white-space: nowrap; pointer-events: none;
 }
+#hud b { color: #ddd; font-weight: 500; }
+#hud .warn b { color: #e0705a; }
 #tray {
-  position: fixed; left: 0; top: 0; bottom: 0; width: 240px; z-index: 50;
+  position: fixed; left: 0; top: 0; bottom: 0; width: var(--tray-w); z-index: 50;
   background: linear-gradient(to right, rgba(15,15,25,0.95), rgba(15,15,25,0.8));
   border-right: 1px solid rgba(212,175,55,0.15);
-  overflow-y: auto; padding: 100px 12px 20px;
+  overflow-y: auto; padding: 96px 12px 70px;
   scrollbar-width: thin; scrollbar-color: #333 transparent;
 }
+#tray-head {
+  font-size: 10px; letter-spacing: 3px; color: #666; margin: 0 4px 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+#hint-btn {
+  background: none; border: 1px solid rgba(212,175,55,0.3); color: var(--gold);
+  font-size: 10px; letter-spacing: 1px; padding: 3px 8px; border-radius: 3px; cursor: pointer;
+  display: none;
+}
+#hint-btn:hover { background: rgba(212,175,55,0.12); }
 .part-card {
-  padding: 14px; margin-bottom: 8px; border-radius: 8px; cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s;
-  background: rgba(255,255,255,0.02);
+  padding: 12px 14px; margin-bottom: 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.06); transition: background 0.25s, border-color 0.25s, opacity 0.25s;
+  background: rgba(255,255,255,0.02); position: relative;
 }
 .part-card:hover { background: rgba(212,175,55,0.08); border-color: rgba(212,175,55,0.2); }
 .part-card.selected { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.5); }
+.part-card.next { border-color: rgba(212,175,55,0.35); box-shadow: inset 0 0 0 1px rgba(212,175,55,0.15); }
+.part-card.next .part-status { color: var(--gold); }
 .part-card.placed { opacity: 0.4; cursor: default; border-color: rgba(100,200,100,0.3); }
 .part-card.placed .part-status { color: #5a5; }
-.part-card.locked { opacity: 0.25; cursor: not-allowed; }
+.part-card.shake { animation: shake 0.4s; border-color: rgba(224,112,90,0.7) !important; }
+.part-card.hinted { animation: hintPulse 0.6s 4; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); }
+}
+@keyframes hintPulse { 50% { background: rgba(212,175,55,0.35); border-color: var(--gold); } }
 .part-name { font-size: 14px; font-weight: 600; color: #ddd; margin-bottom: 4px; }
 .part-desc { font-size: 11px; color: #777; line-height: 1.4; }
-.part-status { font-size: 10px; margin-top: 6px; color: #d4af37; letter-spacing: 1px; }
-#reset-btn {
-  position: fixed; bottom: 20px; left: 20px; z-index: 100;
+.part-status { font-size: 10px; margin-top: 6px; color: #666; letter-spacing: 1px; }
+.part-card.graded .part-name { padding-right: 66px; }
+.part-grade {
+  position: absolute; top: 10px; right: 10px; font-size: 9px; letter-spacing: 1px;
+  color: var(--gold); border: 1px solid var(--gold-dim); padding: 2px 5px; border-radius: 3px;
+}
+.btn {
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
   color: #888; padding: 8px 20px; border-radius: 4px; cursor: pointer;
-  font-size: 12px; letter-spacing: 2px; transition: all 0.3s;
+  font-size: 12px; letter-spacing: 2px; transition: all 0.3s; font-family: inherit;
 }
-#reset-btn:hover { background: rgba(212,175,55,0.1); border-color: rgba(212,175,55,0.3); color: #d4af37; }
+.btn:hover { background: rgba(212,175,55,0.1); border-color: var(--gold-dim); color: var(--gold); }
+.btn.gold { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.5); color: var(--gold); }
+.btn.gold:hover { background: rgba(212,175,55,0.3); }
+#reset-btn { position: fixed; top: 22px; left: 16px; z-index: 100; padding: 6px 14px; font-size: 11px; }
+#mute-btn { position: fixed; bottom: 20px; right: 20px; z-index: 100; padding: 8px 12px; font-size: 15px; }
 #tooltip {
-  position: fixed; z-index: 200; background: rgba(0,0,0,0.85); color: #d4af37;
+  position: fixed; z-index: 200; background: rgba(0,0,0,0.85); color: var(--gold);
   padding: 6px 14px; border-radius: 4px; font-size: 12px; letter-spacing: 1px;
-  pointer-events: none; display: none; border: 1px solid rgba(212,175,55,0.3);
+  pointer-events: none; display: none; border: 1px solid var(--gold-dim);
 }
 #instructions {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
-  font-size: 12px; color: #555; letter-spacing: 1px; text-align: center;
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 100;
+  font-size: 12px; color: #777; letter-spacing: 1px; text-align: center; max-width: 60vw;
+  pointer-events: none; transition: color 0.3s;
 }
+#instructions.good { color: #7bd88f; }
+#instructions.bad { color: #e0705a; }
 .back-link {
-  position: fixed; top: 24px; right: 24px; z-index: 100;
-  color: #666; text-decoration: none; font-size: 12px; letter-spacing: 2px;
-  transition: color 0.3s;
+  position: fixed; top: 22px; right: 24px; z-index: 100;
+  color: #666; text-decoration: none; font-size: 12px; letter-spacing: 2px; transition: color 0.3s;
 }
-.back-link:hover { color: #d4af37; }
-#complete-overlay {
+.back-link:hover { color: var(--gold); }
+
+/* ---- Floating feedback ("PERFECT", "+100") ---- */
+#toast {
+  position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 250;
+  font-size: 34px; letter-spacing: 8px; font-weight: 300; color: var(--gold);
+  text-shadow: 0 0 30px var(--gold-dim); opacity: 0; pointer-events: none; text-align: center;
+}
+#toast small { display: block; font-size: 13px; letter-spacing: 3px; color: #aaa; margin-top: 6px; }
+#toast.pop { animation: toastPop 1.1s ease-out forwards; }
+#toast.bad { color: #e0705a; text-shadow: 0 0 30px rgba(224,112,90,0.4); }
+@keyframes toastPop {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  70% { opacity: 1; transform: translate(-50%, -55%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -75%) scale(1); }
+}
+
+/* ---- Overlays: start screen, seating gauge, regulation, results ---- */
+.overlay {
   position: fixed; inset: 0; z-index: 300; display: none;
-  background: rgba(0,0,0,0); pointer-events: none;
   justify-content: center; align-items: center; flex-direction: column;
+  background: rgba(4,4,8,0.62); backdrop-filter: blur(3px);
 }
-#complete-overlay.show { display: flex; animation: overlayIn 2s forwards; }
-#complete-text {
-  font-size: 36px; letter-spacing: 14px; color: #d4af37; opacity: 0;
-  animation: textIn 1.5s 1s forwards;
-  text-shadow: 0 0 40px rgba(212,175,55,0.5);
+.overlay.show { display: flex; }
+.sheet {
+  background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px;
+  padding: 28px 32px; max-width: min(520px, 92vw); text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
-#complete-sub {
-  font-size: 14px; letter-spacing: 4px; color: #888; opacity: 0; margin-top: 12px;
-  animation: textIn 1.5s 1.8s forwards;
+.sheet h2 { font-size: 26px; letter-spacing: 10px; font-weight: 200; color: var(--gold); margin-bottom: 6px; }
+.sheet .sub { font-size: 12px; letter-spacing: 3px; color: #888; margin-bottom: 18px; }
+.sheet p { font-size: 13px; color: #aaa; line-height: 1.6; margin-bottom: 14px; }
+.sheet .row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.diff {
+  flex: 1 1 180px; text-align: left; padding: 14px 16px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); transition: all 0.25s;
 }
-@keyframes overlayIn { to { background: rgba(0,0,0,0.4); } }
-@keyframes textIn { to { opacity: 1; } }
-canvas { display: block; }
+.diff:hover { border-color: rgba(212,175,55,0.5); background: rgba(212,175,55,0.1); }
+.diff .dn { font-size: 15px; letter-spacing: 4px; color: var(--gold); }
+.diff .dd { font-size: 11px; color: #888; margin-top: 6px; line-height: 1.5; }
+.diff .db { font-size: 10px; color: #6a6; margin-top: 8px; letter-spacing: 1px; }
+.steps { text-align: left; font-size: 12px; color: #999; line-height: 1.7; margin: 0 auto 6px; display: inline-block; }
+.steps b { color: var(--gold); font-weight: 500; }
+
+/* Seating gauge */
+#seat-overlay { background: rgba(0,0,0,0.15); backdrop-filter: none; justify-content: flex-end; padding-bottom: 90px; cursor: pointer; }
+#seat-box {
+  background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 16px 22px 14px;
+  text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+#seat-box .lbl { font-size: 11px; letter-spacing: 4px; color: var(--gold); margin-bottom: 4px; }
+#seat-box .sub { font-size: 11px; color: #777; letter-spacing: 1px; margin-bottom: 10px; }
+#gauge { width: 340px; max-width: 80vw; height: 64px; display: block; margin: 0 auto; }
+#seat-box .hint { font-size: 10px; color: #666; letter-spacing: 2px; margin-top: 8px; }
+
+/* Regulation (timegrapher) */
+#reg-overlay { background: rgba(0,0,0,0.25); justify-content: flex-end; padding-bottom: 70px; }
+#reg-box { background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 18px 24px 16px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+#reg-box .lbl { font-size: 12px; letter-spacing: 5px; color: var(--gold); margin-bottom: 4px; }
+#reg-box .sub { font-size: 11px; color: #888; margin-bottom: 10px; line-height: 1.5; max-width: 420px; }
+#timegrapher { width: 420px; max-width: 86vw; height: 150px; display: block; margin: 0 auto 10px; border-radius: 6px; }
+#reg-row { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 10px; letter-spacing: 2px; color: #888; }
+#reg-slider { width: 220px; max-width: 50vw; accent-color: var(--gold); cursor: pointer; }
+#reg-read { font-size: 13px; color: #ddd; letter-spacing: 1px; min-width: 90px; }
+#reg-box .row { margin-top: 12px; }
+
+/* Results */
+.score-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 22px; text-align: left; font-size: 12px; margin: 10px auto 14px; max-width: 320px; }
+.score-grid .k { color: #888; letter-spacing: 1px; }
+.score-grid .v { color: #ddd; text-align: right; }
+.score-grid .total { border-top: 1px solid rgba(212,175,55,0.3); padding-top: 6px; margin-top: 2px; }
+.score-grid .total .k, .score-grid .total .v { color: var(--gold); font-size: 14px; }
+#rank { font-size: 20px; letter-spacing: 6px; color: var(--gold); margin: 4px 0 2px; font-weight: 300; }
+#rank-sub { font-size: 11px; letter-spacing: 2px; color: #888; margin-bottom: 8px; }
+.newbest { color: #7bd88f !important; }
+
+@media (max-width: 720px) {
+  :root { --tray-w: 100vw; }
+  #title { font-size: 16px; letter-spacing: 6px; top: 10px; }
+  #hud { top: 34px; font-size: 10px; gap: 10px; letter-spacing: 2px; }
+  #tray {
+    top: auto; bottom: 0; height: 34vh; width: 100vw; padding: 10px 10px 8px;
+    border-right: none; border-top: 1px solid rgba(212,175,55,0.15);
+    background: rgba(15,15,25,0.94);
+  }
+  .part-card { padding: 9px 12px; margin-bottom: 6px; }
+  .part-desc { display: none; }
+  .part-card.selected .part-desc, .part-card.next .part-desc { display: block; }
+  #reset-btn { top: 60px; left: 12px; padding: 5px 10px; font-size: 10px; }
+  #mute-btn { bottom: auto; top: 60px; right: 12px; padding: 4px 10px; font-size: 13px; }
+  #instructions { bottom: calc(34vh + 8px); max-width: 90vw; font-size: 11px; }
+  #seat-overlay { padding-bottom: calc(34vh + 20px); }
+  #reg-overlay { padding-bottom: 20px; }
+  .back-link { top: 12px; right: 12px; font-size: 9px; letter-spacing: 1px; }
+  .sheet { padding: 20px 18px; }
+  .sheet h2 { font-size: 20px; letter-spacing: 6px; }
+}
 </style>
 </head>
 <body>
 <div id="title">WATCHMAKER</div>
-<div id="progress">0 / 8 ASSEMBLED</div>
+<div id="hud">
+  <span>PARTS <b id="hud-parts">0/8</b></span>
+  <span>SCORE <b id="hud-score">0</b></span>
+  <span>TIME <b id="hud-time">0:00</b></span>
+  <span class="warn">SLIPS <b id="hud-miss">0</b></span>
+</div>
 <a class="back-link" href="../index.html">&larr; ALL GAMES</a>
-<div id="tray"></div>
-<button id="reset-btn">RESET</button>
+<div id="tray">
+  <div id="tray-head"><span id="tray-title">PARTS BENCH</span><button id="hint-btn">HINT &minus;25</button></div>
+  <div id="tray-list"></div>
+</div>
+<button id="reset-btn" class="btn">RESTART</button>
+<button id="mute-btn" class="btn" title="toggle sound">&#128266;</button>
 <div id="tooltip"></div>
-<div id="instructions">Select a part, then click the assembly to place it</div>
-<div id="complete-overlay"><div id="complete-text">MASTERPIECE</div><div id="complete-sub">Your watch is alive</div></div>
+<div id="instructions">Pick the next part from the bench</div>
+<div id="toast"></div>
+
+<!-- Start screen -->
+<div id="start-overlay" class="overlay show">
+  <div class="sheet">
+    <h2>WATCHMAKER</h2>
+    <div class="sub">BUILD A MECHANICAL MOVEMENT</div>
+    <div class="steps">
+      <b>1.</b> Pick the part that goes in next (order matters!)<br>
+      <b>2.</b> Tap its glowing slot &mdash; the closer to centre, the more points<br>
+      <b>3.</b> Seat it: stop the needle in the gold zone<br>
+      <b>4.</b> Regulate the finished watch until it keeps perfect time
+    </div>
+    <div class="row">
+      <div class="diff" data-diff="apprentice">
+        <div class="dn">APPRENTICE</div>
+        <div class="dd">The bench shows the next part. Slow, wide seating zone. The rate readout is on.</div>
+        <div class="db" id="best-apprentice"></div>
+      </div>
+      <div class="diff" data-diff="master">
+        <div class="dn">MASTER</div>
+        <div class="dd">Parts are shuffled &mdash; you decide the order. Fast needle, tight zone, and you must read the timegrapher yourself.</div>
+        <div class="db" id="best-master"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Seating mini-game -->
+<div id="seat-overlay" class="overlay">
+  <div id="seat-box">
+    <div class="lbl">SEAT THE <span id="seat-name">PART</span></div>
+    <div class="sub">Tap / click / SPACE when the needle is in the gold zone</div>
+    <canvas id="gauge" width="680" height="128"></canvas>
+    <div class="hint" id="seat-hint">CENTRE = PERFECT SEAT</div>
+  </div>
+</div>
+
+<!-- Regulation mini-game -->
+<div id="reg-overlay" class="overlay">
+  <div id="reg-box">
+    <div class="lbl">REGULATE</div>
+    <div class="sub" id="reg-sub">Your watch runs, but not on time. The timegrapher plots every tick: a line sloping <b>up</b> means it runs fast, <b>down</b> means slow. Move the regulator until the trace is flat, then certify.</div>
+    <canvas id="timegrapher" width="840" height="300"></canvas>
+    <div id="reg-row">
+      <span>SLOW &minus;</span>
+      <input type="range" id="reg-slider" min="-60" max="60" value="0" step="1">
+      <span>+ FAST</span>
+      <span id="reg-read">&nbsp;</span>
+    </div>
+    <div class="row"><button id="certify-btn" class="btn gold">CERTIFY</button></div>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="done-overlay" class="overlay">
+  <div class="sheet">
+    <h2>MASTERPIECE</h2>
+    <div class="sub">YOUR WATCH IS ALIVE</div>
+    <div id="rank"></div>
+    <div id="rank-sub"></div>
+    <div class="score-grid" id="score-grid"></div>
+    <div class="row">
+      <button id="again-btn" class="btn gold">BUILD ANOTHER</button>
+      <button id="admire-btn" class="btn">ADMIRE IT</button>
+    </div>
+  </div>
+</div>
+
 <script src="three.min.js"></script>
 <script>
 // ─── CONFIG ───
 const PARTS = [
-  { id:'mainplate', name:'Mainplate', desc:'The foundation — houses all jewel bearings and pivot points', color:0x8888aa, placed:false },
-  { id:'barrel', name:'Barrel & Mainspring', desc:'Cylindrical power source storing energy in a coiled spring', color:0xb8960c, placed:false },
-  { id:'geartrain', name:'Gear Train', desc:'Three wheels converting slow barrel rotation to fast hand motion', color:0xccaa33, placed:false },
-  { id:'escape', name:'Escape Wheel', desc:'Star-shaped wheel with pointed teeth — controls energy release', color:0xc0c0c0, placed:false },
-  { id:'pallet', name:'Pallet Fork', desc:'T-shaped lever with ruby jewels that locks and unlocks the escapement', color:0xaaaacc, placed:false },
-  { id:'balance', name:'Balance Wheel', desc:'The beating heart — oscillates 8 times per second with its hairspring', color:0xddddee, placed:false },
-  { id:'dial', name:'Dial', desc:'The watch face with hour markers and minute track', color:0xf5f0e8, placed:false },
-  { id:'hands', name:'Hands', desc:'Hour, minute, and second hands to display the time', color:0x222244, placed:false },
+  { id:'mainplate', name:'Mainplate', desc:'The foundation — houses all jewel bearings and pivot points', color:0x8888aa },
+  { id:'barrel', name:'Barrel & Mainspring', desc:'Cylindrical power source storing energy in a coiled spring', color:0xb8960c },
+  { id:'geartrain', name:'Gear Train', desc:'Three wheels converting slow barrel rotation to fast hand motion', color:0xccaa33 },
+  { id:'escape', name:'Escape Wheel', desc:'Star-shaped wheel with pointed teeth — controls energy release', color:0xc0c0c0 },
+  { id:'pallet', name:'Pallet Fork', desc:'T-shaped lever with ruby jewels that locks and unlocks the escapement', color:0xaaaacc },
+  { id:'balance', name:'Balance Wheel', desc:'The beating heart — oscillates 8 times per second with its hairspring', color:0xddddee },
+  { id:'dial', name:'Dial', desc:'The watch face with hour markers and minute track', color:0xf5f0e8 },
+  { id:'hands', name:'Hands', desc:'Hour, minute, and second hands to display the time', color:0x222244 },
 ];
+// Why each part must wait for the one before it — shown when you pick too early.
+const WHY_NOT = {
+  barrel: 'the barrel needs the mainplate to sit in',
+  geartrain: 'the gears need the barrel to drive them',
+  escape: 'the escape wheel is the last wheel of the gear train',
+  pallet: 'the pallet fork has nothing to lock without the escape wheel',
+  balance: 'the balance needs the pallet fork to push it',
+  dial: 'the dial covers the movement — finish the movement first',
+  hands: 'the hands need a dial to point at',
+};
+
+const DIFF = {
+  apprentice: { label: 'APPRENTICE', shuffle: false, needleSpeed: 0.55, zone: 0.16, zoneShrink: 0.008, showRate: true,  jitter: 0 },
+  master:     { label: 'MASTER',     shuffle: true,  needleSpeed: 0.95, zone: 0.11, zoneShrink: 0.007, showRate: false, jitter: 2.5 },
+};
+const BEST_KEY = d => 'watchmaker.best.' + d;
+const MUTE_KEY = 'watchmaker.muted';
 
 let scene, camera, renderer, clock;
-let assemblyGroup, partsGroup;
-let selectedPart = null;
-let placedCount = 0;
-let isComplete = false;
-let animating = false;
+let assemblyGroup;
 let ghostMeshes = {};
 let placedMeshes = {};
+let raycaster, mouse;
 let mouseDown = false, mouseX = 0, mouseY = 0;
 let cameraTheta = Math.PI/4, cameraPhi = Math.PI/4, cameraR = 12;
-let targetTheta = cameraTheta, targetPhi = cameraPhi, targetR = cameraR;
-let raycaster, mouse;
-let balanceAngle = 0, balanceDir = 1;
-let tickTime = 0;
+let camShake = 0;
+let isComplete = false;
+
+// Game state
+let phase = 'start';       // start | build | seat | regulate | done
+let diff = DIFF.apprentice;
+let diffName = 'apprentice';
+let order = [];            // tray display order (indexes into PARTS)
+let placedCount = 0;
+let selectedPart = null;   // index into PARTS
+let score = 0, mistakes = 0, hintsUsed = 0;
+let startTime = 0, elapsed = 0, timerOn = false;
+let grades = {};           // partId -> { precision, seat }
+let seat = null;           // { partId, mesh, pos, dir, zoneC, zoneW, speed }
+let reg = null;            // { error, adj, y, x, pts:[] }
+let breakdown = null;
+
+// ─── SOUND (tiny WebAudio synth, matches the other games) ───
+let muted = localStorage.getItem(MUTE_KEY) === '1';
+let audio = null;
+function ac() {
+  if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+  if (audio.state === 'suspended') audio.resume();
+  return audio;
+}
+function beep(freq, dur, type = 'sine', vol = 0.06, slide = 0) {
+  if (muted) return;
+  try {
+    const a = ac();
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, a.currentTime);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), a.currentTime + dur);
+    g.gain.setValueAtTime(vol, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g).connect(a.destination);
+    o.start(); o.stop(a.currentTime + dur);
+  } catch (e) { /* audio blocked — stay silent */ }
+}
+const sfx = {
+  select()  { beep(880, 0.05, 'triangle', 0.035); },
+  snap()    { beep(180, 0.09, 'square', 0.05, -90); setTimeout(() => beep(1200, 0.04, 'triangle', 0.03), 40); },
+  perfect() { [1046, 1318, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 70)); },
+  good()    { beep(784, 0.1, 'triangle', 0.045); setTimeout(() => beep(1046, 0.12, 'triangle', 0.045), 80); },
+  ok()      { beep(660, 0.1, 'triangle', 0.04); },
+  miss()    { beep(200, 0.25, 'sawtooth', 0.05, -120); },
+  wrong()   { beep(160, 0.18, 'square', 0.045, -60); },
+  tick()    { beep(2400, 0.012, 'square', 0.012); },
+  tock()    { beep(1900, 0.012, 'square', 0.010); },
+  hover()   { beep(1500, 0.02, 'sine', 0.012); },
+  hint()    { beep(990, 0.08, 'sine', 0.03); setTimeout(() => beep(1320, 0.1, 'sine', 0.03), 90); },
+  fanfare() { [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'triangle', 0.06), i * 120)); },
+  certify() { [660, 880, 1108, 1320].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'sine', 0.05), i * 100)); },
+};
+const muteBtn = document.getElementById('mute-btn');
+function refreshMute() { muteBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; }
+muteBtn.addEventListener('click', () => {
+  muted = !muted;
+  try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch (e) {}
+  refreshMute(); muteBtn.blur();
+});
+refreshMute();
 
 // ─── INIT ───
 function init() {
@@ -140,53 +407,75 @@ function init() {
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0x334466, 0.4);
-  scene.add(ambientLight);
-
+  scene.add(new THREE.AmbientLight(0x334466, 0.4));
   const keyLight = new THREE.DirectionalLight(0xffeedd, 1.0);
   keyLight.position.set(5, 8, 5);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(1024,1024);
   scene.add(keyLight);
-
   const fillLight = new THREE.DirectionalLight(0x8899bb, 0.4);
   fillLight.position.set(-5, 3, -3);
   scene.add(fillLight);
-
   const rimLight = new THREE.DirectionalLight(0xd4af37, 0.3);
   rimLight.position.set(0, -2, -5);
   scene.add(rimLight);
 
-  // Ground plane
-  const groundGeo = new THREE.PlaneGeometry(40, 40);
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a12, roughness: 0.9 });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
+  // Watchmaker's bench: a dark leather mat with a faint gold ring
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.MeshStandardMaterial({ color: 0x0a0a12, roughness: 0.9 }));
   ground.rotation.x = -Math.PI/2;
   ground.position.y = -2;
   ground.receiveShadow = true;
   scene.add(ground);
+  const mat = new THREE.Mesh(
+    new THREE.CylinderGeometry(5.2, 5.2, 0.08, 64),
+    new THREE.MeshStandardMaterial({ color: 0x141018, roughness: 0.95, metalness: 0.05 }));
+  mat.position.y = -0.16;
+  mat.receiveShadow = true;
+  scene.add(mat);
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(5.2, 0.03, 8, 96),
+    new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.3, emissive: 0x332a08 }));
+  ring.rotation.x = Math.PI/2;
+  ring.position.y = -0.12;
+  scene.add(ring);
 
   assemblyGroup = new THREE.Group();
   scene.add(assemblyGroup);
 
-  buildUI();
   createGhosts();
   updateCamera();
 
-  // Events
   renderer.domElement.style.touchAction = 'none';
   renderer.domElement.addEventListener('mousedown', onMouseDown);
   renderer.domElement.addEventListener('mousemove', onMouseMove);
   renderer.domElement.addEventListener('mouseup', onMouseUp);
-  renderer.domElement.addEventListener('wheel', onWheel);
+  renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
   renderer.domElement.addEventListener('click', onCanvasClick);
   renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
   renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
   renderer.domElement.addEventListener('touchend', onTouchEnd, { passive: false });
   window.addEventListener('resize', onResize);
-  document.getElementById('reset-btn').addEventListener('click', resetGame);
 
+  document.getElementById('reset-btn').addEventListener('click', () => { resetGame(); showStart(); });
+  document.getElementById('again-btn').addEventListener('click', () => { resetGame(); showStart(); });
+  document.getElementById('admire-btn').addEventListener('click', () => {
+    document.getElementById('done-overlay').classList.remove('show');
+    setInstr('Drag to orbit your finished watch · RESTART to build another');
+  });
+  document.querySelectorAll('.diff').forEach(el => el.addEventListener('click', () => startGame(el.dataset.diff)));
+  document.getElementById('hint-btn').addEventListener('click', useHint);
+  document.getElementById('seat-overlay').addEventListener('mousedown', e => { e.preventDefault(); stopNeedle(); });
+  document.getElementById('seat-overlay').addEventListener('touchstart', e => { e.preventDefault(); stopNeedle(); }, { passive: false });
+  document.getElementById('reg-slider').addEventListener('input', onRegInput);
+  document.getElementById('certify-btn').addEventListener('click', certify);
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' && phase === 'seat') { e.preventDefault(); stopNeedle(); }
+    if (e.code === 'Enter' && phase === 'regulate') certify();
+  });
+
+  showStart();
   animate();
 }
 
@@ -581,49 +870,38 @@ function createHands() {
   return group;
 }
 
-// ─── CREATE GHOST INDICATORS ───
+// ─── GHOST SLOTS (where each part must be placed) ───
+const SLOT_POS = {
+  mainplate: [0, 0, 0], barrel: [-1.2, 0.35, 0.8], geartrain: [0, 0, 0], escape: [1.8, 0.5, -0.5],
+  pallet: [1.8, 0.5, -1.3], balance: [-1.5, 0.6, -1.0], dial: [0, 0.9, 0], hands: [0, 1.1, 0],
+};
+const SLOT_SIZE = {
+  mainplate: [3.5, 0.2, 3.5], barrel: [1.0, 0.5, 1.0], geartrain: [1.5, 0.3, 1.5], escape: [0.6, 0.15, 0.6],
+  pallet: [0.5, 0.15, 0.8], balance: [0.9, 0.15, 0.9], dial: [3.2, 0.1, 3.2], hands: [0.5, 0.1, 2.5],
+};
 function createGhosts() {
-  const ghostMat = new THREE.MeshStandardMaterial({
-    color: 0xd4af37, transparent: true, opacity: 0.12, wireframe: true
-  });
-
-  const positions = {
-    mainplate: [0, 0, 0],
-    barrel: [-1.2, 0.35, 0.8],
-    geartrain: [0, 0, 0],
-    escape: [1.8, 0.5, -0.5],
-    pallet: [1.8, 0.5, -1.3],
-    balance: [-1.5, 0.6, -1.0],
-    dial: [0, 0.9, 0],
-    hands: [0, 1.1, 0],
-  };
-
-  const sizes = {
-    mainplate: [3.5, 0.2, 3.5],
-    barrel: [1.0, 0.5, 1.0],
-    geartrain: [1.5, 0.3, 1.5],
-    escape: [0.6, 0.15, 0.6],
-    pallet: [0.5, 0.15, 0.8],
-    balance: [0.9, 0.15, 0.9],
-    dial: [3.2, 0.1, 3.2],
-    hands: [0.5, 0.1, 2.5],
-  };
-
   PARTS.forEach(part => {
-    const s = sizes[part.id];
-    const p = positions[part.id];
+    const s = SLOT_SIZE[part.id], p = SLOT_POS[part.id];
     let geo;
     if (['mainplate','barrel','dial','balance','escape'].includes(part.id)) {
       geo = new THREE.CylinderGeometry(s[0], s[0], s[1], 32);
     } else {
       geo = new THREE.BoxGeometry(s[0]*2, s[1]*2, s[2]*2);
     }
-    const ghost = new THREE.Mesh(geo, ghostMat.clone());
+    const ghost = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      color: 0xd4af37, transparent: true, opacity: 0.12, wireframe: true }));
     ghost.position.set(p[0], p[1], p[2]);
     ghost.visible = false;
     ghost.userData.ghostFor = part.id;
+    ghost.userData.radius = Math.max(s[0], s[2]);
     assemblyGroup.add(ghost);
     ghostMeshes[part.id] = ghost;
+    // A bullseye marker on the slot so "closer to centre" is something you can see
+    const bull = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.11, 24),
+      new THREE.MeshBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+    bull.rotation.x = -Math.PI/2;
+    bull.position.set(0, s[1]/2 + 0.02, 0);
+    ghost.add(bull);
   });
 }
 
@@ -641,144 +919,395 @@ function createPartMesh(partId) {
   }
 }
 
-// ─── UI ───
+
+// ─── GAME FLOW ───
+function fmtTime(s) { s = Math.floor(s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+function setInstr(text, cls) { const el = document.getElementById('instructions'); el.textContent = text; el.className = cls || ''; }
+function toast(text, sub, bad) {
+  const el = document.getElementById('toast');
+  el.innerHTML = text + (sub ? `<small>${sub}</small>` : '');
+  el.className = bad ? 'bad' : '';
+  void el.offsetWidth; // restart the animation
+  el.classList.add('pop');
+}
+function updateHud() {
+  document.getElementById('hud-parts').textContent = placedCount + '/8';
+  document.getElementById('hud-score').textContent = score;
+  document.getElementById('hud-miss').textContent = mistakes;
+  document.getElementById('hud-time').textContent = fmtTime(elapsed);
+}
+function addScore(n) { score = Math.max(0, score + n); updateHud(); }
+function loadBest(d) { try { return JSON.parse(localStorage.getItem(BEST_KEY(d)) || 'null'); } catch (e) { return null; } }
+
+function showStart() {
+  phase = 'start';
+  ['apprentice','master'].forEach(d => {
+    const b = loadBest(d);
+    document.getElementById('best-' + d).textContent = b ? `BEST ${b.score} · ${fmtTime(b.time)} · ${b.rank}` : 'NOT YET ATTEMPTED';
+  });
+  document.getElementById('start-overlay').classList.add('show');
+  document.getElementById('tray').style.visibility = 'hidden';
+  setInstr('');
+}
+
+function startGame(d) {
+  diffName = d; diff = DIFF[d];
+  document.getElementById('start-overlay').classList.remove('show');
+  document.getElementById('tray').style.visibility = '';
+  document.getElementById('tray-title').textContent = diff.label + ' BENCH';
+  document.getElementById('hint-btn').style.display = diff.shuffle ? '' : 'none';
+  order = PARTS.map((_, i) => i);
+  if (diff.shuffle) {
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    // Never leave the tray accidentally in the right order in Master
+    if (order.every((v, i) => v === i)) order.reverse();
+  }
+  phase = 'build';
+  startTime = performance.now(); elapsed = 0; timerOn = true;
+  buildUI();
+  updateHud();
+  setInstr(diff.shuffle ? 'Which part goes in first? Pick it from the bench' : 'Pick the highlighted part from the bench');
+  sfx.select();
+}
+
+// ─── TRAY ───
+function nextIndex() { return PARTS.findIndex(p => !p.placed); }
+
 function buildUI() {
-  const tray = document.getElementById('tray');
-  tray.innerHTML = '';
-  PARTS.forEach((part, idx) => {
+  const list = document.getElementById('tray-list');
+  list.innerHTML = '';
+  const nxt = nextIndex();
+  order.forEach(idx => {
+    const part = PARTS[idx];
     const card = document.createElement('div');
-    card.className = 'part-card' + (part.placed ? ' placed' : (idx > 0 && !PARTS[idx-1].placed ? ' locked' : ''));
+    let cls = 'part-card', status = diff.shuffle ? 'ON THE BENCH' : 'WAITING';
+    if (part.placed) { cls += ' placed graded'; status = 'PLACED'; }
+    else if (idx === nxt && !diff.shuffle) { cls += ' next'; status = 'NEXT — TAP TO PICK UP'; }
+    if (selectedPart === idx) { cls += ' selected'; status = 'TAP ITS SLOT ON THE WATCH'; }
+    card.className = cls;
+    card.dataset.idx = idx;
+    const g = grades[part.id];
     card.innerHTML = `
+      ${g ? `<div class="part-grade">${g.precision}</div>` : ''}
       <div class="part-name">${part.name}</div>
       <div class="part-desc">${part.desc}</div>
-      <div class="part-status">${part.placed ? 'PLACED' : (idx > 0 && !PARTS[idx-1].placed ? 'LOCKED' : 'READY')}</div>
-    `;
+      <div class="part-status">${status}</div>`;
     card.addEventListener('click', () => selectPart(idx));
-    tray.appendChild(card);
+    list.appendChild(card);
   });
 }
 
 function selectPart(idx) {
+  if (phase !== 'build') return;
   const part = PARTS[idx];
   if (part.placed) return;
-  if (idx > 0 && !PARTS[idx-1].placed) return;
-
-  // Deselect previous
-  document.querySelectorAll('.part-card').forEach(c => c.classList.remove('selected'));
-  Object.values(ghostMeshes).forEach(g => { g.visible = false; });
-
-  if (selectedPart === idx) {
-    selectedPart = null;
+  const nxt = nextIndex();
+  if (idx !== nxt) {
+    // Wrong part for this step
+    mistakes++; addScore(-15);
+    sfx.wrong();
+    const card = document.querySelector(`.part-card[data-idx="${idx}"]`);
+    if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
+    const why = WHY_NOT[part.id] || 'something else goes in first';
+    setInstr(`Not yet — ${why}.`, 'bad');
+    toast('TOO SOON', '−15 · ' + (diff.shuffle ? 'think about what it needs to sit on' : 'follow the highlighted part'), true);
     return;
   }
-
+  Object.values(ghostMeshes).forEach(g => { g.visible = false; });
+  if (selectedPart === idx) { selectedPart = null; buildUI(); setInstr('Pick the next part from the bench'); return; }
   selectedPart = idx;
-  document.querySelectorAll('.part-card')[idx].classList.add('selected');
-
-  // Show ghost
+  sfx.select();
   const ghost = ghostMeshes[part.id];
-  if (ghost) {
-    ghost.visible = true;
-    ghost.material.opacity = 0.2;
-    animateGhostPulse(ghost);
+  ghost.visible = true;
+  buildUI();
+  setInstr(`Tap the glowing slot to drop in the ${part.name} — aim for the bullseye`);
+}
+
+function useHint() {
+  if (phase !== 'build' || !diff.shuffle) return;
+  const nxt = nextIndex();
+  if (nxt < 0) return;
+  hintsUsed++; addScore(-25);
+  sfx.hint();
+  const card = document.querySelector(`.part-card[data-idx="${nxt}"]`);
+  if (card) { card.classList.add('hinted'); card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); setTimeout(() => card.classList.remove('hinted'), 2500); }
+  setInstr(`Hint: the ${PARTS[nxt].name} goes in next (−25)`);
+}
+
+// ─── PLACEMENT (precision) ───
+function placeAtScreen(clientX, clientY) {
+  if (phase !== 'build' || selectedPart === null) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const part = PARTS[selectedPart];
+  const ghost = ghostMeshes[part.id];
+  const hits = raycaster.intersectObject(ghost, false);
+  if (!hits.length) {
+    // Missed the slot entirely
+    mistakes++; addScore(-10);
+    camShake = 0.35;
+    sfx.miss();
+    toast('MISSED THE SLOT', '−10 · tap inside the glowing outline', true);
+    setInstr('Missed! Tap inside the glowing outline', 'bad');
+    return;
+  }
+  const hp = hits[0].point;
+  const c = ghost.position;
+  const d = Math.hypot(hp.x - c.x, hp.z - c.z) / ghost.userData.radius; // 0 = bullseye, 1 = edge
+  let grade, pts;
+  if (d < 0.3)      { grade = 'PERFECT'; pts = 100; sfx.perfect(); }
+  else if (d < 0.65) { grade = 'GOOD';    pts = 70;  sfx.good(); }
+  else               { grade = 'OK';      pts = 40;  sfx.ok(); }
+  grades[part.id] = { precision: grade, seat: null };
+  addScore(pts);
+  toast(grade, `+${pts} placement`);
+  ghost.visible = false;
+  beginSeating(part, hp);
+}
+
+// ─── SEATING MINI-GAME (timing gauge) ───
+function beginSeating(part) {
+  phase = 'seat';
+  selectedPart = null;
+  const mesh = createPartMesh(part.id);
+  mesh.userData.partId = part.id;
+  mesh.userData.origPos = mesh.position.clone();
+  mesh.position.y += 6;
+  assemblyGroup.add(mesh);
+  placedMeshes[part.id] = mesh;
+  animateMove(mesh, mesh.userData.origPos.y + 0.7, 500); // hover just above the slot
+
+  const n = placedCount; // zone tightens with every part
+  seat = {
+    partId: part.id, mesh, pos: 0, dir: 1,
+    speed: diff.needleSpeed * (1 + n * 0.07),
+    zoneW: Math.max(0.055, diff.zone - n * diff.zoneShrink),
+    zoneC: 0.25 + Math.random() * 0.5,
+    tries: 0,
+  };
+  document.getElementById('seat-name').textContent = part.name.toUpperCase();
+  document.getElementById('seat-hint').textContent = 'CENTRE OF THE ZONE = PERFECT SEAT';
+  document.getElementById('seat-overlay').classList.add('show');
+  buildUI();
+  setInstr('');
+}
+
+function drawGauge() {
+  if (!seat) return;
+  const cv = document.getElementById('gauge'), g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  const L = 40, R = W - 40, y = H * 0.55, trackH = 26;
+  // Track
+  g.fillStyle = 'rgba(255,255,255,0.06)';
+  g.fillRect(L, y - trackH/2, R - L, trackH);
+  // Gold zone with a brighter perfect core
+  const zx0 = L + (seat.zoneC - seat.zoneW) * (R - L), zx1 = L + (seat.zoneC + seat.zoneW) * (R - L);
+  g.fillStyle = 'rgba(212,175,55,0.35)';
+  g.fillRect(zx0, y - trackH/2, zx1 - zx0, trackH);
+  const core = seat.zoneW * 0.35;
+  const cx0 = L + (seat.zoneC - core) * (R - L), cx1 = L + (seat.zoneC + core) * (R - L);
+  g.fillStyle = 'rgba(212,175,55,0.9)';
+  g.fillRect(cx0, y - trackH/2, cx1 - cx0, trackH);
+  // Tick marks
+  g.fillStyle = 'rgba(255,255,255,0.15)';
+  for (let i = 0; i <= 20; i++) { const x = L + (i/20) * (R - L); g.fillRect(x, y + trackH/2 + 4, 1, i % 5 === 0 ? 10 : 5); }
+  // Needle
+  const nx = L + seat.pos * (R - L);
+  g.strokeStyle = '#fff'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(nx, y - trackH/2 - 14); g.lineTo(nx, y + trackH/2 + 14); g.stroke();
+  g.fillStyle = '#fff';
+  g.beginPath(); g.moveTo(nx - 8, y - trackH/2 - 22); g.lineTo(nx + 8, y - trackH/2 - 22); g.lineTo(nx, y - trackH/2 - 12); g.closePath(); g.fill();
+}
+
+function stopNeedle() {
+  if (phase !== 'seat' || !seat) return;
+  const d = Math.abs(seat.pos - seat.zoneC);
+  const mesh = seat.mesh;
+  if (d <= seat.zoneW) {
+    const perfect = d <= seat.zoneW * 0.35;
+    const pts = perfect ? 50 : 25;
+    grades[seat.partId].seat = perfect ? 'PERFECT' : 'SEATED';
+    addScore(pts);
+    toast(perfect ? 'PERFECT SEAT' : 'SEATED', `+${pts}`);
+    if (perfect) sfx.perfect(); else sfx.snap();
+    document.getElementById('seat-overlay').classList.remove('show');
+    animateMove(mesh, mesh.userData.origPos.y, 260, () => sfx.snap());
+    finishPlacement(seat.partId);
+    seat = null;
+  } else {
+    seat.tries++; mistakes++; addScore(-10);
+    sfx.miss();
+    camShake = 0.25;
+    toast('SLIPPED', '−10 · try again', true);
+    document.getElementById('seat-hint').textContent = d < seat.zoneW * 1.6 ? 'SO CLOSE — TRY AGAIN' : 'WATCH THE NEEDLE — TRY AGAIN';
+    // Wobble the hovering part and move the zone
+    mesh.userData.wobble = 0.5;
+    seat.zoneC = 0.2 + Math.random() * 0.6;
+    seat.pos = 0; seat.dir = 1;
   }
 }
 
-function animateGhostPulse(ghost) {
-  if (!ghost.visible) return;
-  const t = Date.now() * 0.003;
-  ghost.material.opacity = 0.1 + Math.sin(t) * 0.08;
-  requestAnimationFrame(() => animateGhostPulse(ghost));
-}
-
-function placePart(partId) {
+function finishPlacement(partId) {
   const idx = PARTS.findIndex(p => p.id === partId);
-  if (idx < 0 || PARTS[idx].placed) return;
-
   PARTS[idx].placed = true;
   placedCount++;
-  selectedPart = null;
-
-  // Hide ghost
-  if (ghostMeshes[partId]) ghostMeshes[partId].visible = false;
-
-  // Create and add mesh with animation
-  const mesh = createPartMesh(partId);
-  mesh.userData.partId = partId;
-
-  // Start position (above) — offset only the group; animateSnapIn lowers it
-  // back to origPos, so offsetting children too would leave them floating.
-  const startY = 6;
-  mesh.userData.origPos = mesh.position.clone();
-  mesh.position.y += startY;
-
-  assemblyGroup.add(mesh);
-  placedMeshes[partId] = mesh;
-
-  // Animate snap-in
-  animateSnapIn(mesh, startY);
-
-  // Update UI
-  document.getElementById('progress').textContent = `${placedCount} / 8 ASSEMBLED`;
+  phase = 'build';
+  updateHud();
   buildUI();
-
-  // Check completion
   if (placedCount === 8) {
-    setTimeout(onComplete, 1500);
+    setInstr('The movement is complete — it starts to tick!', 'good');
+    setTimeout(onMovementComplete, 1400);
+  } else {
+    const nxt = PARTS[nextIndex()];
+    setInstr(diff.shuffle ? 'What goes in next?' : `Next: pick up the ${nxt.name}`);
   }
 }
 
-function animateSnapIn(mesh, offset) {
-  const duration = 800;
-  const start = Date.now();
-
+function animateMove(mesh, targetY, duration, done) {
+  const start = performance.now(), y0 = mesh.position.y;
   function tick() {
-    const t = Math.min((Date.now() - start) / duration, 1);
-    // Ease out bounce
-    const ease = t < 0.7 ? (t/0.7)*(t/0.7) : 1 - Math.pow((t-0.7)/0.3, 2)*0.15 + 0.15*(t-0.7)/0.3;
-    const y = offset * (1 - Math.min(ease * 1.1, 1));
-
-    mesh.position.y = (mesh.userData.origPos ? mesh.userData.origPos.y : 0) + y;
-
-    if (t < 1) requestAnimationFrame(tick);
+    const t = Math.min((performance.now() - start) / duration, 1);
+    const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    mesh.position.y = y0 + (targetY - y0) * e;
+    if (t < 1) requestAnimationFrame(tick); else if (done) done();
   }
   tick();
 }
 
-// ─── COMPLETION ───
-function onComplete() {
+// ─── REGULATION MINI-GAME (timegrapher) ───
+function onMovementComplete() {
   isComplete = true;
-  document.getElementById('complete-overlay').classList.add('show');
-  document.getElementById('instructions').textContent = 'Your mechanical watch is running';
-
-  // Create particles
   createParticles();
+  sfx.fanfare();
+  // A random rate error the player must dial out. Never tiny, never obvious.
+  let err = 18 + Math.random() * 32;
+  if (Math.random() < 0.5) err = -err;
+  reg = { error: err, adj: 0, y: 0, x: 0, pts: [], lastTick: 0 };
+  document.getElementById('reg-slider').value = 0;
+  document.getElementById('reg-sub').innerHTML = diff.showRate
+    ? 'Your watch runs, but not on time. The timegrapher plots every tick: a line sloping <b>up</b> means it runs fast, <b>down</b> means slow. Move the regulator until the trace is flat, then certify.'
+    : 'Master mode: no rate readout. Read the timegrapher yourself — sloping <b>up</b> = fast, <b>down</b> = slow. Flatten the trace, then certify.';
+  onRegInput();
+  phase = 'regulate';
+  document.getElementById('reg-overlay').classList.add('show');
+  setInstr('');
+}
+function currentRate() { return reg ? reg.error + reg.adj : 0; } // seconds per day (+ = fast)
+function onRegInput() {
+  if (!reg) return;
+  reg.adj = parseInt(document.getElementById('reg-slider').value, 10);
+  const r = currentRate();
+  document.getElementById('reg-read').textContent = diff.showRate ? `${r > 0 ? '+' : ''}${r.toFixed(0)} s/day` : '?? s/day';
+}
+function drawTimegrapher(time) {
+  if (!reg) return;
+  const cv = document.getElementById('timegrapher'), g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  g.fillStyle = '#07070c'; g.fillRect(0, 0, W, H);
+  // Grid
+  g.strokeStyle = 'rgba(255,255,255,0.06)'; g.lineWidth = 1;
+  for (let x = 0; x < W; x += 60) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+  for (let y = 0; y < H; y += 50) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  g.strokeStyle = 'rgba(212,175,55,0.35)';
+  g.beginPath(); g.moveTo(0, H/2); g.lineTo(W, H/2); g.stroke();
+  // Add a dot per beat (8/s), drifting by the current rate
+  const beats = Math.floor(time * 8);
+  if (beats !== reg.lastTick) {
+    const n = Math.min(4, beats - reg.lastTick);
+    for (let i = 0; i < n; i++) {
+      const rate = currentRate();
+      reg.y += rate * 0.09 + (Math.random() - 0.5) * diff.jitter;
+      if (reg.y > H/2 - 6) reg.y = -(H/2 - 6);
+      if (reg.y < -(H/2 - 6)) reg.y = H/2 - 6;
+      reg.x += 3;
+      reg.pts.push({ x: reg.x, y: reg.y, tick: reg.pts.length % 2 === 0 });
+      if (reg.pts.length > 300) reg.pts.shift();
+    }
+    reg.lastTick = beats;
+  }
+  const x0 = Math.max(0, reg.x - (W - 40));
+  for (const p of reg.pts) {
+    g.fillStyle = p.tick ? '#f0d878' : '#8ab4ff';
+    g.fillRect(p.x - x0 + 20, H/2 - p.y - 1.5, 3, 3);
+  }
+  // Labels
+  g.fillStyle = 'rgba(255,255,255,0.35)'; g.font = '18px system-ui, sans-serif'; g.textAlign = 'left';
+  g.fillText('FAST ▲', 12, 26);
+  g.fillText('SLOW ▼', 12, H - 12);
+  const r = Math.abs(currentRate());
+  g.textAlign = 'right';
+  g.fillStyle = r <= 3 ? '#7bd88f' : r <= 8 ? '#f0d878' : 'rgba(255,255,255,0.35)';
+  g.fillText(r <= 3 ? 'CHRONOMETER GRADE' : r <= 8 ? 'ALMOST THERE' : r <= 15 ? 'GETTING CLOSER' : 'TIMEGRAPHER', W - 14, 26);
+}
+function certify() {
+  if (phase !== 'regulate' || !reg) return;
+  const r = Math.abs(currentRate());
+  let pts, label;
+  if (r <= 3)       { pts = 300; label = 'CHRONOMETER GRADE'; }
+  else if (r <= 8)  { pts = 200; label = 'WELL REGULATED'; }
+  else if (r <= 15) { pts = 100; label = 'RUNS A LITTLE OFF'; }
+  else              { pts = 0;   label = 'NEEDS REGULATING'; }
+  addScore(pts);
+  document.getElementById('reg-overlay').classList.remove('show');
+  sfx.certify();
+  timerOn = false;
+  const rateFinal = currentRate();
+  reg = null;
+  showResults(pts, label, rateFinal);
+}
+
+// ─── RESULTS ───
+function showResults(regPts, regLabel, rateFinal) {
+  phase = 'done';
+  const secs = Math.round(elapsed);
+  const timeBonus = Math.max(0, 300 - Math.max(0, secs - 45) * 3);
+  addScore(timeBonus);
+  const placePts = Object.values(grades).reduce((a, g) => a + ({ PERFECT: 100, GOOD: 70, OK: 40 }[g.precision] || 0), 0);
+  const seatPts = Object.values(grades).reduce((a, g) => a + (g.seat === 'PERFECT' ? 50 : 25), 0);
+  const perfects = Object.values(grades).filter(g => g.precision === 'PERFECT' && g.seat === 'PERFECT').length;
+  let rank, sub;
+  if (score >= 1500)      { rank = 'MASTER WATCHMAKER'; sub = 'A movement worthy of a museum'; }
+  else if (score >= 1100) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
+  else if (score >= 700)  { rank = 'APPRENTICE';        sub = 'It ticks! Keep practising'; }
+  else                    { rank = 'TINKERER';          sub = 'Every master started here'; }
+  document.getElementById('rank').textContent = rank;
+  document.getElementById('rank-sub').textContent = sub + ' · ' + diff.label;
+  const penalties = placePts + seatPts + regPts + timeBonus - score; // exact: whatever the slips and hints cost
+  const rows = [
+    ['PLACEMENT ACCURACY', `+${placePts}`],
+    ['SEATING', `+${seatPts}`],
+    [`REGULATION (${rateFinal > 0 ? '+' : ''}${rateFinal.toFixed(0)} s/day · ${regLabel.toLowerCase()})`, `+${regPts}`],
+    [`TIME BONUS (${fmtTime(secs)})`, `+${timeBonus}`],
+    [`SLIPS & HINTS (${mistakes} slips, ${hintsUsed} hints)`, penalties > 0 ? `−${penalties}` : '0'],
+  ];
+  if (perfects === 8) rows.push(['FLAWLESS — 8 DOUBLE PERFECTS', '★']);
+  const prev = loadBest(diffName);
+  const isBest = !prev || score > prev.score;
+  if (isBest) { try { localStorage.setItem(BEST_KEY(diffName), JSON.stringify({ score, time: secs, rank })); } catch (e) {} }
+  rows.push(['TOTAL', String(score)]);
+  document.getElementById('score-grid').innerHTML = rows.map(([k, v], i) =>
+    `<div class="${i === rows.length - 1 ? 'total' : ''}"><span class="k">${k}</span></div><div class="${i === rows.length - 1 ? 'total' : ''}"><span class="v ${i === rows.length - 1 && isBest ? 'newbest' : ''}">${v}${i === rows.length - 1 && isBest ? ' · NEW BEST' : ''}</span></div>`
+  ).join('');
+  setTimeout(() => document.getElementById('done-overlay').classList.add('show'), 600);
 }
 
 let particles = null;
 function createParticles() {
-  const count = 200;
+  const count = 220;
   const geo = new THREE.BufferGeometry();
   const positions = new Float32Array(count*3);
   const velocities = [];
-
   for (let i = 0; i < count; i++) {
-    positions[i*3] = 0;
-    positions[i*3+1] = 1;
-    positions[i*3+2] = 0;
-    const theta = Math.random()*Math.PI*2;
-    const phi = Math.random()*Math.PI;
-    const speed = 2 + Math.random()*4;
-    velocities.push(
-      Math.sin(phi)*Math.cos(theta)*speed,
-      Math.cos(phi)*speed*0.5 + 2,
-      Math.sin(phi)*Math.sin(theta)*speed
-    );
+    positions[i*3] = 0; positions[i*3+1] = 1; positions[i*3+2] = 0;
+    const theta = Math.random()*Math.PI*2, phi = Math.random()*Math.PI, speed = 2 + Math.random()*4;
+    velocities.push(Math.sin(phi)*Math.cos(theta)*speed, Math.cos(phi)*speed*0.5 + 2, Math.sin(phi)*Math.sin(theta)*speed);
   }
-
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const mat = new THREE.PointsMaterial({ color: 0xd4af37, size: 0.06, transparent: true, opacity: 1 });
-  particles = new THREE.Points(geo, mat);
+  particles = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xd4af37, size: 0.06, transparent: true, opacity: 1 }));
   particles.userData.velocities = velocities;
   particles.userData.life = 0;
   scene.add(particles);
@@ -788,124 +1317,56 @@ function createParticles() {
 function updateCamera() {
   cameraPhi = Math.max(0.1, Math.min(Math.PI/2 - 0.05, cameraPhi));
   cameraR = Math.max(5, Math.min(25, cameraR));
-  camera.position.x = cameraR * Math.sin(cameraPhi) * Math.cos(cameraTheta);
-  camera.position.y = cameraR * Math.cos(cameraPhi);
-  camera.position.z = cameraR * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+  const sh = camShake > 0 ? camShake * 0.25 : 0;
+  camera.position.x = cameraR * Math.sin(cameraPhi) * Math.cos(cameraTheta) + (Math.random()-0.5) * sh;
+  camera.position.y = cameraR * Math.cos(cameraPhi) + (Math.random()-0.5) * sh;
+  camera.position.z = cameraR * Math.sin(cameraPhi) * Math.sin(cameraTheta) + (Math.random()-0.5) * sh;
   camera.lookAt(0, 0.5, 0);
 }
-
-function onMouseDown(e) {
-  if (e.target !== renderer.domElement) return;
-  mouseDown = true; mouseX = e.clientX; mouseY = e.clientY;
-}
+function onMouseDown(e) { if (e.target !== renderer.domElement) return; mouseDown = true; mouseX = e.clientX; mouseY = e.clientY; dragDist = 0; }
+let dragDist = 0;
 function onMouseMove(e) {
   if (!mouseDown) return;
-  const dx = e.clientX - mouseX;
-  const dy = e.clientY - mouseY;
-  cameraTheta -= dx * 0.008;
-  cameraPhi -= dy * 0.008;
+  const dx = e.clientX - mouseX, dy = e.clientY - mouseY;
+  dragDist += Math.abs(dx) + Math.abs(dy);
+  cameraTheta -= dx * 0.008; cameraPhi -= dy * 0.008;
   updateCamera();
   mouseX = e.clientX; mouseY = e.clientY;
 }
 function onMouseUp() { mouseDown = false; }
-function onWheel(e) {
-  cameraR += e.deltaY * 0.01;
-  updateCamera();
-}
-
-function onCanvasClick(e) {
-  placeAtScreen(e.clientX, e.clientY);
-}
+function onWheel(e) { cameraR += e.deltaY * 0.01; updateCamera(); }
+function onCanvasClick(e) { if (dragDist > 8) return; placeAtScreen(e.clientX, e.clientY); }
 
 // ─── TOUCH: one finger orbits, two fingers pinch-zoom, tap places parts ───
 let touchState = null;
-
 function onTouchStart(e) {
   e.preventDefault();
   if (e.touches.length === 1) {
-    touchState = {
-      kind: 'orbit',
-      sx: e.touches[0].clientX, sy: e.touches[0].clientY,
-      lx: e.touches[0].clientX, ly: e.touches[0].clientY,
-      moved: false,
-    };
+    touchState = { kind: 'orbit', sx: e.touches[0].clientX, sy: e.touches[0].clientY, lx: e.touches[0].clientX, ly: e.touches[0].clientY, moved: false };
   } else if (e.touches.length === 2) {
-    const d = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY);
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
     touchState = { kind: 'pinch', d0: d, r0: cameraR };
   }
 }
-
 function onTouchMove(e) {
   e.preventDefault();
   if (!touchState) return;
   if (touchState.kind === 'orbit' && e.touches.length === 1) {
     const tx = e.touches[0].clientX, ty = e.touches[0].clientY;
-    cameraTheta -= (tx - touchState.lx) * 0.008;
-    cameraPhi -= (ty - touchState.ly) * 0.008;
+    cameraTheta -= (tx - touchState.lx) * 0.008; cameraPhi -= (ty - touchState.ly) * 0.008;
     updateCamera();
     if (Math.abs(tx - touchState.sx) + Math.abs(ty - touchState.sy) > 10) touchState.moved = true;
     touchState.lx = tx; touchState.ly = ty;
   } else if (touchState.kind === 'pinch' && e.touches.length === 2) {
-    const d = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY);
-    if (d > 0) {
-      cameraR = touchState.r0 * (touchState.d0 / d);
-      updateCamera();
-    }
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    if (d > 0) { cameraR = touchState.r0 * (touchState.d0 / d); updateCamera(); }
   }
 }
-
 function onTouchEnd(e) {
   e.preventDefault();
-  if (touchState && touchState.kind === 'orbit' && !touchState.moved) {
-    // Tap: place the selected part, same as a mouse click
-    placeAtScreen(touchState.sx, touchState.sy);
-  }
+  if (touchState && touchState.kind === 'orbit' && !touchState.moved) placeAtScreen(touchState.sx, touchState.sy);
   touchState = null;
 }
-
-function placeAtScreen(clientX, clientY) {
-  if (selectedPart === null) return;
-
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-
-  const partId = PARTS[selectedPart].id;
-  const ghost = ghostMeshes[partId];
-
-  if (ghost && ghost.visible) {
-    const intersects = raycaster.intersectObject(ghost);
-    if (intersects.length > 0) {
-      placePart(partId);
-      return;
-    }
-  }
-
-  // Also allow clicking anywhere in assembly area for convenience
-  const allGhosts = Object.values(ghostMeshes).filter(g => g.visible);
-  const hits = raycaster.intersectObjects(allGhosts);
-  if (hits.length > 0) {
-    const hitPartId = hits[0].object.userData.ghostFor;
-    if (hitPartId === partId) {
-      placePart(partId);
-    }
-  }
-
-  // Click on assembly area = place if only one option
-  if (ghost && ghost.visible) {
-    const assemblyHits = raycaster.intersectObjects(assemblyGroup.children, true);
-    if (assemblyHits.length > 0) {
-      placePart(partId);
-    }
-  }
-}
-
 function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -915,148 +1376,123 @@ function onResize() {
 // ─── RESET ───
 function resetGame() {
   PARTS.forEach(p => p.placed = false);
-  placedCount = 0;
-  selectedPart = null;
-  isComplete = false;
-
-  // Remove placed meshes
+  placedCount = 0; selectedPart = null; isComplete = false;
+  score = 0; mistakes = 0; hintsUsed = 0; elapsed = 0; timerOn = false;
+  grades = {}; seat = null; reg = null;
   Object.values(placedMeshes).forEach(m => assemblyGroup.remove(m));
   placedMeshes = {};
-
-  // Remove particles
+  Object.values(ghostMeshes).forEach(g => { g.visible = false; });
   if (particles) { scene.remove(particles); particles = null; }
-
-  document.getElementById('complete-overlay').classList.remove('show');
-  document.getElementById('progress').textContent = '0 / 8 ASSEMBLED';
-  document.getElementById('instructions').textContent = 'Select a part, then click the assembly to place it';
-
-  buildUI();
+  ['seat-overlay','reg-overlay','done-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
+  updateHud();
 }
 
 // ─── ANIMATE ───
+let lastBeat = 0;
 function animate() {
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
   const time = clock.getElapsedTime();
 
+  if (timerOn) { elapsed = (performance.now() - startTime) / 1000; document.getElementById('hud-time').textContent = fmtTime(elapsed); }
+  if (camShake > 0) { camShake = Math.max(0, camShake - dt); updateCamera(); }
+
+  // Ghost pulse
+  const sel = selectedPart !== null ? ghostMeshes[PARTS[selectedPart].id] : null;
+  if (sel && sel.visible) sel.material.opacity = 0.14 + Math.sin(time * 4) * 0.1;
+
+  // Seating needle + hovering part
+  if (phase === 'seat' && seat) {
+    seat.pos += seat.dir * seat.speed * Math.min(dt, 0.034); // clamp so slow frames can't skip the zone
+    if (seat.pos >= 1) { seat.pos = 1; seat.dir = -1; }
+    if (seat.pos <= 0) { seat.pos = 0; seat.dir = 1; }
+    drawGauge();
+    const m = seat.mesh;
+    const hoverY = m.userData.origPos.y + 0.7 + Math.sin(time * 3) * 0.05;
+    if (Math.abs(m.position.y - hoverY) < 0.3) m.position.y = hoverY;
+    if (m.userData.wobble > 0) { m.userData.wobble -= dt; m.rotation.z = Math.sin(time * 40) * m.userData.wobble * 0.3; }
+    else m.rotation.z = 0;
+  }
+
+  if (phase === 'regulate') drawTimegrapher(time);
+
   if (isComplete) {
-    tickTime += dt;
-
-    // Balance wheel oscillation (4Hz = 8 beats/sec)
+    // Rate error nudges the beat frequency so a fast watch visibly (and audibly) races
+    const rateMul = 1 + (reg ? currentRate() / 400 : 0);
+    const beatT = time * rateMul;
     const balanceMesh = placedMeshes['balance'];
-    if (balanceMesh) {
-      balanceAngle = Math.sin(time * Math.PI * 8) * 0.4;
-      balanceMesh.rotation.y = balanceAngle;
-    }
-
-    // Escape wheel ticking
+    if (balanceMesh) balanceMesh.rotation.y = Math.sin(beatT * Math.PI * 8) * 0.4;
     const escapeMesh = placedMeshes['escape'];
-    if (escapeMesh) {
-      const tickPhase = Math.floor(time * 8) * (Math.PI * 2 / 15);
-      escapeMesh.children.forEach(c => {
-        if (c.userData && c.userData.gearId === 'escape') {
-          // noop, rotate parent
-        }
-      });
-      escapeMesh.rotation.y = tickPhase * 0.3;
-    }
-
-    // Pallet fork oscillation
+    if (escapeMesh) escapeMesh.rotation.y = Math.floor(beatT * 8) * (Math.PI * 2 / 15) * 0.3;
     const palletMesh = placedMeshes['pallet'];
-    if (palletMesh) {
-      palletMesh.rotation.y = Math.sin(time * Math.PI * 8) * 0.15;
-    }
-
-    // Gear train rotation (increasing speed)
+    if (palletMesh) palletMesh.rotation.y = Math.sin(beatT * Math.PI * 8) * 0.15;
     const gearMesh = placedMeshes['geartrain'];
-    if (gearMesh) {
-      gearMesh.children.forEach(c => {
-        if (c.userData.gearId === 'second') c.rotation.z = time * 0.5;
-        if (c.userData.gearId === 'third') c.rotation.z = time * 1.5;
-        if (c.userData.gearId === 'fourth') c.rotation.z = time * 4;
-      });
-    }
-
-    // Barrel slow rotation
+    if (gearMesh) gearMesh.children.forEach(c => {
+      if (c.userData.gearId === 'second') c.rotation.z = beatT * 0.5;
+      if (c.userData.gearId === 'third') c.rotation.z = beatT * 1.5;
+      if (c.userData.gearId === 'fourth') c.rotation.z = beatT * 4;
+    });
     const barrelMesh = placedMeshes['barrel'];
-    if (barrelMesh) {
-      barrelMesh.rotation.y = time * 0.1;
-    }
-
-    // Hands rotation
+    if (barrelMesh) barrelMesh.rotation.y = beatT * 0.1;
     const handsMesh = placedMeshes['hands'];
-    if (handsMesh) {
-      handsMesh.children.forEach(c => {
-        if (c.userData.handType === 'second') c.rotation.y = time * (Math.PI*2/60) * 20; // accelerated
-        if (c.userData.handType === 'minute') c.rotation.y = time * (Math.PI*2/3600) * 20;
-        if (c.userData.handType === 'hour') c.rotation.y = time * (Math.PI*2/43200) * 20;
-      });
-    }
+    if (handsMesh) handsMesh.children.forEach(c => {
+      if (c.userData.handType === 'second') c.rotation.y = beatT * (Math.PI*2/60) * 20;
+      if (c.userData.handType === 'minute') c.rotation.y = beatT * (Math.PI*2/3600) * 20;
+      if (c.userData.handType === 'hour') c.rotation.y = beatT * (Math.PI*2/43200) * 20;
+    });
+    // Audible tick-tock at 8 beats/s (quieter than the UI sounds)
+    const beat = Math.floor(beatT * 8);
+    if (beat !== lastBeat) { lastBeat = beat; if (beat % 2) sfx.tick(); else sfx.tock(); }
 
-    // Particles
     if (particles && particles.userData.life < 3) {
       particles.userData.life += dt;
       const pos = particles.geometry.attributes.position.array;
       const vel = particles.userData.velocities;
       for (let i = 0; i < pos.length/3; i++) {
-        pos[i*3] += vel[i*3] * dt;
-        pos[i*3+1] += vel[i*3+1] * dt;
-        pos[i*3+2] += vel[i*3+2] * dt;
-        vel[i*3+1] -= 5 * dt; // gravity
+        pos[i*3] += vel[i*3] * dt; pos[i*3+1] += vel[i*3+1] * dt; pos[i*3+2] += vel[i*3+2] * dt;
+        vel[i*3+1] -= 5 * dt;
       }
       particles.geometry.attributes.position.needsUpdate = true;
       particles.material.opacity = Math.max(0, 1 - particles.userData.life / 3);
-
-      if (particles.userData.life >= 3) {
-        scene.remove(particles);
-        particles = null;
-      }
+      if (particles.userData.life >= 3) { scene.remove(particles); particles = null; }
     }
   }
 
-  // Subtle ambient rotation when not dragging
-  if (!mouseDown && !isComplete) {
+  // Subtle ambient rotation when not dragging (it stops while you aim a part)
+  if (!mouseDown && !touchState && !isComplete && selectedPart === null && phase !== 'seat') {
     cameraTheta += dt * 0.05;
     updateCamera();
   }
-
   renderer.render(scene, camera);
 }
 
 // ─── TOOLTIP ───
-// (registered before init() runs, so the handler must guard on renderer)
 document.addEventListener('mousemove', (e) => {
   if (!renderer || !raycaster) return;
   const tooltip = document.getElementById('tooltip');
-
   const rect = renderer.domElement.getBoundingClientRect();
   mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
   raycaster.setFromCamera(mouse, camera);
-  const placed = Object.values(placedMeshes);
   const allChildren = [];
-  placed.forEach(m => m.traverse(c => { if(c.isMesh) allChildren.push(c); }));
-
+  Object.values(placedMeshes).forEach(m => m.traverse(c => { if (c.isMesh) allChildren.push(c); }));
   const hits = raycaster.intersectObjects(allChildren);
   if (hits.length > 0) {
     let obj = hits[0].object;
     while (obj.parent && !obj.userData.partId) obj = obj.parent;
-    if (obj.userData.partId) {
-      const part = PARTS.find(p => p.id === obj.userData.partId);
-      if (part) {
-        tooltip.textContent = part.name;
-        tooltip.style.display = 'block';
-        tooltip.style.left = (e.clientX + 15) + 'px';
-        tooltip.style.top = (e.clientY - 10) + 'px';
-        return;
-      }
+    const part = obj.userData.partId && PARTS.find(p => p.id === obj.userData.partId);
+    if (part) {
+      const g = grades[part.id];
+      tooltip.textContent = part.name + (g ? ` · ${g.precision}${g.seat ? ' / ' + g.seat : ''}` : '');
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 15) + 'px';
+      tooltip.style.top = (e.clientY - 10) + 'px';
+      return;
     }
   }
   tooltip.style.display = 'none';
 });
 
-// Start
 init();
 </script>
 </body>
