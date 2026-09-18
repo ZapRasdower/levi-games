@@ -4,70 +4,157 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Levi's Games</title>
+  <meta name="description" content="Levi's game site — a growing collection of small browser games: arcade, science, and 3D builders.">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --yellow: #ffe600;
+      --yellow-dk: #b8a800;
+      --red: #ff6b6b;
+      --mint: #6bffd1;
+      --blue: #6bd1ff;
+      --text: #fff;
+      --muted: #888;
+    }
 
+    html { scroll-behavior: smooth; }
     body {
-      background: #0f0f1a;
-      color: #fff;
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Courier New', monospace;
       min-height: 100vh;
+      overflow-x: hidden;
     }
+
+    /* Pixel starfield behind everything */
+    #sky {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .page { position: relative; z-index: 1; }
 
     header {
       text-align: center;
-      padding: 60px 20px 40px;
+      padding: 64px 20px 18px;
     }
 
     header h1 {
-      font-size: 3rem;
-      color: #ffe600;
-      text-shadow: 4px 4px 0px #b8a800;
+      font-size: clamp(2rem, 6vw, 3.4rem);
+      color: var(--yellow);
+      text-shadow: 4px 4px 0 var(--yellow-dk), 0 0 28px rgba(255,230,0,0.25);
       letter-spacing: 4px;
       text-transform: uppercase;
+      display: inline-block;
+      animation: titleGlow 3.5s ease-in-out infinite;
     }
+    header h1 .pad { display: inline-block; animation: padBob 2.4s ease-in-out infinite; transform-origin: 50% 60%; }
+    @keyframes titleGlow {
+      0%, 100% { text-shadow: 4px 4px 0 var(--yellow-dk), 0 0 18px rgba(255,230,0,0.18); }
+      50%      { text-shadow: 4px 4px 0 var(--yellow-dk), 0 0 34px rgba(255,230,0,0.45); }
+    }
+    @keyframes padBob { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg) translateY(-3px); } }
+
+    .tagline {
+      margin-top: 14px;
+      color: #a9a9c4;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+    }
+    .tagline .caret { color: var(--yellow); animation: blink 1s steps(2, start) infinite; }
+    @keyframes blink { to { visibility: hidden; } }
 
     .pixel-divider {
       display: flex;
       justify-content: center;
       gap: 6px;
-      margin: 10px 0 50px;
+      margin: 22px 0 18px;
     }
-
     .pixel-divider span {
-      width: 12px;
-      height: 12px;
-      background: #ffe600;
+      width: 12px; height: 12px;
+      background: var(--yellow);
       display: inline-block;
+      animation: pixelWave 1.6s ease-in-out infinite;
+      animation-delay: calc(var(--i) * 0.08s);
     }
+    .pixel-divider span:nth-child(even) { background: var(--red); }
+    @keyframes pixelWave { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-    .pixel-divider span:nth-child(even) {
-      background: #ff6b6b;
+    /* Little stat strip: pulls from what Levi has actually played */
+    .strip {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px 28px;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+      padding: 0 16px;
     }
+    .strip b { color: var(--yellow); font-weight: normal; }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 26px 16px 8px;
+    }
+    .chip {
+      background: transparent;
+      color: #bbb;
+      border: 2px solid #33334d;
+      border-radius: 3px;
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s, background 0.12s, transform 0.12s;
+    }
+    .chip:hover { border-color: var(--yellow); color: var(--yellow); transform: translateY(-2px); }
+    .chip.active { background: var(--yellow); color: #111; border-color: var(--yellow); }
+    .chip.dice { border-color: var(--red); color: var(--red); }
+    .chip.dice:hover { background: var(--red); color: #111; }
+    .chip.dice.rolling { animation: wiggle 0.4s linear infinite; }
+    @keyframes wiggle { 0% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } 100% { transform: rotate(-4deg); } }
 
     .games-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 30px;
+      gap: 28px;
       max-width: 1100px;
       margin: 0 auto;
-      padding: 0 30px 80px;
+      padding: 20px 30px 60px;
     }
 
     .game-card {
-      background: #1a1a2e;
+      background: var(--card);
       border: 3px solid #333;
       border-radius: 4px;
       overflow: hidden;
-      transition: transform 0.15s, border-color 0.15s;
+      transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
       text-decoration: none;
-      display: block;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      opacity: 0;
+      animation: cardIn 0.5s ease-out forwards;
+      animation-delay: calc(var(--i) * 0.06s);
     }
-
-    .game-card:hover {
+    @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+    .game-card:hover, .game-card:focus-visible, .game-card.spotlight {
       transform: translateY(-6px);
-      border-color: #ffe600;
+      border-color: var(--yellow);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,230,0,0.25), 0 0 26px rgba(255,230,0,0.15);
+      outline: none;
     }
+    .game-card.spotlight { transition-duration: 0.08s; }
+    .game-card.hidden { display: none; }
 
     .game-card .thumbnail {
       width: 100%;
@@ -76,147 +163,317 @@
       align-items: center;
       justify-content: center;
       font-size: 4rem;
-      background: #111125;
+      background:
+        radial-gradient(circle at 30% 25%, var(--tint) 0%, transparent 55%),
+        #111125;
+      position: relative;
+      overflow: hidden;
     }
-
-    .game-card .info {
-      padding: 16px;
+    .game-card .thumbnail::after {
+      /* subtle pixel scanlines */
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 4px);
+      pointer-events: none;
     }
+    .game-card .thumbnail .emoji {
+      display: inline-block;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5));
+    }
+    .game-card:hover .thumbnail .emoji, .game-card.spotlight .thumbnail .emoji { transform: scale(1.22) rotate(-8deg); }
 
+    .ribbon {
+      position: absolute;
+      top: 12px; right: -34px;
+      background: var(--red);
+      color: #111;
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      padding: 3px 40px;
+      transform: rotate(45deg);
+      font-weight: bold;
+    }
+    .ribbon.last { background: var(--mint); font-size: 0.55rem; letter-spacing: 1px; padding-top: 4px; padding-bottom: 4px; }
+
+    .game-card .info { padding: 16px; display: flex; flex-direction: column; flex: 1; }
     .game-card .info h2 {
       font-size: 1.1rem;
-      color: #ffe600;
+      color: var(--yellow);
       letter-spacing: 1px;
       text-transform: uppercase;
     }
-
     .game-card .info p {
       margin-top: 6px;
       font-size: 0.85rem;
-      color: #888;
+      color: var(--muted);
       line-height: 1.5;
+      flex: 1;
     }
-
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
     .tag {
       display: inline-block;
-      margin-top: 10px;
       padding: 3px 8px;
       background: #ffe60022;
-      color: #ffe600;
+      color: var(--yellow);
       border: 1px solid #ffe60055;
       font-size: 0.7rem;
       letter-spacing: 1px;
       border-radius: 2px;
     }
+    .stat {
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      color: var(--mint);
+      text-align: right;
+    }
+    .stat.none { color: #555; }
+
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; letter-spacing: 2px; font-size: 0.8rem; display: none; }
+
+    footer {
+      text-align: center;
+      padding: 10px 20px 48px;
+      color: #666;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      line-height: 2;
+    }
+    footer .hearts { color: var(--red); }
+
+    @media (max-width: 600px) {
+      header { padding-top: 44px; }
+      .games-grid { padding: 16px 16px 40px; gap: 18px; }
+      .game-card .thumbnail { height: 130px; font-size: 3.4rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      header h1, header h1 .pad, .pixel-divider span, .tagline .caret { animation: none; }
+      .game-card { animation-duration: 0.01s; animation-delay: 0s; }
+    }
   </style>
 </head>
 <body>
+  <canvas id="sky" aria-hidden="true"></canvas>
 
-  <header>
-    <h1>&#127918; Levi's Games</h1>
-  </header>
+  <div class="page">
+    <header>
+      <h1><span class="pad">&#127918;</span> Levi's Games</h1>
+      <p class="tagline" id="tagline">pick a game and press start <span class="caret">&#9646;</span></p>
+      <div class="pixel-divider">
+        <span style="--i:0"></span><span style="--i:1"></span><span style="--i:2"></span><span style="--i:3"></span><span style="--i:4"></span>
+        <span style="--i:5"></span><span style="--i:6"></span><span style="--i:7"></span><span style="--i:8"></span><span style="--i:9"></span>
+      </div>
+      <div class="strip" id="strip"></div>
+    </header>
 
-  <div class="pixel-divider">
-    <span></span><span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span><span></span>
+    <nav class="filters" id="filters" aria-label="filter games"></nav>
+
+    <main class="games-grid" id="grid"></main>
+    <div class="empty" id="empty">NOTHING HERE YET</div>
+
+    <footer>
+      <span id="count"></span> games and counting <span class="hearts">&#10084;</span> made for Levi<br>
+      <span style="color:#444">high scores live in this browser</span>
+    </footer>
   </div>
 
-  <div class="games-grid">
+<script>
+  // ---- The games. Add a new one here (folder, emoji, blurb, tag, category) and it
+  //      shows up on the grid with filters, ribbons and best-score readouts. ----
+  const GAMES = [
+    { id: 'pixel-jump',     name: 'Levi Leap',      emoji: '&#129354;', tag: 'ENDLESS RUNNER', cat: 'arcade',  tint: '#ffe60044',
+      desc: 'Help Levi jump over obstacles and grab coins. How far can you go?' },
+    { id: 'levi-crossing',  name: 'Levi Crossing',  emoji: '&#128056;', tag: 'ARCADE',         cat: 'arcade',  tint: '#6bffd144',
+      desc: 'Hop Levi across roads, rivers & railways. 10 levels — the last two are LEGENDARY.' },
+    { id: 'snake',          name: 'Levi Snake',     emoji: '&#128013;', tag: 'ARCADE',         cat: 'arcade',  tint: '#7bd88f44',
+      desc: "Eat, grow, and don't bite yourself. Watch for bonus snacks!" },
+    { id: 'atom-builder',   name: 'Atom Builder',   emoji: '&#9883;',   tag: 'SCIENCE',        cat: 'science', tint: '#6bd1ff44',
+      desc: 'Build atoms in 3D, discover all 20 elements & zoom in to see quarks!' },
+    { id: 'solar-system',   name: 'Solar System',   emoji: '&#128640;', tag: 'SCIENCE',        cat: 'science', tint: '#ffb04744', updated: true,
+      desc: 'Fly 8 probe missions from Earth, spin the planets in 3D, launch comets, and take the quiz.' },
+    { id: 'periodic-table', name: 'Periodic Table', emoji: '&#9879;',   tag: 'SCIENCE',        cat: 'science', tint: '#c07bff44',
+      desc: 'Click any of the 118 elements to see facts, mass, group and electron config.' },
+    { id: 'squishy-pets',   name: 'Squishy Pets',   emoji: '&#129382;', tag: 'IDLE / COLLECT', cat: 'build',   tint: '#ff9fd044',
+      desc: 'Open blind boxes, squish pets for Dough, earn achievements, and collect all 40 across 5 themes.' },
+    { id: 'brick-breaker',  name: 'Brick Breaker',  emoji: '&#129521;', tag: 'ARCADE',         cat: 'arcade',  tint: '#ff6b6b44',
+      desc: 'Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.' },
+    { id: 'watchmaker',     name: 'Watchmaker',     emoji: '&#8986;',   tag: '3D BUILDER',     cat: 'build',   tint: '#d4af3744', updated: true,
+      desc: 'Assemble a mechanical watch in 3D: pick parts in order, seat them on the beat, then regulate it to keep time.' },
+    { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44', isNew: true,
+      desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
+  ];
+  const CATS = [['all', 'ALL'], ['arcade', 'ARCADE'], ['science', 'SCIENCE'], ['build', 'BUILD & COLLECT']];
+  const LAST_KEY = 'levi.lastPlayed', PLAYS_KEY = 'levi.plays';
 
-    <a class="game-card" href="pixel-jump/index.html">
-      <div class="thumbnail">&#129354;</div>
-      <div class="info">
-        <h2>Levi Leap</h2>
-        <p>Help Levi jump over obstacles and grab coins. How far can you go?</p>
-        <span class="tag">ENDLESS RUNNER</span>
-      </div>
-    </a>
+  function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsJSON(k, fb) { try { return JSON.parse(ls(k) || 'null') ?? fb; } catch (e) { return fb; } }
+  const num = k => parseInt(ls(k) || '0', 10) || 0;
+  const fmt = n => n.toLocaleString('en-US');
 
-    <a class="game-card" href="levi-crossing/index.html">
-      <div class="thumbnail">&#128056;</div>
-      <div class="info">
-        <h2>Levi Crossing</h2>
-        <p>Hop Levi across roads, rivers & railways. 10 levels — the last two are LEGENDARY.</p>
-        <span class="tag">ARCADE</span>
-      </div>
-    </a>
+  // Each game's "best" readout, read from the save data that game already keeps.
+  const STATS = {
+    'pixel-jump':     () => { const b = num('leviLeap.best'), c = num('leviLeap.totalCoins'); return b ? `BEST ${fmt(b)}${c ? ` · ${fmt(c)} COINS` : ''}` : null; },
+    'levi-crossing':  () => { const b = num('leviCrossingBest'), u = num('leviCrossingUnlocked'); return (b || u > 1) ? `BEST ${fmt(b)} · LEVEL ${Math.min(u, 10)}/10` : null; },
+    'snake':          () => { const b = num('leviSnake.best'); return b ? `BEST ${fmt(b)}` : null; },
+    'atom-builder':   () => { const d = lsJSON('atomBuilderDiscovered', []); return d.length ? `${d.length}/20 ELEMENTS FOUND` : null; },
+    'solar-system':   () => { const q = num('solarSystem.quizBest'); const m = lsJSON('solarSystem.missions', {}); const st = Object.values(m).reduce((a, b) => a + b, 0);
+                              const parts = []; if (st) parts.push(`${st}/24 &#9733;`); if (q) parts.push(`QUIZ BEST ${q}`); return parts.length ? parts.join(' · ') : null; },
+    'periodic-table': () => { const q = num('ptable.quizBest'); return q ? `QUIZ BEST ${q}` : null; },
+    'squishy-pets':   () => { const s = lsJSON('squishy_pets_v2', null); const k = s && s.k ? s.k.length : 0; return k ? `${k}/40 PETS` : null; },
+    'brick-breaker':  () => { const b = num('brickBreaker.best'); return b ? `BEST ${fmt(b)}` : null; },
+    'watchmaker':     () => { const a = lsJSON('watchmaker.best.apprentice', null), m = lsJSON('watchmaker.best.master', null);
+                              const b = [a, m].filter(Boolean).sort((x, y) => y.score - x.score)[0]; return b ? `BEST ${fmt(b.score)} · ${b.rank}` : null; },
+    'levi-galaxy':    () => { const b = num('leviGalaxy.best'); return b ? `BEST ${fmt(b)}` : null; },
+  };
 
-    <a class="game-card" href="snake/index.html">
-      <div class="thumbnail">&#128013;</div>
-      <div class="info">
-        <h2>Levi Snake</h2>
-        <p>Eat, grow, and don't bite yourself. Watch for bonus snacks!</p>
-        <span class="tag">ARCADE</span>
-      </div>
-    </a>
+  const grid = document.getElementById('grid');
+  const lastPlayed = ls(LAST_KEY);
+  const plays = lsJSON(PLAYS_KEY, {});
 
-    <a class="game-card" href="atom-builder/index.html">
-      <div class="thumbnail">&#9883;</div>
-      <div class="info">
-        <h2>Atom Builder</h2>
-        <p>Build atoms in 3D, discover all 20 elements & zoom in to see quarks!</p>
-        <span class="tag">SCIENCE</span>
-      </div>
-    </a>
+  function render() {
+    grid.innerHTML = '';
+    GAMES.forEach((g, i) => {
+      let stat = null;
+      try { stat = STATS[g.id] ? STATS[g.id]() : null; } catch (e) { stat = null; }
+      const a = document.createElement('a');
+      a.className = 'game-card';
+      a.href = g.id + '/index.html';
+      a.dataset.cat = g.cat;
+      a.dataset.id = g.id;
+      a.style.setProperty('--i', i);
+      a.style.setProperty('--tint', g.tint);
+      const ribbon = g.id === lastPlayed ? '<span class="ribbon last">LAST PLAYED</span>'
+                   : g.isNew ? '<span class="ribbon">NEW</span>'
+                   : g.updated ? '<span class="ribbon">UPDATED</span>' : '';
+      a.innerHTML = `
+        <div class="thumbnail"><span class="emoji">${g.emoji}</span>${ribbon}</div>
+        <div class="info">
+          <h2>${g.name}</h2>
+          <p>${g.desc}</p>
+          <div class="meta">
+            <span class="tag">${g.tag}</span>
+            <span class="stat ${stat ? '' : 'none'}">${stat || 'NOT PLAYED YET'}</span>
+          </div>
+        </div>`;
+      a.addEventListener('click', () => {
+        try {
+          localStorage.setItem(LAST_KEY, g.id);
+          plays[g.id] = (plays[g.id] || 0) + 1;
+          localStorage.setItem(PLAYS_KEY, JSON.stringify(plays));
+        } catch (e) {}
+      });
+      grid.appendChild(a);
+    });
+    document.getElementById('count').textContent = GAMES.length;
+  }
+  render();
 
-    <a class="game-card" href="solar-system/index.html">
-      <div class="thumbnail">&#128640;</div>
-      <div class="info">
-        <h2>Solar System</h2>
-        <p>Explore the planets (and Pluto!) — learn facts, launch comets, take the quiz.</p>
-        <span class="tag">SCIENCE</span>
-      </div>
-    </a>
+  // ---- Stat strip ----
+  (function strip() {
+    const played = GAMES.filter(g => { try { return (plays[g.id] || 0) > 0 || (STATS[g.id] && STATS[g.id]()); } catch (e) { return false; } }).length;
+    const fav = Object.entries(plays).sort((a, b) => b[1] - a[1])[0];
+    const favGame = fav && GAMES.find(g => g.id === fav[0]);
+    const items = [`<b>${GAMES.length}</b> GAMES`, `<b>${played}</b> PLAYED`];
+    if (favGame && fav[1] > 1) items.push(`FAVOURITE <b>${favGame.name.toUpperCase()}</b>`);
+    document.getElementById('strip').innerHTML = items.map(s => `<span>${s}</span>`).join('');
+  })();
 
-    <a class="game-card" href="periodic-table/index.html">
-      <div class="thumbnail">&#9879;</div>
-      <div class="info">
-        <h2>Periodic Table</h2>
-        <p>Click any of the 118 elements to see facts, mass, group and electron config.</p>
-        <span class="tag">SCIENCE</span>
-      </div>
-    </a>
+  // ---- Filters + surprise-me ----
+  const filters = document.getElementById('filters');
+  let activeCat = 'all';
+  CATS.forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (id === 'all' ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      activeCat = id;
+      filters.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === b));
+      let shown = 0;
+      grid.querySelectorAll('.game-card').forEach((c, i) => {
+        const show = id === 'all' || c.dataset.cat === id;
+        c.classList.toggle('hidden', !show);
+        if (show) { c.style.setProperty('--i', shown++); c.style.animation = 'none'; void c.offsetWidth; c.style.animation = ''; }
+      });
+      document.getElementById('empty').style.display = shown ? 'none' : 'block';
+    });
+    filters.appendChild(b);
+  });
+  const dice = document.createElement('button');
+  dice.className = 'chip dice';
+  dice.innerHTML = '&#127922; SURPRISE ME';
+  let rolling = false;
+  dice.addEventListener('click', () => {
+    if (rolling) return;
+    const cards = [...grid.querySelectorAll('.game-card:not(.hidden)')];
+    if (!cards.length) return;
+    rolling = true;
+    dice.classList.add('rolling');
+    let n = 0, delay = 70;
+    const pick = cards[Math.floor(Math.random() * cards.length)];
+    (function spin() {
+      cards.forEach(c => c.classList.remove('spotlight'));
+      const c = n < 14 ? cards[n % cards.length] : pick;
+      c.classList.add('spotlight');
+      c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      n++;
+      if (n <= 16) { delay += 22; setTimeout(spin, delay); }
+      else setTimeout(() => { pick.click(); window.location.href = pick.href; }, 450);
+    })();
+  });
+  filters.appendChild(dice);
 
-    <a class="game-card" href="squishy-pets/index.html">
-      <div class="thumbnail">&#129382;</div>
-      <div class="info">
-        <h2>Squishy Pets</h2>
-        <p>Open blind boxes, squish pets for Dough, earn achievements, and collect all 40 across 5 themes.</p>
-        <span class="tag">IDLE / COLLECT</span>
-      </div>
-    </a>
-
-    <a class="game-card" href="brick-breaker/index.html">
-      <div class="thumbnail">&#129521;</div>
-      <div class="info">
-        <h2>Brick Breaker</h2>
-        <p>Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.</p>
-        <span class="tag">ARCADE</span>
-      </div>
-    </a>
-
-    <a class="game-card" href="watchmaker/index.html">
-      <div class="thumbnail">&#8986;</div>
-      <div class="info">
-        <h2>Watchmaker</h2>
-        <p>Assemble a mechanical watch in 3D, piece by piece — then watch it come alive and tick.</p>
-        <span class="tag">3D BUILDER</span>
-      </div>
-    </a>
-
-    <a class="game-card" href="levi-galaxy/index.html">
-      <div class="thumbnail">&#128126;</div>
-      <div class="info">
-        <h2>Levi Galaxy</h2>
-        <p>Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!</p>
-        <span class="tag">SPACE SHOOTER</span>
-      </div>
-    </a>
-
-    <!-- Add more games here! Copy the block above and change the link, emoji, title and description -->
-
-  </div>
-
-
+  // ---- Pixel starfield with parallax + shooting stars ----
+  (function sky() {
+    const cv = document.getElementById('sky'), ctx = cv.getContext('2d');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W = 0, H = 0, stars = [], shoot = null, mx = 0, my = 0, tx = 0, ty = 0;
+    const TINTS = ['255,255,255', '255,255,255', '255,230,0', '255,107,107', '107,209,255'];
+    function resize() {
+      W = cv.width = window.innerWidth; H = cv.height = window.innerHeight;
+      stars = [];
+      const n = Math.min(260, Math.floor(W * H / 6000) + 60);
+      for (let i = 0; i < n; i++) {
+        const layer = Math.random() < 0.6 ? 0.35 : 1;
+        stars.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random() < 0.2 ? 3 : 2, layer,
+                     b: 0.25 + Math.random() * 0.6, tw: Math.random() * Math.PI * 2, tint: TINTS[Math.floor(Math.random() * TINTS.length)] });
+      }
+    }
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', e => { tx = (e.clientX / W - 0.5) * 2; ty = (e.clientY / H - 0.5) * 2; }, { passive: true });
+    resize();
+    function draw(t) {
+      ctx.clearRect(0, 0, W, H);
+      mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
+      for (const s of stars) {
+        const b = s.b * (reduce ? 1 : 0.7 + 0.3 * Math.sin(t * 0.0015 + s.tw));
+        const px = ((s.x - mx * 18 * s.layer) % W + W) % W;
+        const py = ((s.y - my * 12 * s.layer) % H + H) % H;
+        ctx.fillStyle = `rgba(${s.tint},${b})`;
+        ctx.fillRect(px | 0, py | 0, s.s, s.s);
+      }
+      if (!reduce) {
+        if (!shoot && Math.random() < 0.006) shoot = { x: Math.random() * W, y: Math.random() * H * 0.4, vx: 7 + Math.random() * 4, vy: 3 + Math.random() * 2, life: 0 };
+        if (shoot) {
+          shoot.x += shoot.vx; shoot.y += shoot.vy; shoot.life++;
+          const a = Math.max(0, 1 - shoot.life / 45);
+          for (let k = 0; k < 8; k++) {
+            ctx.fillStyle = `rgba(255,255,255,${a * (1 - k / 8)})`;
+            ctx.fillRect((shoot.x - shoot.vx * k * 0.8) | 0, (shoot.y - shoot.vy * k * 0.8) | 0, 3, 3);
+          }
+          if (shoot.life > 45 || shoot.x > W + 40 || shoot.y > H + 40) shoot = null;
+        }
+        requestAnimationFrame(draw);
+      }
+    }
+    if (reduce) draw(0); else requestAnimationFrame(draw);
+  })();
+</script>
 </body>
 </html>

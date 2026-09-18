@@ -214,6 +214,44 @@
 
     #panel .panelBtns { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
 
+    #muteBtn {
+      position: fixed;
+      top: 6px; right: 104px;
+      z-index: 6;
+      padding: 3px 8px;
+      font-size: 0.85rem;
+      line-height: 1;
+    }
+    @media (max-width: 760px) {
+      #muteBtn { right: 110px; top: 8px; }
+      #questionBar { font-size: 0.78rem; padding: 6px 10px; }
+      #questionBar .mline { font-size: 0.66rem; }
+    }
+
+    #questionBar.mission { border-color: #6bd1ff; color: #dff1ff; }
+    #questionBar .mline { display: block; font-size: 0.72rem; color: #8ac6ff; margin-top: 3px; letter-spacing: 0; }
+
+    .mission {
+      border: 1px solid #2a2a44;
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin-bottom: 7px;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+      background: rgba(255,255,255,0.02);
+    }
+    .mission:hover { border-color: #6bd1ff88; background: rgba(107,209,255,0.06); }
+    .mission.current { border-color: #6bd1ff; background: rgba(107,209,255,0.1); }
+    .mission .mname { color: #dff1ff; font-size: 0.82rem; letter-spacing: 1px; display: flex; justify-content: space-between; }
+    .mission .mname .stars { color: #ffe600; letter-spacing: 0; }
+    .mission .mname .stars.none { color: #444; }
+    .mission .mbrief { color: #99a; font-size: 0.74rem; margin-top: 4px; line-height: 1.4; }
+    .mission .mtip { color: #6bd1ff; font-size: 0.72rem; margin-top: 6px; line-height: 1.4; border-left: 2px solid #6bd1ff55; padding-left: 8px; display: none; }
+    .mission.current .mtip { display: block; }
+    .mission .mcap { color: #ff9f6b; font-size: 0.68rem; margin-top: 4px; letter-spacing: 1px; }
+    #panel .mhead { color: #6bd1ff; font-size: 0.72rem; letter-spacing: 2px; margin: 4px 0 10px; }
+    #panel .mtotal { color: #888; font-size: 0.72rem; margin-top: 10px; text-align: center; letter-spacing: 1px; }
+
     #tooltip {
       position: fixed;
       pointer-events: none;
@@ -239,9 +277,10 @@
 
   <div id="hud">
     <h1>&#128640; Solar System</h1>
-    <span class="subtitle">drag to spin in 3D &middot; scroll to zoom &middot; click a planet to learn &middot; launch comets &middot; quiz yourself</span>
+    <span class="subtitle">drag to spin in 3D &middot; scroll to zoom &middot; click a planet to learn &middot; fly missions &middot; launch comets &middot; quiz yourself</span>
   </div>
   <a class="back-link" href="../index.html">&larr; all games</a>
+  <button id="muteBtn" title="toggle sound (S)">&#128266;</button>
 
   <div id="questionBar"></div>
 
@@ -270,6 +309,7 @@
       <button id="compareBtn">SIZES</button>
       <button id="gravityBtn">GRAVITY LAB</button>
       <button id="graphBtn">SPEED GRAPH</button>
+      <button id="missionBtn">&#128640; MISSIONS</button>
       <button id="quizBtn">QUIZ ME</button>
       <span class="sliderWrap" id="weightWrap">YOUR MASS
         <input type="range" id="weightSlider" min="20" max="100" value="30">
@@ -311,6 +351,51 @@
   const weightVal = document.getElementById('weightVal');
 
   const QUIZ_BEST_KEY = 'solarSystem.quizBest';
+  const MISSIONS_KEY = 'solarSystem.missions';
+  const MUTE_KEY = 'solarSystem.muted';
+
+  // ---- Sound (tiny WebAudio synth — same helper as the other games) ----
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  let audio = null;
+  function ac() {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    return audio;
+  }
+  function beep(freq, dur, type = 'sine', vol = 0.06, slide = 0) {
+    if (muted) return;
+    try {
+      const a = ac();
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, a.currentTime);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), a.currentTime + dur);
+      g.gain.setValueAtTime(vol, a.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+      o.connect(g).connect(a.destination);
+      o.start(); o.stop(a.currentTime + dur);
+    } catch (e) { /* audio blocked — stay silent */ }
+  }
+  const sfx = {
+    click()   { beep(900, 0.04, 'triangle', 0.03); },
+    select()  { beep(660, 0.06, 'triangle', 0.04); setTimeout(() => beep(990, 0.07, 'triangle', 0.035), 50); },
+    launch()  { beep(240, 0.35, 'sawtooth', 0.05, 700); },
+    impact()  { beep(120, 0.22, 'square', 0.06, -80); },
+    sun()     { beep(600, 0.4, 'sawtooth', 0.05, -520); },
+    lost()    { beep(300, 0.3, 'sine', 0.04, -200); },
+    right()   { beep(784, 0.1, 'triangle', 0.05); setTimeout(() => beep(1046, 0.14, 'triangle', 0.05), 90); },
+    wrong()   { beep(220, 0.25, 'square', 0.045, -90); },
+    win()     { [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'triangle', 0.06), i * 110)); },
+    best()    { beep(660, 0.1); setTimeout(() => beep(880, 0.12), 90); setTimeout(() => beep(1108, 0.18), 200); },
+  };
+  const muteBtn = document.getElementById('muteBtn');
+  function refreshMute() { muteBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; }
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch (e) {}
+    refreshMute(); muteBtn.blur();
+  });
+  refreshMute();
 
   // Real-ish data; orbit radius & display radius are tuned for visibility.
   // periodDays = real Earth days for one orbit.
@@ -339,14 +424,15 @@
       r: 7, compressedR: 125, orbitAU: 1.00, periodDays: 365, inclDeg: 0,
       diameterKm: 12742, gravityG: 1.00, moons: 1, dayHours: 24,
       fact: "Earth is the only place we've ever found life. About 71% of its surface is covered in liquid water, and its magnetic field protects us from harmful solar radiation.",
-      hasMoon: true
+      sats: [{ d: 9, r: 2.2, spd: 0.22, col: '#bbbbbb' }]  // the Moon
     },
     {
       name: 'Mars', type: 'Terrestrial planet',
       color: '#d76b3a', accent: '#8a3a1a',
       r: 5, compressedR: 160, orbitAU: 1.52, periodDays: 687, inclDeg: 1.9,
       diameterKm: 6779, gravityG: 0.38, moons: 2, dayHours: 24.6,
-      fact: 'Mars has the largest volcano in the solar system — Olympus Mons — about 22 km tall, almost 3× higher than Mount Everest. Its red color comes from rusty iron in the soil.'
+      fact: 'Mars has the largest volcano in the solar system — Olympus Mons — about 22 km tall, almost 3× higher than Mount Everest. Its red color comes from rusty iron in the soil.',
+      sats: [{ d: 5, r: 1, spd: 0.9, col: '#a08878' }, { d: 8, r: 0.8, spd: 0.45, col: '#a08878' }]  // Phobos & Deimos
     },
     {
       name: 'Jupiter', type: 'Gas giant',
@@ -354,7 +440,10 @@
       r: 22, compressedR: 220, orbitAU: 5.20, periodDays: 4333, inclDeg: 1.3,
       diameterKm: 139820, gravityG: 2.53, moons: 95, dayHours: 9.9,
       fact: 'Jupiter is so big that more than 1,300 Earths could fit inside it. The Great Red Spot is a giant storm that has been raging for at least 400 years.',
-      bands: true
+      bands: true,
+      // The four Galilean moons — Io, Europa, Ganymede, Callisto
+      sats: [{ d: 6, r: 1.3, spd: 0.6, col: '#e8d890' }, { d: 9, r: 1.1, spd: 0.4, col: '#d8d8d0' },
+             { d: 12.5, r: 1.7, spd: 0.28, col: '#b0a890' }, { d: 16.5, r: 1.5, spd: 0.18, col: '#807060' }]
     },
     {
       name: 'Saturn', type: 'Gas giant',
@@ -362,7 +451,8 @@
       r: 18, compressedR: 280, orbitAU: 9.58, periodDays: 10759, inclDeg: 2.5,
       diameterKm: 116460, gravityG: 1.07, moons: 146, dayHours: 10.7,
       fact: "Saturn's rings are made of billions of chunks of ice and rock, some as small as dust grains and others as big as a house. Saturn is so light it would float in water!",
-      rings: true
+      rings: true,
+      sats: [{ d: 26, r: 1.6, spd: 0.14, col: '#d8b070' }]  // Titan, beyond the rings
     },
     {
       name: 'Uranus', type: 'Ice giant',
@@ -801,6 +891,22 @@
     const isSel = selected === p;
     const pr = p.r * scr.s;
 
+    // Moons orbit in 3D around the planet; the ones behind it are painted
+    // first so they disappear behind the disc like the real thing.
+    const sats = (p.sats || []).map((m, k) => {
+      const ma = simDays * m.spd + i + k * 2.1;
+      const mr = p.r + m.d;
+      const ms = project(w.wx + Math.cos(ma) * mr, w.wy, w.wz + Math.sin(ma) * mr);
+      return { m, ms };
+    });
+    const drawSat = ({ m, ms }) => {
+      ctx.fillStyle = m.col;
+      ctx.beginPath();
+      ctx.arc(ms.x, ms.y, Math.max(0.8, m.r * ms.s), 0, Math.PI * 2);
+      ctx.fill();
+    };
+    sats.filter(sat => sat.ms.depth > scr.depth).forEach(drawSat);
+
     // Saturn rings, far half (drawn behind the body)
     if (p.rings) drawSaturnRings(scr.x, scr.y, pr, 'back', ringSquash());
 
@@ -834,6 +940,8 @@
     ctx.beginPath();
     ctx.arc(scr.x, scr.y, pr, 0, Math.PI * 2);
     ctx.fill();
+
+    drawSurface(p, scr, pr, t);
 
     // Jupiter bands
     if (p.bands) {
@@ -870,16 +978,8 @@
       ctx.restore();
     }
 
-    // Earth's moon (orbits in 3D around the planet)
-    if (p.hasMoon) {
-      const ma = simDays * 0.22 + i;
-      const mr = p.r + 9;
-      const mScr = project(w.wx + Math.cos(ma) * mr, w.wy, w.wz + Math.sin(ma) * mr);
-      ctx.fillStyle = '#bbbbbb';
-      ctx.beginPath();
-      ctx.arc(mScr.x, mScr.y, 2.2 * mScr.s, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // Moons in front of the planet
+    sats.filter(sat => sat.ms.depth <= scr.depth).forEach(drawSat);
 
     // Name label
     if (showLabels) {
@@ -905,6 +1005,80 @@
       ctx.arc(scr.x, scr.y, pr + 8 + (Math.abs(quizFlash) % 10), 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+
+  // Cartoon surface features that slowly rotate so each world looks like a
+  // spinning globe rather than a flat dot. [lon, lat, w, h] in globe units.
+  const EARTH_LAND = [[0.3, -0.15, 0.30, 0.42], [0.55, 0.42, 0.18, 0.30], [2.5, -0.30, 0.55, 0.32], [2.35, 0.20, 0.24, 0.42], [3.9, 0.42, 0.20, 0.14]];
+  const MARS_DARK  = [[0.4, 0.05, 0.35, 0.25], [2.6, -0.2, 0.28, 0.2], [4.4, 0.3, 0.22, 0.15]];
+  function drawSurface(p, scr, pr, t) {
+    if (pr < 3.5) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(scr.x, scr.y, pr, 0, Math.PI * 2);
+    ctx.clip();
+    const rot = t * 0.0005;
+    const blob = (list, color, alpha) => {
+      ctx.fillStyle = color;
+      ctx.globalAlpha = alpha;
+      for (const [lon, lat, bw, bh] of list) {
+        const a = lon + rot;
+        const c = Math.cos(a);
+        if (c <= 0.08) continue; // on the far side of the globe
+        ctx.beginPath();
+        ctx.ellipse(scr.x + Math.sin(a) * pr * 0.92, scr.y + lat * pr, Math.max(0.6, bw * pr * c), bh * pr, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    };
+    const caps = (size, color) => {
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(scr.x, scr.y - pr * 0.92, pr * size, pr * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(scr.x, scr.y + pr * 0.92, pr * size * 0.8, pr * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    };
+    switch (p.name) {
+      case 'Earth':
+        blob(EARTH_LAND, '#4f9a3c', 0.95);
+        caps(0.55, 'rgba(240,248,255,0.85)');
+        // drifting clouds
+        blob([[1.2 + rot * 0.6, -0.5, 0.35, 0.10], [3.5 + rot * 0.6, 0.15, 0.4, 0.09], [5.4 + rot * 0.6, 0.55, 0.3, 0.08]], '#ffffff', 0.55);
+        break;
+      case 'Mars':
+        blob(MARS_DARK, '#7a3a1e', 0.75);
+        caps(0.35, 'rgba(255,255,255,0.8)');
+        break;
+      case 'Venus':
+        // Swirling sulphuric-acid cloud bands
+        ctx.strokeStyle = 'rgba(255,240,200,0.35)';
+        ctx.lineWidth = Math.max(1, pr * 0.12);
+        for (let k = -2; k <= 2; k++) {
+          ctx.beginPath();
+          ctx.ellipse(scr.x, scr.y + k * pr * 0.35, pr * 1.1, pr * 0.14, -0.25 + k * 0.1, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        break;
+      case 'Mercury':
+        blob([[0.5, -0.3, 0.09, 0.12], [1.8, 0.35, 0.07, 0.09], [3.2, 0.0, 0.11, 0.14], [4.6, -0.45, 0.06, 0.08], [5.5, 0.5, 0.08, 0.1]], '#5c4a3a', 0.8);
+        break;
+      case 'Neptune':
+        blob([[1.0, 0.15, 0.20, 0.13]], '#16307a', 0.9); // the Great Dark Spot
+        blob([[2.4, -0.45, 0.30, 0.05], [4.3, 0.5, 0.25, 0.05]], '#ffffff', 0.35);
+        break;
+      case 'Uranus':
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = Math.max(1, pr * 0.08);
+        for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(scr.x - pr, scr.y + k * pr * 0.45); ctx.lineTo(scr.x + pr, scr.y + k * pr * 0.45); ctx.stroke(); }
+        break;
+      case 'Saturn':
+        ctx.strokeStyle = 'rgba(160,130,80,0.25)';
+        ctx.lineWidth = Math.max(1, pr * 0.1);
+        for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(scr.x - pr, scr.y + k * pr * 0.32); ctx.lineTo(scr.x + pr, scr.y + k * pr * 0.32); ctx.stroke(); }
+        break;
+      case 'Pluto':
+        blob([[1.0, 0.1, 0.22, 0.28]], '#f4ece0', 0.9); // the heart-shaped nitrogen glacier
+        break;
+    }
+    ctx.restore();
   }
 
   function render(t) {
@@ -1372,22 +1546,41 @@
       for (let s = 0; s < SUBSTEPS && alive; s++) {
         const r2 = c.x * c.x + c.z * c.z;
         const r = Math.sqrt(r2);
-        if (r < SUN.r) { alive = false; sunFlash = 12; break; }   // fell into the Sun
+        if (r < SUN.r) { alive = false; sunFlash = 12; sfx.sun(); cometEnded(c, 'sun'); break; }   // fell into the Sun
         const a = GM * gravMult / r2;      // acceleration magnitude (inverse square)
         c.vx += a * (-c.x / r) * h;
         c.vz += a * (-c.z / r) * h;
         c.x += c.vx * h;
         c.z += c.vz * h;
+        if (c.mission) {
+          // Mission telemetry: closest approach to the Sun and how far
+          // around the Sun the probe has swung (for the orbit mission)
+          const ang = Math.atan2(c.z, c.x);
+          let da = ang - c.lastAng;
+          if (da > Math.PI) da -= Math.PI * 2; else if (da < -Math.PI) da += Math.PI * 2;
+          c.sweep += da; c.lastAng = ang;
+          if (r < c.minR) c.minR = r;
+          if (!c.leftHome) {
+            const e = positions[2];
+            if (Math.hypot(c.x - e.wx, c.z - e.wz) > PLANETS[2].r + 12) c.leftHome = true;
+          }
+          if (checkMissionProgress(c, r)) { alive = false; break; }
+        }
         // Splat on any planet in the way — checked every sub-step so fast
         // time-warp can't tunnel a comet through a planet. Full 3D
         // distance: inclined planets can dodge above or below a comet!
+        // (Mission probes fly a flat course, so for them only the 2D
+        // distance counts — otherwise tilted Pluto could never be reached.)
         for (let i = 0; i < PLANETS.length; i++) {
+          if (c.mission && i === 2 && !c.leftHome) continue; // still leaving Earth
           const w = positions[i];
-          const ddx = c.x - w.wx, ddy = -w.wy, ddz = c.z - w.wz;
-          const hitR = PLANETS[i].r + 3;
+          const ddx = c.x - w.wx, ddy = c.mission ? 0 : -w.wy, ddz = c.z - w.wz;
+          const hitR = PLANETS[i].r + (c.mission ? 7 : 3);
           if (ddx * ddx + ddy * ddy + ddz * ddz < hitR * hitR) {
             alive = false;
             impacts.push({ wx: w.wx, wy: w.wy, wz: w.wz, r: PLANETS[i].r, life: 0 });
+            sfx.impact();
+            cometEnded(c, 'hit', i);
             break;
           }
         }
@@ -1401,7 +1594,7 @@
       }
       if (!alive) continue;
       // Drop comets that fly far away
-      if (Math.abs(c.x) > 2600 || Math.abs(c.z) > 2600) continue;
+      if (Math.abs(c.x) > 2600 || Math.abs(c.z) > 2600) { cometEnded(c, 'lost'); continue; }
       survivors.push(c);
     }
     comets = survivors;
@@ -1466,10 +1659,14 @@
       ctx.font = '10px Courier New';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(speedKmS(c.vx, c.vz).toFixed(1) + ' km/s', head.x + 6, head.y - 6);
       ctx.fillText(speedKmS(c.vx, c.vz).toFixed(1) + ' km/s', head.x + 6, head.y - 6);
     }
     // Aiming arrow while dragging (lives on the ecliptic plane)
     if (aiming) {
+      refreshAimOrigin();
       const a0 = project(aiming.x0, 0, aiming.z0);
       const a1 = project(aiming.x1, 0, aiming.z1);
       ctx.strokeStyle = '#6bd1ff';
@@ -1498,10 +1695,15 @@
       // as launchComet so the number matches what the comet starts with.
       const previewVx = (aiming.x1 - aiming.x0) * 0.05;
       const previewVz = (aiming.z1 - aiming.z0) * 0.05;
-      ctx.fillStyle = '#6bd1ff';
+      const kms = speedKmS(previewVx, previewVz);
+      const capped = aiming.fromEarth && mission && kms >= mission.def.maxKmS - 0.05;
+      ctx.fillStyle = capped ? '#ff9f6b' : '#6bd1ff';
       ctx.font = 'bold 11px Courier New';
       ctx.textAlign = 'left';
-      ctx.fillText(speedKmS(previewVx, previewVz).toFixed(1) + ' km/s', a1.x + 8, a1.y + 4);
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.lineWidth = 3;
+      ctx.strokeText(kms.toFixed(1) + ' km/s' + (capped ? ' (MAX FUEL)' : ''), a1.x + 8, a1.y + 4);
+      ctx.fillText(kms.toFixed(1) + ' km/s' + (capped ? ' (MAX FUEL)' : ''), a1.x + 8, a1.y + 4);
     }
   }
 
@@ -1607,6 +1809,48 @@
     };
   }
 
+  // Set the far end of the aiming arrow. In mission mode the arrow starts on
+  // Earth (wherever Earth is right now) and its length is capped by the
+  // mission's fuel budget, so the Sun's gravity has to do the rest.
+  function setAimEnd(w) {
+    if (!aiming) return;
+    if (aiming.fromEarth) {
+      aiming.dx = w.x - aiming.px;
+      aiming.dz = w.z - aiming.pz;
+      const max = mission ? mission.def.maxKmS : 0;
+      if (max) {
+        const kms = speedKmS(aiming.dx * 0.05, aiming.dz * 0.05);
+        if (kms > max) { const k = max / kms; aiming.dx *= k; aiming.dz *= k; }
+      }
+      refreshAimOrigin();
+    } else {
+      aiming.x1 = w.x; aiming.z1 = w.z;
+    }
+  }
+  function refreshAimOrigin() {
+    if (!aiming || !aiming.fromEarth) return;
+    const e = planetPos3D(PLANETS[2], 2);
+    aiming.x0 = e.wx; aiming.z0 = e.wz;
+    aiming.x1 = e.wx + aiming.dx; aiming.z1 = e.wz + aiming.dz;
+  }
+  function beginAim(w) {
+    if (missionMode) {
+      if (!mission) { showMissionPanel(); return; }
+      aiming = { fromEarth: true, px: w.x, pz: w.z, dx: 0, dz: 0 };
+      refreshAimOrigin();
+    } else {
+      aiming = { x0: w.x, z0: w.z, x1: w.x, z1: w.z };
+    }
+  }
+  function releaseAim() {
+    if (!aiming) return;
+    if (Math.hypot(aiming.x1 - aiming.x0, aiming.z1 - aiming.z0) > 6) {
+      if (aiming.fromEarth) launchProbe(aiming);
+      else launchComet(aiming);
+    }
+    aiming = null;
+  }
+
   function launchComet(aim) {
     // Drag length sets speed; direction is the throw direction.
     const VEL_SCALE = 0.05;
@@ -1626,9 +1870,9 @@
   canvas.addEventListener('mousedown', e => {
     if (mode !== 'orbit') return;
     const { x, y } = canvasCoords(e.clientX, e.clientY);
-    if (cometMode) {
+    if (cometMode || missionMode) {
       const w = screenToPlane(x, y);
-      if (w) aiming = { x0: w.x, z0: w.z, x1: w.x, z1: w.z };
+      if (w) beginAim(w);
     } else {
       viewDrag = { sx: x, sy: y, yaw0: cam.yaw, pitch0: cam.pitch, moved: false };
     }
@@ -1638,16 +1882,13 @@
     if (aiming) {
       const { x, y } = canvasCoords(e.clientX, e.clientY);
       const w = screenToPlane(x, y);
-      if (w) { aiming.x1 = w.x; aiming.z1 = w.z; }
-      if (Math.hypot(aiming.x1 - aiming.x0, aiming.z1 - aiming.z0) > 6) {
-        launchComet(aiming);
-      }
-      aiming = null;
+      if (w) setAimEnd(w);
+      releaseAim();
     }
     if (viewDrag) {
       if (viewDrag.moved) suppressClick = true;
       viewDrag = null;
-      canvas.style.cursor = cometMode ? 'crosshair' : 'grab';
+      canvas.style.cursor = (cometMode || missionMode) ? 'crosshair' : 'grab';
     }
   });
 
@@ -1655,7 +1896,7 @@
     const { x: mx, y: my } = canvasCoords(e.clientX, e.clientY);
     if (aiming) {
       const w = screenToPlane(mx, my);
-      if (w) { aiming.x1 = w.x; aiming.z1 = w.z; }
+      if (w) setAimEnd(w);
       return;
     }
     if (viewDrag) {
@@ -1683,7 +1924,7 @@
       canvas.style.cursor = 'pointer';
     } else {
       hideTip();
-      canvas.style.cursor = cometMode ? 'crosshair' : (mode === 'orbit' ? 'grab' : 'default');
+      canvas.style.cursor = (cometMode || missionMode) ? 'crosshair' : (mode === 'orbit' ? 'grab' : 'default');
     }
   });
 
@@ -1695,7 +1936,7 @@
 
   canvas.addEventListener('click', e => {
     if (suppressClick) { suppressClick = false; return; }
-    if (cometMode) return; // canvas is for launching comets in this mode
+    if (cometMode || missionMode) return; // canvas is for launching in these modes
     const { x: mx, y: my } = canvasCoords(e.clientX, e.clientY);
     const hit = getPlanetAt(mx, my);
 
@@ -1734,11 +1975,11 @@
     }
     const t0 = e.touches[0];
     const { x, y } = canvasCoords(t0.clientX, t0.clientY);
-    if (cometMode) {
+    if (cometMode || missionMode) {
       const w = screenToPlane(x, y);
       if (w) {
-        aiming = { x0: w.x, z0: w.z, x1: w.x, z1: w.z };
-        touchState = { kind: 'aim' };
+        beginAim(w);
+        if (aiming) touchState = { kind: 'aim' };
       }
     } else {
       touchState = { kind: 'rotate', sx: x, sy: y, yaw0: cam.yaw, pitch0: cam.pitch, moved: false };
@@ -1757,7 +1998,7 @@
     const { x, y } = canvasCoords(t0.clientX, t0.clientY);
     if (touchState.kind === 'aim' && aiming) {
       const w = screenToPlane(x, y);
-      if (w) { aiming.x1 = w.x; aiming.z1 = w.z; }
+      if (w) setAimEnd(w);
     } else if (touchState.kind === 'rotate') {
       const dx = x - touchState.sx, dy = y - touchState.sy;
       if (Math.abs(dx) + Math.abs(dy) > 6) touchState.moved = true;
@@ -1770,10 +2011,7 @@
     if (!touchState) return;
     e.preventDefault();
     if (touchState.kind === 'aim' && aiming) {
-      if (Math.hypot(aiming.x1 - aiming.x0, aiming.z1 - aiming.z0) > 6) {
-        launchComet(aiming);
-      }
-      aiming = null;
+      releaseAim();
     } else if (touchState.kind === 'rotate' && !touchState.moved) {
       // A tap: treat it like a click (select / answer quiz)
       const hit = getPlanetAt(touchState.sx, touchState.sy);
@@ -1837,6 +2075,8 @@
   function setMode(m) {
     mode = (mode === m) ? 'orbit' : m;
     if (mode !== 'orbit' && cometMode) stopComet();
+    if (mode !== 'orbit' && missionMode) stopMissions();
+    sfx.click();
     selectBody(null); // stale info (e.g. a FOLLOW button) doesn't carry across modes
     compareBtn.textContent = mode === 'compare' ? 'BACK TO ORBITS' : 'SIZES';
     gravityBtn.textContent = mode === 'gravity' ? 'BACK TO ORBITS' : 'GRAVITY LAB';
@@ -1869,7 +2109,9 @@
 
   function startComet() {
     if (quiz) stopQuiz();
+    if (missionMode) stopMissions();
     cometMode = true;
+    sfx.click();
     canvas.style.cursor = 'crosshair';
     cometBtn.innerHTML = '&#9732; STOP COMETS';
     cometBtn.classList.add('active');
@@ -1880,9 +2122,9 @@
 
   function stopComet() {
     cometMode = false;
-    comets = [];
+    comets = comets.filter(c => c.mission);
     aiming = null;
-    canvas.style.cursor = 'grab';
+    canvas.style.cursor = missionMode ? 'crosshair' : 'grab';
     cometBtn.innerHTML = '&#9732; COMETS';
     cometBtn.classList.remove('active');
     gravWrap.classList.remove('show');
@@ -1894,6 +2136,192 @@
     if (cometMode) stopComet();
     else startComet();
   });
+
+  // ---- Missions ----
+  // Real probe physics on top of the comet sandbox: every probe launches
+  // from wherever Earth is right now, with a fuel budget (a max launch
+  // speed) so the Sun's gravity has to bend the path the rest of the way.
+  const MISSIONS = [
+    { id: 'mars',    name: 'RED PLANET',    target: 'Mars',    maxKmS: 36,
+      brief: 'Land a probe on Mars.',
+      tip: 'Mars keeps moving while your probe flies — aim a little ahead of it, like leading a pass. NASA waits for a launch window every 26 months!' },
+    { id: 'venus',   name: 'MORNING STAR',  target: 'Venus',   maxKmS: 36,
+      brief: 'Hit Venus. Falling inward, your probe speeds up as it goes.',
+      tip: 'Throw gently — toward the Sun the pull gets stronger and stronger. Watch the km/s number climb on the way in.' },
+    { id: 'jupiter', name: 'GIANT LEAP',    target: 'Jupiter', maxKmS: 40,
+      brief: 'Reach Jupiter, the biggest target out there.',
+      tip: 'Long trips need more fuel. Fling hard and mostly outward — the Sun\'s gravity will curve your path.' },
+    { id: 'saturn',  name: 'RING RUNNER',   target: 'Saturn',  maxKmS: 42,
+      brief: 'Deliver a probe to Saturn, like Cassini did in 2004 after 7 years in flight.',
+      tip: 'Watch the km/s readout drop as the probe climbs away from the Sun — it\'s trading speed for height, like a ball thrown upward.' },
+    { id: 'sundive', name: 'SUN DIVER',     type: 'sundive',   maxKmS: 40,
+      brief: 'Dive in closer than 3 Sun-radii, then swing back out past Earth\'s orbit — without falling in.',
+      tip: 'The Parker Solar Probe does this for real. Aim just beside the Sun, not at it — gravity will whip you around.' },
+    { id: 'orbit',   name: 'ORBITER',       type: 'orbit',     maxKmS: 40,
+      brief: 'Put a probe into an orbit that goes all the way around the Sun once.',
+      tip: 'Throw sideways, not at the Sun. Too slow and it falls in; too fast and it escapes. That balance is what keeps every planet in orbit!' },
+    { id: 'mercury', name: 'HOT SHOT',      target: 'Mercury', maxKmS: 40,
+      brief: 'Hit tiny, speedy Mercury deep in the Sun\'s gravity well.',
+      tip: 'Mercury is small AND fast. Try 5× speed first to watch how it moves, then time your throw.' },
+    { id: 'pluto',   name: 'THE LONG SHOT', target: 'Pluto',   maxKmS: 46,
+      brief: 'Reach Pluto, like New Horizons did after a 9-year flight.',
+      tip: 'Pluto barely moves, but it\'s tiny and very far. Almost all your fuel, aimed dead straight — and if you overdo it, the probe leaves the solar system for good.' },
+  ];
+  let missionMode = false;
+  let mission = null;   // { def, attempts, busy }
+  let missionStars = {};
+  try { missionStars = JSON.parse(localStorage.getItem(MISSIONS_KEY) || '{}'); } catch (e) { missionStars = {}; }
+  const missionBtn = document.getElementById('missionBtn');
+  const STAR = '★', NOSTAR = '☆';
+  function starText(n) { return STAR.repeat(n) + NOSTAR.repeat(3 - n); }
+  function totalStars() { return MISSIONS.reduce((a, m) => a + (missionStars[m.id] || 0), 0); }
+
+  function startMissions() {
+    if (quiz) stopQuiz();
+    if (cometMode) stopComet();
+    missionMode = true;
+    missionBtn.innerHTML = '&#128640; MISSION LIST';
+    missionBtn.classList.add('active');
+    canvas.style.cursor = 'crosshair';
+    sfx.click();
+    showMissionPanel();
+    if (!mission) {
+      questionBar.className = 'show mission';
+      questionBar.innerHTML = 'MISSION CONTROL — pick a mission from the list<span class="mline">Every probe launches from Earth. Drag anywhere to aim, release to launch.</span>';
+    }
+  }
+  function stopMissions() {
+    missionMode = false;
+    mission = null;
+    comets = comets.filter(c => !c.mission);
+    aiming = null;
+    missionBtn.innerHTML = '&#128640; MISSIONS';
+    missionBtn.classList.remove('active');
+    canvas.style.cursor = 'grab';
+    questionBar.classList.remove('show', 'mission', 'right', 'wrong');
+    questionBar.textContent = '';
+    if (selected === null) panel.classList.remove('open');
+  }
+  missionBtn.addEventListener('click', () => {
+    if (!missionMode) startMissions();
+    else if (panel.classList.contains('open')) { sfx.click(); panel.classList.remove('open'); }
+    else { sfx.click(); showMissionPanel(); }
+  });
+
+  function showMissionPanel() {
+    selected = null;
+    const cur = mission ? mission.def.id : null;
+    panelBody.innerHTML = `
+      <h2>MISSIONS</h2>
+      <div class="mhead">${totalStars()} / ${MISSIONS.length * 3} STARS · FEWER ATTEMPTS = MORE STARS</div>
+      ${MISSIONS.map((m, i) => {
+        const st = missionStars[m.id] || 0;
+        return `<div class="mission ${cur === m.id ? 'current' : ''}" data-id="${m.id}">
+          <div class="mname"><span>${i + 1}. ${m.name}</span><span class="stars ${st ? '' : 'none'}">${starText(st)}</span></div>
+          <div class="mbrief">${m.brief}</div>
+          <div class="mcap">FUEL: MAX ${m.maxKmS} KM/S</div>
+          <div class="mtip">&#128161; ${m.tip}</div>
+        </div>`;
+      }).join('')}
+      <div class="mtotal">${totalStars() === MISSIONS.length * 3 ? '&#127942; EVERY MISSION PERFECT — MISSION COMMANDER!' : 'Progress is saved on this device'}</div>
+      <div class="panelBtns"><button id="endMissionsBtn">END MISSIONS</button></div>`;
+    panelBody.querySelectorAll('.mission').forEach(el => el.addEventListener('click', () => startMission(MISSIONS.find(m => m.id === el.dataset.id))));
+    document.getElementById('endMissionsBtn').addEventListener('click', stopMissions);
+    panel.classList.add('open');
+  }
+
+  function startMission(def) {
+    mission = { def, attempts: 0, busy: false };
+    comets = comets.filter(c => !c.mission);
+    aiming = null;
+    sfx.select();
+    showMissionPanel();
+    if (window.innerWidth <= 760) panel.classList.remove('open'); // the bottom sheet would cover the sky
+    updateMissionBar();
+  }
+  function updateMissionBar(extra) {
+    if (!mission) return;
+    const m = mission.def, idx = MISSIONS.indexOf(m) + 1;
+    questionBar.className = 'show mission';
+    questionBar.innerHTML = `MISSION ${idx}: ${m.name} — ${m.brief}<span class="mline">${extra || `Drag to aim from Earth (max ${m.maxKmS} km/s), release to launch · attempt ${mission.attempts + 1}`}</span>`;
+  }
+
+  function launchProbe(aim) {
+    if (!mission || mission.busy) return;
+    comets = comets.filter(c => !c.mission); // one probe in flight at a time
+    mission.attempts++;
+    const VEL_SCALE = 0.05;
+    comets.push({
+      x: aim.x0, z: aim.z0,
+      vx: (aim.x1 - aim.x0) * VEL_SCALE,
+      vz: (aim.z1 - aim.z0) * VEL_SCALE,
+      trail: [], mission: true, leftHome: false,
+      minR: Infinity, sweep: 0, lastAng: Math.atan2(aim.z0, aim.x0),
+    });
+    sfx.launch();
+    updateMissionBar(`Probe away at ${speedKmS(comets[comets.length - 1].vx, comets[comets.length - 1].vz).toFixed(1)} km/s · attempt ${mission.attempts}`);
+  }
+
+  const earthOrbitR = () => orbitRadius(PLANETS[2]);
+  // Called every physics sub-step for a mission probe. Returns true when the
+  // probe has just completed its mission (and should be removed).
+  function checkMissionProgress(c, r) {
+    if (!mission || mission.busy) return false;
+    const t = mission.def.type;
+    if (t === 'sundive' && c.minR < SUN.r * 3 && r > earthOrbitR() && c.leftHome) {
+      impacts.push({ wx: c.x, wy: 0, wz: c.z, r: 4, life: 0 });
+      missionWon(`Closest approach ${(c.minR / SUN.r).toFixed(1)}× the Sun's radius — and it survived!`);
+      return true;
+    }
+    // A lap counts a whisker early, so a probe that swings right back to
+    // its launch point wins the moment the loop closes.
+    if (t === 'orbit' && Math.abs(c.sweep) >= Math.PI * 2 - 0.15) {
+      impacts.push({ wx: c.x, wy: 0, wz: c.z, r: 4, life: 0 });
+      missionWon('One full lap around the Sun — that\'s a real orbit!');
+      return true;
+    }
+    return false;
+  }
+  function cometEnded(c, reason, planetIndex) {
+    if (!c.mission || !mission || mission.busy) return;
+    const m = mission.def;
+    if (reason === 'hit') {
+      const name = PLANETS[planetIndex].name;
+      if (m.target === name) { missionWon(`Touchdown on ${name}!`); return; }
+      if (name === 'Earth') { missionLost('The probe came back and hit Earth!'); return; }
+      missionLost(m.target ? `Oops — that was ${name}, not ${m.target}.` : `Crashed into ${name}!`);
+    } else if (reason === 'sun') {
+      missionLost(m.type === 'sundive' ? 'Too close! The probe fell into the Sun.' : 'The probe fell into the Sun!');
+    } else {
+      missionLost(m.type === 'orbit' ? 'Too fast — it escaped the Sun\'s gravity.' : 'The probe flew off into deep space.');
+    }
+  }
+  function missionWon(msg) {
+    const m = mission.def;
+    const stars = mission.attempts <= 1 ? 3 : mission.attempts <= 3 ? 2 : 1;
+    const prev = missionStars[m.id] || 0;
+    if (stars > prev) {
+      missionStars[m.id] = stars;
+      try { localStorage.setItem(MISSIONS_KEY, JSON.stringify(missionStars)); } catch (e) {}
+    }
+    mission.busy = true;
+    sfx.win();
+    questionBar.className = 'show right';
+    questionBar.innerHTML = `&#10003; MISSION COMPLETE — ${msg}<span class="mline">${starText(stars)} in ${mission.attempts} attempt${mission.attempts === 1 ? '' : 's'}${stars > prev ? ' · NEW BEST' : ''}</span>`;
+    const idx = MISSIONS.indexOf(m);
+    setTimeout(() => {
+      if (!missionMode) return;
+      if (idx + 1 < MISSIONS.length) startMission(MISSIONS[idx + 1]);
+      else { mission = null; showMissionPanel(); questionBar.className = 'show mission'; questionBar.innerHTML = 'ALL MISSIONS FLOWN — replay any of them for 3 stars<span class="mline">Every probe launches from Earth. Drag anywhere to aim, release to launch.</span>'; }
+    }, 2600);
+  }
+  function missionLost(msg) {
+    mission.busy = true;
+    sfx.lost();
+    questionBar.className = 'show wrong';
+    questionBar.innerHTML = `&#10007; ${msg}<span class="mline">Try again — attempt ${mission.attempts + 1}</span>`;
+    setTimeout(() => { if (mission) { mission.busy = false; updateMissionBar(); } }, 1600);
+  }
 
   // ---- Quiz ----
   const QUIZ_QUESTIONS = [
@@ -1915,10 +2343,22 @@
     { test: p => p.name === 'Saturn',   q: 'Click the planet so light it would float in water' },
     { test: p => p.name === 'Venus',    q: 'Click the planet that spins backward' },
     { test: p => p.name === 'Pluto',    q: 'Click the body with the most tilted orbit (spin the view to see it!)' },
+    { test: p => p.name === 'Jupiter',  q: 'Click the planet with the shortest day (under 10 hours!)' },
+    { test: p => p.name === 'Venus',    q: 'Click the planet with the longest day (longer than its year!)' },
+    { test: p => p.name === 'Neptune',  q: 'Click the planet that was found by math before anyone saw it' },
+    { test: p => p.name === 'Mars',     q: 'Click the planet that has two tiny moons, Phobos and Deimos' },
+    { test: p => p.name === 'Jupiter',  q: 'Click the planet whose four biggest moons Galileo spotted in 1610' },
+    { test: p => p.name === 'Saturn',   q: 'Click the planet that Titan, a moon with lakes of methane, orbits' },
+    { test: p => p.name === 'Uranus',   q: 'Click the coldest of the giant planets (about −195°C)' },
+    { test: p => p.name === 'Earth',    q: 'Click the planet where sunlight takes about 8 minutes to arrive' },
+    { test: p => p.name === 'Mercury',  q: 'Click the planet that races around the Sun at 47 km/s' },
+    { test: p => p.name === 'Pluto',    q: 'Click the dwarf planet with a heart-shaped glacier' },
   ];
 
   function startQuiz() {
     if (cometMode) stopComet();
+    if (missionMode) stopMissions();
+    sfx.click();
     quiz = {
       score: 0,
       best: parseInt(localStorage.getItem(QUIZ_BEST_KEY) || '0', 10),
@@ -1957,12 +2397,14 @@
       if (quiz.score > quiz.best) {
         quiz.best = quiz.score;
         localStorage.setItem(QUIZ_BEST_KEY, quiz.best);
-      }
+        sfx.best();
+      } else sfx.right();
       quizFlash = 30;
       questionBar.className = 'show right';
       questionBar.textContent = `✓ Correct!  Score: ${quiz.score}  Best: ${quiz.best}`;
       setTimeout(nextQuestion, 1100);
     } else {
+      sfx.wrong();
       quizFlash = -30;
       questionBar.className = 'show wrong';
       const correctName = PLANETS[quiz.targetIndex].name;
@@ -1975,6 +2417,34 @@
   quizBtn.addEventListener('click', () => {
     if (quiz) stopQuiz();
     else startQuiz();
+  });
+
+  // ---- Keyboard shortcuts ----
+  window.addEventListener('keydown', e => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return;
+    const speedBtn = v => document.querySelector(`button[data-speed="${v}"]`);
+    switch (e.key) {
+      case ' ': e.preventDefault(); pauseBtn.click(); break;
+      case '1': speedBtn('0.5').click(); break;
+      case '2': speedBtn('1').click(); break;
+      case '3': speedBtn('5').click(); break;
+      case '4': speedBtn('20').click(); break;
+      case 'l': case 'L': if (mode === 'orbit') labelBtn.click(); break;
+      case 't': case 'T': if (mode === 'orbit') trailBtn.click(); break;
+      case 'r': case 'R': viewBtn.click(); break;
+      case 'm': case 'M': if (mode === 'orbit') missionBtn.click(); break;
+      case 'c': case 'C': if (mode === 'orbit') cometBtn.click(); break;
+      case 'q': case 'Q': quizBtn.click(); break;
+      case 's': case 'S': muteBtn.click(); break;
+      case 'Escape':
+        if (panel.classList.contains('open') && selected) selectBody(null);
+        else if (missionMode) stopMissions();
+        else if (cometMode) stopComet();
+        else if (quiz) stopQuiz();
+        else if (mode !== 'orbit') setMode(mode);
+        else selectBody(null);
+        break;
+    }
   });
 
   requestAnimationFrame(loop);
