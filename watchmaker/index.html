@@ -167,6 +167,101 @@ canvas { display: block; }
 #reg-read { font-size: 13px; color: #ddd; letter-spacing: 1px; min-width: 90px; }
 #reg-box .row { margin-top: 12px; }
 
+/* Winding */
+#wind-overlay { background: rgba(0,0,0,0.25); justify-content: flex-end; padding-bottom: 70px; cursor: grab; }
+#wind-overlay.held { cursor: grabbing; }
+#wind-box { background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 18px 24px 14px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+#wind-box .lbl { font-size: 12px; letter-spacing: 5px; color: var(--gold); margin-bottom: 4px; }
+#wind-box .sub { font-size: 11px; color: #888; margin-bottom: 8px; line-height: 1.5; max-width: 400px; }
+#crown { width: 360px; max-width: 80vw; height: 170px; display: block; margin: 0 auto; }
+#wind-box .hint { font-size: 10px; color: #666; letter-spacing: 2px; margin-top: 6px; }
+
+/* Set the time */
+#time-overlay { background: rgba(0,0,0,0.25); justify-content: flex-end; padding-bottom: 70px; }
+#time-box { background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 18px 24px 16px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6); min-width: 320px; }
+#time-box .lbl { font-size: 12px; letter-spacing: 5px; color: var(--gold); margin-bottom: 4px; }
+#time-box .sub { font-size: 11px; color: #888; margin-bottom: 10px; line-height: 1.5; max-width: 400px; }
+#time-target { font-size: 44px; letter-spacing: 4px; color: #fff; font-weight: 200; line-height: 1; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+#time-target small { font-size: 12px; letter-spacing: 3px; color: var(--gold); display: block; margin-top: 6px; }
+#time-shows { font-size: 12px; letter-spacing: 2px; color: #8ab4ff; margin: 8px 0 4px; min-height: 16px; }
+#crown-strip {
+  margin: 10px auto 8px; width: 320px; max-width: 78vw; height: 44px; border-radius: 8px; cursor: ew-resize;
+  border: 1px solid rgba(212,175,55,0.35); position: relative; overflow: hidden; touch-action: none; user-select: none;
+  background: repeating-linear-gradient(90deg, rgba(212,175,55,0.25) 0 6px, rgba(212,175,55,0.06) 6px 12px);
+  background-position-x: var(--sx, 0px);
+}
+#crown-strip span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 3px; color: #ddd; text-shadow: 0 0 6px #000; pointer-events: none; }
+.timebtns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.timebtns .btn { padding: 6px 10px; font-size: 11px; min-width: 48px; }
+#time-box .row { margin-top: 10px; }
+
+/* Case & style */
+#style-overlay { background: rgba(0,0,0,0.15); justify-content: flex-end; padding-bottom: 70px; }
+#style-box { background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 16px 22px 14px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6); max-width: min(560px, 94vw); }
+#style-box .lbl { font-size: 12px; letter-spacing: 5px; color: var(--gold); margin-bottom: 2px; }
+#style-box .sub { font-size: 11px; color: #888; margin-bottom: 8px; }
+.opt-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; justify-content: center; flex-wrap: wrap; }
+.opt-row .on { font-size: 10px; letter-spacing: 3px; color: #777; width: 56px; text-align: right; }
+.swatch {
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 -6px 10px rgba(0,0,0,0.35), inset 0 4px 8px rgba(255,255,255,0.15); transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch.sel { border-color: var(--gold); transform: scale(1.15); box-shadow: 0 0 0 2px rgba(212,175,55,0.3), inset 0 -6px 10px rgba(0,0,0,0.35); }
+.swatch.striped { background: repeating-linear-gradient(90deg, var(--a) 0 6px, var(--b) 6px 10px) !important; }
+.opt-row .nm { font-size: 10px; letter-spacing: 2px; color: var(--gold); min-width: 86px; text-align: left; }
+#style-box .row { margin-top: 10px; }
+
+/* Part thumbnails on the bench */
+.part-card { display: grid; grid-template-columns: 52px 1fr; gap: 0 10px; align-items: start; }
+.part-card .thumb { width: 52px; height: 52px; border-radius: 8px; background: radial-gradient(circle at 40% 35%, rgba(212,175,55,0.18), rgba(0,0,0,0.35)); grid-row: 1 / span 3; object-fit: cover; }
+.part-card .part-name, .part-card .part-desc, .part-card .part-status { grid-column: 2; }
+.part-card.nolabel .part-name { color: #999; font-style: italic; font-weight: 400; }
+
+/* Guide / lesson / quiz */
+#guide-overlay .sheet, #quiz-overlay .sheet { max-width: min(680px, 94vw); max-height: 88vh; overflow-y: auto; text-align: left; }
+.flow { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 4px 0 16px; font-size: 10px; letter-spacing: 2px; color: var(--gold); }
+.flow span { border: 1px solid var(--gold-dim); border-radius: 4px; padding: 4px 8px; background: rgba(212,175,55,0.06); }
+.flow i { color: #666; font-style: normal; }
+.gpart { display: grid; grid-template-columns: 72px 1fr; gap: 0 14px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+.gpart img { width: 72px; height: 72px; border-radius: 10px; background: radial-gradient(circle at 40% 35%, rgba(212,175,55,0.18), rgba(0,0,0,0.35)); }
+.gpart .gn { font-size: 14px; color: #ddd; font-weight: 600; }
+.gpart .gn small { color: var(--gold); font-size: 10px; letter-spacing: 2px; margin-left: 8px; font-weight: 400; }
+.gpart .gd { font-size: 12px; color: #999; line-height: 1.55; margin-top: 3px; }
+.gpart .gl { font-size: 11px; color: #8ab4ff; line-height: 1.5; margin-top: 5px; }
+#lesson-box {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 320; width: min(620px, 92vw);
+  background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 16px 20px 14px; text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none;
+}
+#lesson-box.show { display: block; }
+#lesson-box .step { font-size: 10px; letter-spacing: 3px; color: #777; }
+#lesson-box .lt { font-size: 18px; letter-spacing: 5px; color: var(--gold); font-weight: 300; margin: 4px 0 6px; }
+#lesson-box .lx { font-size: 13px; color: #bbb; line-height: 1.6; min-height: 60px; }
+#lesson-box .row { margin-top: 10px; }
+.qthumb { width: 160px; height: 160px; display: block; margin: 0 auto 10px; border-radius: 14px; background: radial-gradient(circle at 40% 35%, rgba(212,175,55,0.2), rgba(0,0,0,0.4)); }
+.qopts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.qopts .btn { padding: 10px 8px; font-size: 12px; letter-spacing: 1px; }
+.qopts .btn.right { background: rgba(80,200,120,0.2); border-color: #5c5; color: #9f9; }
+.qopts .btn.wrong { background: rgba(224,112,90,0.2); border-color: #e0705a; color: #f99; }
+#quiz-feedback { font-size: 12px; color: #aaa; line-height: 1.5; min-height: 40px; text-align: center; margin-top: 6px; }
+#quiz-head { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 2px; color: #888; margin-bottom: 8px; }
+#start-links .btn { padding: 7px 12px; font-size: 11px; }
+#start-links { flex-wrap: wrap; }
+
+/* Showcase */
+#showcase-overlay .sheet { max-width: min(640px, 94vw); max-height: 86vh; overflow-y: auto; }
+.wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin: 6px 0 14px; }
+.wcard { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 8px 8px; }
+.wcard canvas { width: 96px; height: 96px; display: block; margin: 0 auto 6px; }
+.wcard .ws { font-size: 11px; color: #ddd; letter-spacing: 1px; }
+.wcard .wr { font-size: 9px; color: var(--gold); letter-spacing: 1px; margin-top: 2px; }
+.wcard .wd { font-size: 9px; color: #666; margin-top: 2px; }
+#showcase-empty { color: #777; font-size: 12px; letter-spacing: 2px; padding: 20px 0; }
+#result-thumb { width: 110px; height: 110px; display: block; margin: 0 auto 6px; }
+#start-links { margin-top: 14px; display: flex; gap: 10px; justify-content: center; }
+
 /* Results */
 .score-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 22px; text-align: left; font-size: 12px; margin: 10px auto 14px; max-width: 320px; }
 .score-grid .k { color: #888; letter-spacing: 1px; }
@@ -193,7 +288,15 @@ canvas { display: block; }
   #mute-btn { bottom: auto; top: 60px; right: 12px; padding: 4px 10px; font-size: 13px; }
   #instructions { bottom: calc(34vh + 8px); max-width: 90vw; font-size: 11px; }
   #seat-overlay { padding-bottom: calc(34vh + 20px); }
-  #reg-overlay { padding-bottom: 20px; }
+  #reg-overlay, #wind-overlay, #time-overlay, #style-overlay { padding-bottom: 20px; }
+  body.built #tray { display: none; }
+  body.built #instructions { bottom: 16px; }
+  #time-target { font-size: 36px; }
+  .wgrid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .part-card { grid-template-columns: 40px 1fr; }
+  .part-card .thumb { width: 40px; height: 40px; }
+  #lesson-box { bottom: 12px; padding: 12px 14px; }
+  #lesson-box .lx { font-size: 12px; }
   .back-link { top: 12px; right: 12px; font-size: 9px; letter-spacing: 1px; }
   .sheet { padding: 20px 18px; }
   .sheet h2 { font-size: 20px; letter-spacing: 6px; }
@@ -203,7 +306,7 @@ canvas { display: block; }
 <body>
 <div id="title">WATCHMAKER</div>
 <div id="hud">
-  <span>PARTS <b id="hud-parts">0/8</b></span>
+  <span>PARTS <b id="hud-parts">0/12</b></span>
   <span>SCORE <b id="hud-score">0</b></span>
   <span>TIME <b id="hud-time">0:00</b></span>
   <span class="warn">SLIPS <b id="hud-miss">0</b></span>
@@ -223,25 +326,123 @@ canvas { display: block; }
 <div id="start-overlay" class="overlay show">
   <div class="sheet">
     <h2>WATCHMAKER</h2>
-    <div class="sub">BUILD A MECHANICAL MOVEMENT</div>
+    <div class="sub">BUILD A COMPLETE MECHANICAL WATCH</div>
     <div class="steps">
-      <b>1.</b> Pick the part that goes in next (order matters!)<br>
-      <b>2.</b> Tap its glowing slot &mdash; the closer to centre, the more points<br>
+      <b>1.</b> Build the movement, then case it: 12 parts, each in its proper order<br>
+      <b>2.</b> Tap each part's glowing slot &mdash; closer to the bullseye, more points<br>
       <b>3.</b> Seat it: stop the needle in the gold zone<br>
-      <b>4.</b> Regulate the finished watch until it keeps perfect time
+      <b>4.</b> Wind the mainspring to bring it to life &mdash; don't overwind!<br>
+      <b>5.</b> Regulate it on the timegrapher, then set it to the real time<br>
+      <b>6.</b> Choose your finish and add the watch to your showcase
     </div>
     <div class="row">
       <div class="diff" data-diff="apprentice">
         <div class="dn">APPRENTICE</div>
-        <div class="dd">The bench shows the next part. Slow, wide seating zone. The rate readout is on.</div>
+        <div class="dd">Learn the parts: the bench shows what goes in next and what it does. Slow needle, rate readout on.</div>
         <div class="db" id="best-apprentice"></div>
+      </div>
+      <div class="diff" data-diff="journeyman">
+        <div class="dn">JOURNEYMAN</div>
+        <div class="dd">Parts are shuffled &mdash; you work out the order from what each part needs.</div>
+        <div class="db" id="best-journeyman"></div>
       </div>
       <div class="diff" data-diff="master">
         <div class="dn">MASTER</div>
-        <div class="dd">Parts are shuffled &mdash; you decide the order. Fast needle, tight zone, and you must read the timegrapher yourself.</div>
+        <div class="dd"><b>No labels.</b> Identify every part by its shape alone and build in order. Fast needle, no rate readout.</div>
         <div class="db" id="best-master"></div>
       </div>
     </div>
+    <div id="start-links">
+      <button id="lesson-btn" class="btn gold">&#9654; LESSON: HOW A WATCH WORKS</button>
+      <button id="guide-btn" class="btn">&#128214; PARTS GUIDE</button>
+      <button id="quiz-btn" class="btn">&#10067; NAME THAT PART</button>
+      <button id="showcase-btn" class="btn">&#9201; SHOWCASE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Parts guide -->
+<div id="guide-overlay" class="overlay">
+  <div class="sheet">
+    <h2 style="text-align:center">PARTS GUIDE</h2>
+    <div class="sub" style="text-align:center">HOW POWER FLOWS THROUGH A MECHANICAL WATCH</div>
+    <div class="flow"><span>MAINSPRING</span><i>&rarr;</i><span>BARREL</span><i>&rarr;</i><span>GEAR TRAIN</span><i>&rarr;</i><span>ESCAPE WHEEL</span><i>&harr;</i><span>PALLET FORK</span><i>&harr;</i><span>BALANCE</span><i>&nbsp;&nbsp;&rArr;&nbsp;&nbsp;</i><span>HANDS</span></div>
+    <div id="guide-list"></div>
+    <div class="row" style="justify-content:center"><button id="guide-close" class="btn gold">BACK</button></div>
+  </div>
+</div>
+
+<!-- Lesson caption -->
+<div id="lesson-box">
+  <div class="step" id="lesson-step"></div>
+  <div class="lt" id="lesson-title"></div>
+  <div class="lx" id="lesson-text"></div>
+  <div class="row">
+    <button id="lesson-prev" class="btn">&#9664; BACK</button>
+    <button id="lesson-next" class="btn gold">NEXT &#9654;</button>
+    <button id="lesson-exit" class="btn">EXIT</button>
+  </div>
+</div>
+
+<!-- Name that part quiz -->
+<div id="quiz-overlay" class="overlay">
+  <div class="sheet">
+    <div id="quiz-head"><span id="quiz-progress"></span><span id="quiz-score"></span></div>
+    <img id="quiz-img" class="qthumb" alt="">
+    <div class="qopts" id="quiz-opts"></div>
+    <div id="quiz-feedback"></div>
+    <div class="row" style="justify-content:center"><button id="quiz-next" class="btn gold">NEXT</button><button id="quiz-close" class="btn">BACK</button></div>
+  </div>
+</div>
+
+<!-- Showcase gallery -->
+<div id="showcase-overlay" class="overlay">
+  <div class="sheet">
+    <h2>SHOWCASE</h2>
+    <div class="sub" id="showcase-sub">EVERY WATCH YOU HAVE FINISHED</div>
+    <div class="wgrid" id="wgrid"></div>
+    <div id="showcase-empty">NO WATCHES YET &mdash; BUILD ONE!</div>
+    <div class="row"><button id="showcase-close" class="btn gold">BACK</button></div>
+  </div>
+</div>
+
+<!-- Winding mini-game -->
+<div id="wind-overlay" class="overlay">
+  <div id="wind-box">
+    <div class="lbl">WIND THE MAINSPRING</div>
+    <div class="sub">The movement is complete but has no power. <b>Hold</b> anywhere (or hold SPACE) to wind &mdash; drag in circles to wind faster. <b>Let go in the gold band.</b> Past the end, the spring slips!</div>
+    <canvas id="crown" width="720" height="340"></canvas>
+    <div class="hint" id="wind-hint">FULL = GOLD BAND</div>
+  </div>
+</div>
+
+<!-- Set the time -->
+<div id="time-overlay" class="overlay">
+  <div id="time-box">
+    <div class="lbl">SET THE TIME</div>
+    <div class="sub">Pull the crown and turn the hands to the real time right now. The hour hand moves too &mdash; it points between numbers as the minutes pass.</div>
+    <div id="time-target">00:00<small>SET THE HANDS TO THIS TIME</small></div>
+    <div id="time-shows"></div>
+    <div id="crown-strip"><span>&#9664; DRAG TO TURN THE CROWN &#9654;</span></div>
+    <div class="timebtns">
+      <button class="btn" data-min="-60">&minus;1 HR</button>
+      <button class="btn" data-min="-5">&minus;5</button>
+      <button class="btn" data-min="-1">&minus;1</button>
+      <button class="btn" data-min="1">+1</button>
+      <button class="btn" data-min="5">+5</button>
+      <button class="btn" data-min="60">+1 HR</button>
+    </div>
+    <div class="row"><button id="settime-btn" class="btn gold">PUSH THE CROWN IN</button></div>
+  </div>
+</div>
+
+<!-- Case & style -->
+<div id="style-overlay" class="overlay">
+  <div id="style-box">
+    <div class="lbl">CASE IT UP</div>
+    <div class="sub">Your movement keeps time. Now make it <i>yours</i>.</div>
+    <div id="style-rows"></div>
+    <div class="row"><button id="caseup-btn" class="btn gold">FINISH THE WATCH</button></div>
   </div>
 </div>
 
@@ -276,6 +477,7 @@ canvas { display: block; }
   <div class="sheet">
     <h2>MASTERPIECE</h2>
     <div class="sub">YOUR WATCH IS ALIVE</div>
+    <canvas id="result-thumb" width="220" height="220"></canvas>
     <div id="rank"></div>
     <div id="rank-sub"></div>
     <div class="score-grid" id="score-grid"></div>
@@ -290,15 +492,32 @@ canvas { display: block; }
 <script>
 // ─── CONFIG ───
 const PARTS = [
-  { id:'mainplate', name:'Mainplate', desc:'The foundation — houses all jewel bearings and pivot points', color:0x8888aa },
-  { id:'barrel', name:'Barrel & Mainspring', desc:'Cylindrical power source storing energy in a coiled spring', color:0xb8960c },
-  { id:'geartrain', name:'Gear Train', desc:'Three wheels converting slow barrel rotation to fast hand motion', color:0xccaa33 },
-  { id:'escape', name:'Escape Wheel', desc:'Star-shaped wheel with pointed teeth — controls energy release', color:0xc0c0c0 },
-  { id:'pallet', name:'Pallet Fork', desc:'T-shaped lever with ruby jewels that locks and unlocks the escapement', color:0xaaaacc },
-  { id:'balance', name:'Balance Wheel', desc:'The beating heart — oscillates 8 times per second with its hairspring', color:0xddddee },
-  { id:'dial', name:'Dial', desc:'The watch face with hour markers and minute track', color:0xf5f0e8 },
-  { id:'hands', name:'Hands', desc:'Hour, minute, and second hands to display the time', color:0x222244 },
+  { id:'mainplate', name:'Mainplate', role:'FOUNDATION', desc:'The foundation — houses all jewel bearings and pivot points', color:0x8888aa,
+    lore:'The red dots are synthetic rubies. Steel pivots spin inside them with almost no friction or wear — that is why a good watch is "17 jewels" or more.' },
+  { id:'barrel', name:'Barrel & Mainspring', role:'POWER', desc:'Cylindrical power source storing energy in a coiled spring', color:0xb8960c,
+    lore:'The mainspring is a thin ribbon of steel about 30 cm long coiled inside the barrel. Winding tightens it; it then spends about two days slowly unwinding to push the whole watch along.' },
+  { id:'geartrain', name:'Gear Train', role:'TRANSMISSION', desc:'Three wheels converting slow barrel rotation to fast hand motion', color:0xccaa33,
+    lore:'Each wheel drives a smaller pinion on the next, so every stage spins faster. The barrel turns once in ~6 hours; the last wheel turns once a minute and carries the second hand.' },
+  { id:'escape', name:'Escape Wheel', role:'ESCAPEMENT', desc:'Star-shaped wheel with pointed teeth — controls energy release', color:0xc0c0c0,
+    lore:'Left alone, the gear train would spin down in seconds. The escape wheel\'s hooked teeth are caught and released one at a time, letting power "escape" in tiny, equal steps.' },
+  { id:'pallet', name:'Pallet Fork', role:'ESCAPEMENT', desc:'T-shaped lever with ruby jewels that locks and unlocks the escapement', color:0xaaaacc,
+    lore:'Its two ruby pallets rock in and out of the escape wheel teeth. Every rock is one "tick" — and each tick gives the balance wheel a tiny push to keep it swinging.' },
+  { id:'balance', name:'Balance Wheel', role:'TIMEKEEPER', desc:'The beating heart — oscillates 8 times per second with its hairspring', color:0xddddee,
+    lore:'Like a pendulum, the balance and its spiral hairspring swing back and forth at a steady rhythm: 28,800 times an hour. The regulator shortens or lengthens the hairspring to speed it up or slow it down.' },
+  { id:'dial', name:'Dial', role:'DISPLAY', desc:'The watch face with hour markers and minute track', color:0xf5f0e8,
+    lore:'Dials are often brass, plated and painted or enamelled. The applied markers and the printed minute track are made and placed by hand on fine watches.' },
+  { id:'hands', name:'Hands', role:'DISPLAY', desc:'Hour, minute, and second hands to display the time', color:0x222244,
+    lore:'The minute hand turns 12 times for every turn of the hour hand, through a small gear set called the motion works. "Blued" steel hands get their colour by being heated to about 290°C.' },
+  { id:'case', name:'Case', role:'PROTECTION', desc:'Middle case with lugs — a sealed metal housing for the movement', color:0xc8ccd4,
+    lore:'The case keeps out dust, water and knocks. The four little horns are lugs, where the strap attaches. Steel, gold and titanium are the usual metals.' },
+  { id:'crown', name:'Crown & Stem', role:'CONTROL', desc:'The knurled knob that winds the mainspring and sets the hands', color:0xd4af37,
+    lore:'Turn it to wind. Pull it out and the stem switches over to the hands instead — on many watches the second hand stops too ("hacking"), so you can set the time exactly.' },
+  { id:'crystal', name:'Crystal', role:'PROTECTION', desc:'The transparent window over the dial', color:0xbfe6ff,
+    lore:'Modern crystals are synthetic sapphire — almost as hard as diamond, so they barely scratch. Older or cheaper watches use acrylic or mineral glass.' },
+  { id:'strap', name:'Strap', role:'WEARING', desc:'Leather, fabric or a metal bracelet, attached at the lugs with spring bars', color:0x6b3f1e,
+    lore:'Spring bars are tiny spring-loaded pins that click into holes in the lugs. A NATO strap is a single piece of nylon that passes under the case — invented for British soldiers in 1973.' },
 ];
+const TOTAL = PARTS.length;
 // Why each part must wait for the one before it — shown when you pick too early.
 const WHY_NOT = {
   barrel: 'the barrel needs the mainplate to sit in',
@@ -308,13 +527,27 @@ const WHY_NOT = {
   balance: 'the balance needs the pallet fork to push it',
   dial: 'the dial covers the movement — finish the movement first',
   hands: 'the hands need a dial to point at',
+  case: 'the case goes on once the movement, dial and hands are finished',
+  crown: 'the crown and stem go in through the case',
+  crystal: 'the crystal sits in the case, over the dial and hands',
+  strap: 'the strap attaches to the lugs of the finished case',
 };
 
 const DIFF = {
-  apprentice: { label: 'APPRENTICE', shuffle: false, needleSpeed: 0.55, zone: 0.16, zoneShrink: 0.008, showRate: true,  jitter: 0 },
-  master:     { label: 'MASTER',     shuffle: true,  needleSpeed: 0.95, zone: 0.11, zoneShrink: 0.007, showRate: false, jitter: 2.5 },
+  apprentice: { label: 'APPRENTICE', shuffle: false, noLabels: false, needleSpeed: 0.55, zone: 0.16, zoneShrink: 0.008, showRate: true,  jitter: 0 },
+  journeyman: { label: 'JOURNEYMAN', shuffle: true,  noLabels: false, needleSpeed: 0.75, zone: 0.13, zoneShrink: 0.007, showRate: true,  jitter: 1.2 },
+  master:     { label: 'MASTER',     shuffle: true,  noLabels: true,  needleSpeed: 0.95, zone: 0.11, zoneShrink: 0.007, showRate: false, jitter: 2.5 },
 };
+const QUIZ_KEY = 'watchmaker.quizBest';
 const BEST_KEY = d => 'watchmaker.best.' + d;
+const SHOWCASE_KEY = 'watchmaker.showcase';
+// Finishing options. Hex colours double as 3D material colours and 2D thumbnail colours.
+const STYLE = {
+  case:  [['STEEL', 0xc8ccd4], ['GOLD', 0xd4af37], ['ROSE GOLD', 0xd9a07a], ['BLACK', 0x2a2a30]],
+  dial:  [['CREAM', 0xf5f0e8], ['BLACK', 0x15151c], ['BLUE', 0x1f3f8f], ['GREEN', 0x1d5a3a], ['SALMON', 0xf2b49a]],
+  hands: [['BLUED', 0x111133], ['GOLD', 0xd4af37], ['WHITE', 0xf4f4f4], ['ORANGE', 0xff7a1a]],
+  strap: [['BROWN LEATHER', 0x6b3f1e], ['BLACK LEATHER', 0x1a1a1a], ['BLUE', 0x2a4a9a], ['NATO STRIPE', 0x2d5b3a, 0xd9c36a], ['STEEL BRACELET', 0xb8bcc4]],
+};
 const MUTE_KEY = 'watchmaker.muted';
 
 let scene, camera, renderer, clock;
@@ -340,6 +573,13 @@ let grades = {};           // partId -> { precision, seat }
 let seat = null;           // { partId, mesh, pos, dir, zoneC, zoneW, speed }
 let reg = null;            // { error, adj, y, x, pts:[] }
 let breakdown = null;
+let wind = null;           // { reserve, held, angle, lastAng, keyHeld }
+let tset = null;           // { targetMin, tries }
+let design = { case: 0, dial: 0, hands: 0, strap: 0 };
+let watchTime = 0;         // what the hands show, in seconds since 12:00:00
+let handSpeed = 0;         // 0 = stopped, 1 = real time, 30 = fast-forward before setting
+let regPtsFinal = 0, regLabelFinal = '', rateFinal = 0, windPts = 0, setPts = 0;
+let camLook = { x: 0, y: 0.5, z: 0 }, camLookTarget = { x: 0, y: 0.5, z: 0 }, userR = 12;
 
 // ─── SOUND (tiny WebAudio synth, matches the other games) ───
 let muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -470,10 +710,50 @@ function init() {
   document.getElementById('seat-overlay').addEventListener('touchstart', e => { e.preventDefault(); stopNeedle(); }, { passive: false });
   document.getElementById('reg-slider').addEventListener('input', onRegInput);
   document.getElementById('certify-btn').addEventListener('click', certify);
+  document.getElementById('showcase-btn').addEventListener('click', showShowcase);
+  document.getElementById('guide-btn').addEventListener('click', showGuide);
+  document.getElementById('guide-close').addEventListener('click', () => document.getElementById('guide-overlay').classList.remove('show'));
+  document.getElementById('lesson-btn').addEventListener('click', startLesson);
+  document.getElementById('lesson-next').addEventListener('click', () => lessonNext(1));
+  document.getElementById('lesson-prev').addEventListener('click', () => lessonNext(-1));
+  document.getElementById('lesson-exit').addEventListener('click', endLesson);
+  document.getElementById('quiz-btn').addEventListener('click', startQuiz);
+  document.getElementById('quiz-close').addEventListener('click', () => { document.getElementById('quiz-overlay').classList.remove('show'); quiz = null; });
+  document.getElementById('quiz-next').addEventListener('click', () => { if (!quiz) return; if (quiz.done) { startQuiz(); return; } if (!quiz.answered) return; quiz.i++; showQuizQ(); });
+  document.getElementById('showcase-close').addEventListener('click', () => document.getElementById('showcase-overlay').classList.remove('show'));
+  // Winding: hold anywhere on the overlay, circle to wind faster, release to stop
+  const wo = document.getElementById('wind-overlay');
+  wo.addEventListener('pointerdown', e => { e.preventDefault(); windHold(true, e); });
+  wo.addEventListener('pointermove', e => { if (wind && wind.held) windCircle(e); });
+  window.addEventListener('pointerup', () => { if (wind && wind.held) windHold(false); });
+  window.addEventListener('pointercancel', () => { if (wind && wind.held) windHold(false); });
+  // Time setting: drag the crown strip, tap the nudge buttons, or use arrow keys
+  const strip = document.getElementById('crown-strip');
+  let stripX = null, stripAcc = 0;
+  strip.addEventListener('pointerdown', e => { strip.setPointerCapture(e.pointerId); stripX = e.clientX; stripAcc = 0; });
+  strip.addEventListener('pointermove', e => {
+    if (stripX === null) return;
+    stripAcc += e.clientX - stripX; stripX = e.clientX;
+    const steps = Math.trunc(stripAcc / 6); // 6px per minute
+    if (steps) { nudgeTime(steps); stripAcc -= steps * 6; }
+    strip.style.setProperty('--sx', (parseFloat(strip.style.getPropertyValue('--sx')) || 0) + (e.movementX || 0) + 'px');
+  });
+  const stripEnd = () => { stripX = null; };
+  strip.addEventListener('pointerup', stripEnd); strip.addEventListener('pointercancel', stripEnd);
+  document.querySelectorAll('.timebtns .btn').forEach(b => b.addEventListener('click', () => nudgeTime(parseInt(b.dataset.min, 10))));
+  document.getElementById('settime-btn').addEventListener('click', pushCrownIn);
+  document.getElementById('caseup-btn').addEventListener('click', finishWatch);
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && phase === 'seat') { e.preventDefault(); stopNeedle(); }
+    if (e.code === 'Space' && phase === 'wind') { e.preventDefault(); if (!e.repeat) windHold(true); }
     if (e.code === 'Enter' && phase === 'regulate') certify();
+    if (e.code === 'Enter' && phase === 'settime') pushCrownIn();
+    if (e.code === 'Enter' && phase === 'style') finishWatch();
+    if (phase === 'lesson' && (e.code === 'ArrowRight' || e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); lessonNext(1); }
+    if (phase === 'lesson' && e.code === 'ArrowLeft') lessonNext(-1);
+    if (phase === 'settime' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); nudgeTime((e.code === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 5 : 1)); }
   });
+  window.addEventListener('keyup', e => { if (e.code === 'Space' && wind && wind.held && wind.byKey) windHold(false); });
 
   showStart();
   animate();
@@ -781,6 +1061,7 @@ function createDial() {
   const dialGeo = new THREE.CylinderGeometry(3.2, 3.2, 0.08, 64);
   const dialMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, metalness: 0.1, roughness: 0.6 });
   const dial = new THREE.Mesh(dialGeo, dialMat);
+  dial.userData.isDialFace = true;
   dial.position.y = 0.9;
   dial.castShadow = true;
   group.add(dial);
@@ -830,7 +1111,7 @@ function createHands() {
   hourShape.moveTo(-0.06, 0); hourShape.lineTo(0, 1.6);
   hourShape.lineTo(0.06, 0); hourShape.closePath();
   const hourGeo = new THREE.ExtrudeGeometry(hourShape, { depth: 0.04, bevelEnabled: false });
-  const hourHand = new THREE.Mesh(hourGeo, handMat);
+  const hourHand = new THREE.Mesh(hourGeo, handMat.clone());
   hourHand.rotation.x = -Math.PI/2;
   hourHand.position.set(0, 1.05, 0);
   hourHand.userData.handType = 'hour';
@@ -841,7 +1122,7 @@ function createHands() {
   minShape.moveTo(-0.04, 0); minShape.lineTo(0, 2.3);
   minShape.lineTo(0.04, 0); minShape.closePath();
   const minGeo = new THREE.ExtrudeGeometry(minShape, { depth: 0.03, bevelEnabled: false });
-  const minHand = new THREE.Mesh(minGeo, handMat);
+  const minHand = new THREE.Mesh(minGeo, handMat.clone());
   minHand.rotation.x = -Math.PI/2;
   minHand.position.set(0, 1.1, 0);
   minHand.userData.handType = 'minute';
@@ -874,16 +1155,18 @@ function createHands() {
 const SLOT_POS = {
   mainplate: [0, 0, 0], barrel: [-1.2, 0.35, 0.8], geartrain: [0, 0, 0], escape: [1.8, 0.5, -0.5],
   pallet: [1.8, 0.5, -1.3], balance: [-1.5, 0.6, -1.0], dial: [0, 0.9, 0], hands: [0, 1.1, 0],
+  case: [0, 0.4, 0], crown: [4.05, 0.55, 0], crystal: [0, 1.3, 0], strap: [0, 0.05, 6.4],
 };
 const SLOT_SIZE = {
   mainplate: [3.5, 0.2, 3.5], barrel: [1.0, 0.5, 1.0], geartrain: [1.5, 0.3, 1.5], escape: [0.6, 0.15, 0.6],
   pallet: [0.5, 0.15, 0.8], balance: [0.9, 0.15, 0.9], dial: [3.2, 0.1, 3.2], hands: [0.5, 0.1, 2.5],
+  case: [3.9, 0.8, 3.9], crown: [0.35, 0.3, 0.35], crystal: [3.35, 0.08, 3.35], strap: [1.2, 0.12, 2.2],
 };
 function createGhosts() {
   PARTS.forEach(part => {
     const s = SLOT_SIZE[part.id], p = SLOT_POS[part.id];
     let geo;
-    if (['mainplate','barrel','dial','balance','escape'].includes(part.id)) {
+    if (['mainplate','barrel','dial','balance','escape','case','crystal'].includes(part.id)) {
       geo = new THREE.CylinderGeometry(s[0], s[0], s[1], 32);
     } else {
       geo = new THREE.BoxGeometry(s[0]*2, s[1]*2, s[2]*2);
@@ -905,9 +1188,111 @@ function createGhosts() {
   });
 }
 
+// ─── CASE PARTS (built with the current design colours) ───
+function metalMat(color) { return new THREE.MeshStandardMaterial({ color, metalness: 0.9, roughness: 0.25 }); }
+function createCase() {
+  const g = new THREE.Group();
+  const caseCol = STYLE.case[design.case][1];
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(3.85, 3.85, 1.5, 96, 1, true), metalMat(caseCol));
+  band.material.side = THREE.DoubleSide; band.position.y = 0.3; band.castShadow = true; band.userData.caseMetal = true;
+  g.add(band);
+  const bezel = new THREE.Mesh(new THREE.TorusGeometry(3.6, 0.27, 16, 96), metalMat(caseCol));
+  bezel.rotation.x = Math.PI / 2; bezel.position.y = 1.05; bezel.castShadow = true; bezel.userData.caseMetal = true;
+  g.add(bezel);
+  const back = new THREE.Mesh(new THREE.CylinderGeometry(3.85, 3.85, 0.1, 96), metalMat(caseCol));
+  back.position.y = -0.4; back.userData.caseMetal = true; g.add(back);
+  for (const sgn of [1, -1]) for (const sx of [1, -1]) {
+    const lug = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 1.2), metalMat(caseCol));
+    lug.position.set(sx * 1.45, 0.25, sgn * 4.05); lug.userData.caseMetal = true; g.add(lug);
+  }
+  g.userData.partId = 'case';
+  return g;
+}
+function createCrown() {
+  const g = new THREE.Group();
+  const caseCol = STYLE.case[design.case][1];
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.4, 24), metalMat(caseCol));
+  crown.rotation.z = Math.PI / 2; crown.position.set(4.08, 0.55, 0); crown.userData.caseMetal = true; crown.castShadow = true; g.add(crown);
+  for (let i = 0; i < 12; i++) { // knurling
+    const a = i / 12 * Math.PI * 2;
+    const k = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.06), metalMat(0x8a7430));
+    k.position.set(4.08, 0.55 + Math.cos(a) * 0.28, Math.sin(a) * 0.28); k.rotation.x = -a; g.add(k);
+  }
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 8), metalMat(0xccccdd));
+  stem.rotation.z = Math.PI / 2; stem.position.set(3.35, 0.55, 0); g.add(stem);
+  g.userData.partId = 'crown';
+  return g;
+}
+function createCrystal() {
+  const g = new THREE.Group();
+  const crystal = new THREE.Mesh(new THREE.CylinderGeometry(3.35, 3.35, 0.06, 64),
+    new THREE.MeshStandardMaterial({ color: 0xbfe6ff, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.18 }));
+  crystal.position.y = 1.3; g.add(crystal);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(3.33, 0.03, 8, 96), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }));
+  rim.rotation.x = Math.PI / 2; rim.position.y = 1.33; g.add(rim);
+  g.userData.partId = 'crystal';
+  return g;
+}
+function createStrap() {
+  const g = new THREE.Group();
+  const strapOpt = STYLE.strap[design.strap];
+  const steel = strapOpt[0].includes('STEEL');
+  for (const sgn of [1, -1]) {
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.18, 4.4),
+      steel ? metalMat(strapOpt[1]) : new THREE.MeshStandardMaterial({ color: strapOpt[1], metalness: 0.05, roughness: 0.85 }));
+    strap.position.set(0, 0.05, sgn * 6.4); strap.rotation.x = sgn * 0.08; strap.castShadow = true; strap.userData.strapMain = true; g.add(strap);
+    if (strapOpt[2]) for (const off of [-0.65, 0.65]) {
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.19, 4.4), new THREE.MeshStandardMaterial({ color: strapOpt[2], roughness: 0.85 }));
+      st.position.set(off, 0.06, sgn * 6.4); st.rotation.x = sgn * 0.08; st.userData.strapStripe = true; g.add(st);
+    }
+    if (steel) for (let k = 0; k < 5; k++) {
+      const gap = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 0.06), new THREE.MeshStandardMaterial({ color: 0x222228 }));
+      gap.position.set(0, 0.05, sgn * (4.6 + k * 0.85)); gap.rotation.x = sgn * 0.08; g.add(gap);
+    }
+  }
+  const buckle = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.08, 8, 24), metalMat(STYLE.case[design.case][1]));
+  buckle.position.set(0, 0.14, -8.6); buckle.rotation.x = Math.PI / 2; buckle.scale.set(1.4, 1, 1); buckle.userData.caseMetal = true; g.add(buckle);
+  g.userData.partId = 'strap';
+  return g;
+}
+
+// ─── PART THUMBNAILS (rendered once from the real 3D meshes) ───
+const thumbCache = {};
+let thumbRenderer = null;
+function partThumb(id) {
+  if (thumbCache[id]) return thumbCache[id];
+  try {
+    if (!thumbRenderer) {
+      thumbRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+      thumbRenderer.setSize(176, 176); thumbRenderer.setPixelRatio(1);
+      thumbRenderer.toneMapping = THREE.ACESFilmicToneMapping; thumbRenderer.toneMappingExposure = 1.3;
+    }
+    const sc = new THREE.Scene();
+    sc.add(new THREE.AmbientLight(0x667799, 0.8));
+    const l = new THREE.DirectionalLight(0xffeedd, 1.2); l.position.set(3, 6, 4); sc.add(l);
+    const l2 = new THREE.DirectionalLight(0xd4af37, 0.5); l2.position.set(-3, 2, -4); sc.add(l2);
+    const mesh = createPartMesh(id);
+    sc.add(mesh);
+    const box = new THREE.Box3().setFromObject(mesh);
+    const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+    const span = Math.max(size.x, size.z, size.y * 1.5);
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
+    const d = span * 1.9 + 0.3;
+    cam.position.set(c.x + d * 0.55, c.y + d * 0.7, c.z + d * 0.55); cam.lookAt(c);
+    thumbRenderer.render(sc, cam);
+    thumbCache[id] = thumbRenderer.domElement.toDataURL();
+    mesh.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  } catch (e) { thumbCache[id] = ''; }
+  return thumbCache[id];
+}
+
 // ─── PART CREATION MAP ───
 function createPartMesh(partId) {
   switch(partId) {
+    case 'case': return createCase();
+    case 'crown': return createCrown();
+    case 'crystal': return createCrystal();
+    case 'strap': return createStrap();
     case 'mainplate': return createMainplate();
     case 'barrel': return createBarrel();
     case 'geartrain': return createGearTrain();
@@ -931,7 +1316,8 @@ function toast(text, sub, bad) {
   el.classList.add('pop');
 }
 function updateHud() {
-  document.getElementById('hud-parts').textContent = placedCount + '/8';
+  const stage = { wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
+  document.getElementById('hud-parts').textContent = placedCount + '/' + TOTAL + (stage ? ' · ' + stage : '');
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hud-miss').textContent = mistakes;
   document.getElementById('hud-time').textContent = fmtTime(elapsed);
@@ -941,7 +1327,7 @@ function loadBest(d) { try { return JSON.parse(localStorage.getItem(BEST_KEY(d))
 
 function showStart() {
   phase = 'start';
-  ['apprentice','master'].forEach(d => {
+  ['apprentice','journeyman','master'].forEach(d => {
     const b = loadBest(d);
     document.getElementById('best-' + d).textContent = b ? `BEST ${b.score} · ${fmtTime(b.time)} · ${b.rank}` : 'NOT YET ATTEMPTED';
   });
@@ -956,6 +1342,8 @@ function startGame(d) {
   document.getElementById('tray').style.visibility = '';
   document.getElementById('tray-title').textContent = diff.label + ' BENCH';
   document.getElementById('hint-btn').style.display = diff.shuffle ? '' : 'none';
+  design = { case: 0, dial: 0, hands: 0, strap: 0 };
+  document.getElementById('tray').scrollTop = 0;
   order = PARTS.map((_, i) => i);
   if (diff.shuffle) {
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
@@ -987,14 +1375,20 @@ function buildUI() {
     card.className = cls;
     card.dataset.idx = idx;
     const g = grades[part.id];
+    const hidden = diff.noLabels && !part.placed;
+    if (hidden) cls += ' nolabel';
+    card.className = cls;
     card.innerHTML = `
       ${g ? `<div class="part-grade">${g.precision}</div>` : ''}
-      <div class="part-name">${part.name}</div>
-      <div class="part-desc">${part.desc}</div>
+      <img class="thumb" src="${partThumb(part.id)}" alt="">
+      <div class="part-name">${hidden ? 'Unlabelled part' : part.name}</div>
+      <div class="part-desc">${hidden ? 'Identify it by its shape' : part.desc}</div>
       <div class="part-status">${status}</div>`;
     card.addEventListener('click', () => selectPart(idx));
     list.appendChild(card);
   });
+  const focus = list.querySelector('.part-card.selected') || (!diff.shuffle && list.querySelector('.part-card.next'));
+  if (focus && focus.scrollIntoView) focus.scrollIntoView({ block: 'nearest' });
 }
 
 function selectPart(idx) {
@@ -1014,11 +1408,12 @@ function selectPart(idx) {
     return;
   }
   Object.values(ghostMeshes).forEach(g => { g.visible = false; });
-  if (selectedPart === idx) { selectedPart = null; buildUI(); setInstr('Pick the next part from the bench'); return; }
+  if (selectedPart === idx) { selectedPart = null; frameSlot(null); buildUI(); setInstr('Pick the next part from the bench'); return; }
   selectedPart = idx;
   sfx.select();
   const ghost = ghostMeshes[part.id];
   ghost.visible = true;
+  frameSlot(ghost.position);
   buildUI();
   setInstr(`Tap the glowing slot to drop in the ${part.name} — aim for the bullseye`);
 }
@@ -1065,6 +1460,7 @@ function placeAtScreen(clientX, clientY) {
   addScore(pts);
   toast(grade, `+${pts} placement`);
   ghost.visible = false;
+  frameSlot(null);
   beginSeating(part, hp);
 }
 
@@ -1083,8 +1479,8 @@ function beginSeating(part) {
   const n = placedCount; // zone tightens with every part
   seat = {
     partId: part.id, mesh, pos: 0, dir: 1,
-    speed: diff.needleSpeed * (1 + n * 0.07),
-    zoneW: Math.max(0.055, diff.zone - n * diff.zoneShrink),
+    speed: diff.needleSpeed * (1 + Math.min(n, 7) * 0.07),
+    zoneW: Math.max(0.06, diff.zone - Math.min(n, 8) * diff.zoneShrink),
     zoneC: 0.25 + Math.random() * 0.5,
     tries: 0,
   };
@@ -1158,12 +1554,15 @@ function finishPlacement(partId) {
   phase = 'build';
   updateHud();
   buildUI();
-  if (placedCount === 8) {
-    setInstr('The movement is complete — it starts to tick!', 'good');
-    setTimeout(onMovementComplete, 1400);
+  if (diff.noLabels) toast('THE ' + PARTS[idx].name.toUpperCase(), PARTS[idx].role, false);
+  if (placedCount === TOTAL) {
+    setInstr('The watch is complete — but it has no power yet', 'good');
+    document.body.classList.add('built');
+    setTimeout(beginWinding, 1200);
   } else {
     const nxt = PARTS[nextIndex()];
-    setInstr(diff.shuffle ? 'What goes in next?' : `Next: pick up the ${nxt.name}`);
+    if (placedCount === 8) setInstr('The movement is complete! Now case it up: ' + (diff.shuffle ? 'what goes on first?' : `pick up the ${nxt.name}`), 'good');
+    else setInstr(diff.shuffle ? 'What goes in next?' : `Next: pick up the ${nxt.name}`);
   }
 }
 
@@ -1180,9 +1579,6 @@ function animateMove(mesh, targetY, duration, done) {
 
 // ─── REGULATION MINI-GAME (timegrapher) ───
 function onMovementComplete() {
-  isComplete = true;
-  createParticles();
-  sfx.fanfare();
   // A random rate error the player must dial out. Never tiny, never obvious.
   let err = 18 + Math.random() * 32;
   if (Math.random() < 0.5) err = -err;
@@ -1254,41 +1650,460 @@ function certify() {
   addScore(pts);
   document.getElementById('reg-overlay').classList.remove('show');
   sfx.certify();
-  timerOn = false;
-  const rateFinal = currentRate();
+  regPtsFinal = pts; regLabelFinal = label; rateFinal = currentRate();
   reg = null;
-  showResults(pts, label, rateFinal);
+  toast(label, `+${pts} regulation`);
+  setTimeout(beginSetTime, 900);
+}
+
+// ─── WINDING MINI-GAME ───
+function beginWinding() {
+  phase = 'wind';
+  wind = { reserve: 0, held: false, angle: 0, lastAng: null, byKey: false, slips: 0 };
+  document.getElementById('wind-hint').textContent = 'FULL = GOLD BAND';
+  document.getElementById('wind-overlay').classList.add('show');
+  updateHud();
+  setInstr('');
+}
+function windHold(on, e) {
+  if (phase !== 'wind' || !wind) return;
+  const wo = document.getElementById('wind-overlay');
+  if (on) {
+    wind.held = true; wind.byKey = !e; wind.lastAng = null;
+    wo.classList.add('held');
+    return;
+  }
+  wind.held = false; wo.classList.remove('held');
+  // Evaluate the release
+  const r = wind.reserve;
+  if (r >= 85 && r <= 100) {
+    const perfect = r >= 93;
+    windPts = perfect ? 100 : 60;
+    addScore(windPts);
+    toast(perfect ? 'FULLY WOUND' : 'WOUND', `+${windPts} · the balance starts to swing`);
+    if (perfect) sfx.perfect(); else sfx.good();
+    document.getElementById('wind-overlay').classList.remove('show');
+    wind = null;
+    movementAlive();
+  } else if (r > 100) {
+    wind.slips++; mistakes++; addScore(-10);
+    wind.reserve = 55;
+    sfx.miss(); camShake = 0.3;
+    toast('OVERWOUND!', '−10 · the mainspring slipped — wind it again', true);
+    document.getElementById('wind-hint').textContent = 'TOO FAR — LET GO INSIDE THE GOLD BAND';
+  } else {
+    document.getElementById('wind-hint').textContent = r < 30 ? 'KEEP WINDING…' : 'NOT FULL YET — KEEP GOING';
+  }
+}
+function windCircle(e) {
+  const cv = document.getElementById('crown').getBoundingClientRect();
+  const cx = cv.left + cv.width * 0.28, cy = cv.top + cv.height * 0.5;
+  const a = Math.atan2(e.clientY - cy, e.clientX - cx);
+  if (wind.lastAng !== null) {
+    let d = a - wind.lastAng;
+    if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2;
+    if (d > 0) { wind.reserve += d / (Math.PI * 2) * 18; wind.angle += d; } // clockwise only, 18% per turn
+  }
+  wind.lastAng = a;
+}
+function drawCrown(dt) {
+  const cv = document.getElementById('crown'), g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  if (wind.held) { wind.reserve += 17 * Math.min(dt, 0.05); wind.angle += 3 * dt; } // ~0.9 s inside the gold band
+  if (wind.reserve > 118) { windHold(false); } // held way too long: it slips on its own
+  // Crown
+  const cx = W * 0.28, cy = H * 0.5, R = 92;
+  g.save(); g.translate(cx, cy); g.rotate(wind.angle);
+  for (let i = 0; i < 24; i++) {
+    const a = i / 24 * Math.PI * 2;
+    g.fillStyle = i % 2 ? '#8a7430' : '#d4af37';
+    g.beginPath(); g.arc(Math.cos(a) * R, Math.sin(a) * R, 11, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = '#b8960c'; g.beginPath(); g.arc(0, 0, R - 4, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#e8cf6a'; g.beginPath(); g.arc(-18, -18, R * 0.45, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#5a4a10'; g.fillRect(-R * 0.5, -5, R, 10); // slot shows the rotation
+  g.restore();
+  g.fillStyle = 'rgba(255,255,255,0.4)'; g.font = '16px system-ui, sans-serif'; g.textAlign = 'center';
+  g.fillText(wind.held ? 'WINDING…' : 'HOLD TO WIND', cx, cy + R + 34);
+  // Power reserve gauge
+  const L = W * 0.52, Rr = W - 40, y = H * 0.5, h = 46;
+  g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(L, y - h/2, Rr - L, h);
+  const px = v => L + Math.min(v, 118) / 118 * (Rr - L);
+  g.fillStyle = 'rgba(212,175,55,0.35)'; g.fillRect(px(85), y - h/2, px(100) - px(85), h);
+  g.fillStyle = 'rgba(212,175,55,0.9)'; g.fillRect(px(93), y - h/2, px(100) - px(93), h);
+  g.fillStyle = 'rgba(224,60,40,0.45)'; g.fillRect(px(100), y - h/2, px(118) - px(100), h);
+  const r = Math.min(wind.reserve, 118);
+  const grad = g.createLinearGradient(L, 0, px(r), 0); grad.addColorStop(0, '#4a6fd4'); grad.addColorStop(1, r > 100 ? '#ff5a3a' : '#8ab4ff');
+  g.fillStyle = grad; g.fillRect(L, y - h/2 + 10, px(r) - L, h - 20);
+  g.fillStyle = 'rgba(255,255,255,0.4)'; g.font = '14px system-ui, sans-serif'; g.textAlign = 'left';
+  g.fillText('EMPTY', L, y - h/2 - 10); g.textAlign = 'right'; g.fillText('SLIPS!', Rr, y - h/2 - 10);
+  g.textAlign = 'center'; g.fillStyle = '#f0d878'; g.fillText('FULL', (px(85) + px(100)) / 2, y + h/2 + 22);
+  g.fillStyle = '#fff'; g.font = '300 34px system-ui, sans-serif';
+  g.fillText(Math.round(Math.min(wind.reserve, 118)) + '%', (L + Rr) / 2, y + h/2 + 68);
+  // Spin the barrel in 3D as you wind
+  const barrel = placedMeshes['barrel'];
+  if (barrel) barrel.rotation.y = wind.angle * 0.5;
+}
+function movementAlive() {
+  isComplete = true;
+  createParticles();
+  sfx.fanfare();
+  watchTime = Math.floor(Math.random() * 43200); // the hands start at some random time
+  handSpeed = 30;                                  // fast-forward until the time is set
+  setInstr('It\'s alive! The balance swings, the escapement ticks…', 'good');
+  setTimeout(onMovementComplete, 1800);
+}
+
+// ─── SET THE TIME ───
+function pad2(n) { return String(n).padStart(2, '0'); }
+function fmtClock(min) { min = ((Math.round(min) % 720) + 720) % 720; const h = Math.floor(min / 60); return `${h === 0 ? 12 : h}:${pad2(min % 60)}`; }
+function beginSetTime() {
+  phase = 'settime';
+  const now = new Date();
+  tset = { targetMin: (now.getHours() % 12) * 60 + now.getMinutes(), tries: 0 };
+  handSpeed = 0; // pulling the crown out stops the hands (hacking seconds)
+  watchTime = Math.floor(watchTime / 60) * 60;
+  document.getElementById('time-target').innerHTML = `${fmtClock(tset.targetMin)}<small>SET THE HANDS TO THIS TIME (IT\'S ${now.getHours() < 12 ? 'MORNING' : 'AFTERNOON / EVENING'})</small>`;
+  refreshTimeShows();
+  document.getElementById('time-overlay').classList.add('show');
+  updateHud();
+  setInstr('');
+}
+function refreshTimeShows() {
+  const el = document.getElementById('time-shows');
+  el.textContent = diff.showRate ? `THE HANDS SHOW ${fmtClock(watchTime / 60)}` : 'MASTER: READ THE HANDS YOURSELF';
+}
+function nudgeTime(mins) {
+  if (phase !== 'settime') return;
+  watchTime = ((watchTime + mins * 60) % 43200 + 43200) % 43200;
+  if (Math.abs(mins) >= 1) sfx.hover();
+  refreshTimeShows();
+}
+function pushCrownIn() {
+  if (phase !== 'settime' || !tset) return;
+  const shown = Math.round(watchTime / 60) % 720;
+  let err = Math.abs(shown - tset.targetMin) % 720;
+  err = Math.min(err, 720 - err);
+  tset.tries++;
+  const limit = diff.showRate ? 5 : 1;
+  if (err > limit) {
+    sfx.wrong();
+    if (!diff.showRate) { mistakes++; addScore(-10); }
+    const ahead = ((shown - tset.targetMin + 720) % 720) < 360;
+    const hrs = Math.floor(err / 60), mns = err % 60;
+    const by = (hrs ? `${hrs} hr ` : '') + (mns ? `${mns} min` : '');
+    toast('NOT YET', `the hands are ${by} ${ahead ? 'ahead' : 'behind'}${diff.showRate ? '' : ' · −10'}`, true);
+    return;
+  }
+  setPts = err === 0 ? 150 : err <= 1 ? 120 : err <= 3 ? 90 : 60;
+  if (tset.tries > 1) setPts = Math.max(30, setPts - (tset.tries - 1) * 20);
+  addScore(setPts);
+  toast(err === 0 ? 'SPOT ON' : 'TIME SET', `+${setPts} · the second hand starts again`);
+  if (err === 0) sfx.perfect(); else sfx.good();
+  watchTime = ((tset.targetMin * 60) + new Date().getSeconds()) % 43200;
+  handSpeed = 1; // from now on the watch keeps real time
+  document.getElementById('time-overlay').classList.remove('show');
+  tset = null;
+  timerOn = false;
+  setTimeout(beginStyle, 900);
+}
+
+// ─── CASE & STYLE ───
+function beginStyle() {
+  phase = 'style';
+  buildStyleRows();
+  applyDesign();
+  document.getElementById('style-overlay').classList.add('show');
+  updateHud();
+  setInstr('Drag to admire · choose your finish');
+}
+function buildStyleRows() {
+  const rows = document.getElementById('style-rows');
+  rows.innerHTML = '';
+  for (const key of ['case', 'dial', 'hands', 'strap']) {
+    const row = document.createElement('div');
+    row.className = 'opt-row';
+    row.innerHTML = `<span class="on">${key.toUpperCase()}</span>`;
+    STYLE[key].forEach((opt, i) => {
+      const sw = document.createElement('div');
+      sw.className = 'swatch' + (design[key] === i ? ' sel' : '') + (opt[2] ? ' striped' : '');
+      sw.style.background = '#' + opt[1].toString(16).padStart(6, '0');
+      if (opt[2]) { sw.style.setProperty('--a', '#' + opt[1].toString(16).padStart(6, '0')); sw.style.setProperty('--b', '#' + opt[2].toString(16).padStart(6, '0')); }
+      sw.title = opt[0];
+      sw.addEventListener('click', () => { design[key] = i; sfx.select(); buildStyleRows(); applyDesign(); });
+      row.appendChild(sw);
+    });
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = STYLE[key][design[key]][0];
+    row.appendChild(nm);
+    rows.appendChild(row);
+  }
+}
+function metalMat(color) { return new THREE.MeshStandardMaterial({ color, metalness: 0.9, roughness: 0.25 }); }
+function applyDesign() {
+  const dialMesh = placedMeshes['dial'];
+  if (dialMesh) dialMesh.traverse(c => { if (c.userData.isDialFace) c.material.color.setHex(STYLE.dial[design.dial][1]); });
+  const hands = placedMeshes['hands'];
+  if (hands) hands.children.forEach(c => { if (c.userData.handType === 'hour' || c.userData.handType === 'minute') c.material.color.setHex(STYLE.hands[design.hands][1]); });
+  // Case metal recolours in place; a strap of a different kind is rebuilt
+  const want = STYLE.strap[design.strap];
+  const strapMesh = placedMeshes['strap'];
+  if (strapMesh) {
+    const hasStripes = strapMesh.children.some(c => c.userData.strapStripe);
+    const isSteel = strapMesh.children.some(c => c.userData.strapMain && c.material.metalness > 0.5);
+    if ((!!want[2]) !== hasStripes || want[0].includes('STEEL') !== isSteel) {
+      assemblyGroup.remove(strapMesh);
+      const fresh = createStrap(); fresh.userData.origPos = fresh.position.clone();
+      assemblyGroup.add(fresh); placedMeshes['strap'] = fresh;
+    }
+  }
+  ['case', 'crown', 'strap'].forEach(id => {
+    const m = placedMeshes[id];
+    if (m) m.children.forEach(c => {
+      if (c.userData.caseMetal) c.material.color.setHex(STYLE.case[design.case][1]);
+      if (c.userData.strapMain) c.material.color.setHex(want[1]);
+    });
+  });
+}
+function finishWatch() {
+  if (phase !== 'style') return;
+  document.getElementById('style-overlay').classList.remove('show');
+  addScore(25);
+  sfx.certify();
+  createParticles();
+  showResults();
+}
+
+// ─── PARTS GUIDE ───
+function showGuide() {
+  const list = document.getElementById('guide-list');
+  list.innerHTML = PARTS.map((p, i) => `
+    <div class="gpart">
+      <img src="${partThumb(p.id)}" alt="">
+      <div>
+        <div class="gn">${i + 1}. ${p.name}<small>${p.role}</small></div>
+        <div class="gd">${p.desc}.</div>
+        <div class="gl">${p.lore}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('guide-overlay').classList.add('show');
+}
+
+// ─── LESSON: a guided tour of a running watch ───
+const LESSON = [
+  { id: null, title: 'HOW A WATCH WORKS', text: 'No battery, no electronics — just a spring, some wheels and a swinging balance. Let\'s follow the power from the mainspring all the way to the hands. Drag to look around at any time.' },
+  { id: 'mainplate', title: 'THE MAINPLATE', text: 'Everything is built on the mainplate. The red dots are ruby jewels: hard, slippery bearings that the steel pivots spin in, almost without friction.' },
+  { id: 'barrel', title: 'THE MAINSPRING', text: 'Power comes from the mainspring, a coiled steel ribbon inside the barrel. Winding the crown tightens it. As it slowly unwinds, the barrel\'s teeth turn the gear train.' },
+  { id: 'geartrain', title: 'THE GEAR TRAIN', text: 'Each wheel drives a smaller pinion on the next, so each one spins faster than the last. The big wheel turns about once in six hours; the smallest once a minute.' },
+  { id: 'escape', title: 'THE ESCAPE WHEEL', text: 'Without a brake the train would spin down in seconds. The escape wheel\'s hooked teeth are the brake — they can only move one tooth at a time.' },
+  { id: 'pallet', title: 'THE PALLET FORK', text: 'The pallet fork rocks back and forth, catching and releasing one tooth per swing. That is the tick-tock you hear: energy escaping in tiny, perfectly equal packets.' },
+  { id: 'balance', title: 'THE BALANCE WHEEL', text: 'The timekeeper. Balance and hairspring swing like a pendulum, 8 beats every second, and the pallet fork follows their rhythm — while each tick gives the balance a tiny push to keep it going.' },
+  { id: 'hands', title: 'THE HANDS', text: 'Back at the gear train, the once-a-minute wheel carries the second hand, and a small gear set turns the minute and hour hands at 1/60 and 1/720 of that speed.' },
+  { id: 'crown', title: 'THE CROWN', text: 'Turn the crown to wind the mainspring. Pull it out and the stem switches to the hands instead, so you can set the time.' },
+  { id: 'case', title: 'CASE, CRYSTAL & STRAP', text: 'The case and sapphire crystal keep out dust, water and knocks; the strap attaches at the lugs. Now the movement can live on a wrist for decades.' },
+  { id: 'balance', title: 'KEEPING TIME', text: 'A watch that runs fast or slow is fixed with the regulator, which changes the working length of the hairspring: shorter swings faster. In the game you do this on the timegrapher. Ready to build one?' },
+];
+let lesson = null, highlighted = [];
+function clearHighlight() {
+  highlighted.forEach(({ m, e }) => { m.material.emissive.setHex(e); });
+  highlighted = [];
+}
+function highlightPart(id) {
+  clearHighlight();
+  const mesh = placedMeshes[id];
+  if (!mesh) return;
+  mesh.traverse(c => { if (c.isMesh && c.material && c.material.emissive) { highlighted.push({ m: c, e: c.material.emissive.getHex() }); } });
+  frameSlot(ghostMeshes[id] ? ghostMeshes[id].position : null);
+}
+function startLesson() {
+  resetGame();
+  document.getElementById('start-overlay').classList.remove('show');
+  document.getElementById('tray').style.visibility = 'hidden';
+  diff = DIFF.apprentice; diffName = 'apprentice';
+  design = { case: 0, dial: 0, hands: 0, strap: 0 };
+  PARTS.forEach(p => {
+    const m = createPartMesh(p.id); m.userData.origPos = m.position.clone();
+    assemblyGroup.add(m); placedMeshes[p.id] = m; p.placed = true;
+  });
+  placedCount = TOTAL;
+  isComplete = true;
+  const now = new Date();
+  watchTime = (now.getHours() % 12) * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  handSpeed = 1;
+  phase = 'lesson';
+  lesson = { step: 0 };
+  document.getElementById('lesson-box').classList.add('show');
+  showLessonStep();
+  setInstr('');
+}
+function showLessonStep() {
+  const st = LESSON[lesson.step];
+  document.getElementById('lesson-step').textContent = `LESSON ${lesson.step + 1} / ${LESSON.length}`;
+  document.getElementById('lesson-title').textContent = st.title;
+  document.getElementById('lesson-text').textContent = st.text;
+  document.getElementById('lesson-prev').style.visibility = lesson.step === 0 ? 'hidden' : '';
+  document.getElementById('lesson-next').innerHTML = lesson.step === LESSON.length - 1 ? 'BUILD ONE &#9654;' : 'NEXT &#9654;';
+  // Movement steps lift off the dial, hands and case so you can see inside
+  const movement = ['mainplate','barrel','geartrain','escape','pallet','balance'];
+  const expose = movement.includes(st.id);
+  PARTS.forEach(p => { const m = placedMeshes[p.id]; if (m) m.visible = !expose || movement.includes(p.id); });
+  if (st.id) highlightPart(st.id); else { clearHighlight(); frameSlot(null); }
+  userR = st.id && st.id !== 'case' ? 7 : 12;
+  sfx.select();
+}
+function lessonNext(dir) {
+  if (!lesson) return;
+  const n = lesson.step + dir;
+  if (n >= LESSON.length) { endLesson(); return; }
+  lesson.step = Math.max(0, n);
+  showLessonStep();
+}
+function endLesson() {
+  document.getElementById('lesson-box').classList.remove('show');
+  clearHighlight();
+  userR = 12;
+  resetGame();
+  showStart();
+}
+
+// ─── NAME THAT PART quiz ───
+let quiz = null;
+function startQuiz() {
+  const pool = PARTS.map((_, i) => i);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  quiz = { qs: pool.slice(0, 8), i: 0, score: 0, answered: false, best: parseInt(localStorage.getItem(QUIZ_KEY) || '0', 10) };
+  document.getElementById('quiz-overlay').classList.add('show');
+  showQuizQ();
+}
+function showQuizQ() {
+  const q = quiz;
+  if (q.i >= q.qs.length) {
+    if (q.score > q.best) { q.best = q.score; try { localStorage.setItem(QUIZ_KEY, String(q.best)); } catch (e) {} }
+    document.getElementById('quiz-progress').textContent = 'FINISHED';
+    document.getElementById('quiz-score').textContent = `BEST ${q.best}/${q.qs.length}`;
+    document.getElementById('quiz-img').style.display = 'none';
+    document.getElementById('quiz-opts').innerHTML = '';
+    document.getElementById('quiz-feedback').innerHTML = `<b style="color:var(--gold);font-size:18px;letter-spacing:4px">${q.score} / ${q.qs.length}</b><br>${q.score === q.qs.length ? 'Perfect — you know your way around a movement!' : q.score >= 6 ? 'Nearly there. Check the Parts Guide for the ones you missed.' : 'Keep looking closely — the Lesson and Parts Guide will help.'}`;
+    document.getElementById('quiz-next').textContent = 'PLAY AGAIN';
+    q.answered = true; q.done = true;
+    return;
+  }
+  const idx = q.qs[q.i], part = PARTS[idx];
+  q.answered = false;
+  document.getElementById('quiz-progress').textContent = `QUESTION ${q.i + 1} / ${q.qs.length}`;
+  document.getElementById('quiz-score').textContent = `SCORE ${q.score} · BEST ${q.best}`;
+  const img = document.getElementById('quiz-img'); img.style.display = ''; img.src = partThumb(part.id);
+  document.getElementById('quiz-feedback').textContent = 'Which part is this?';
+  document.getElementById('quiz-next').textContent = 'NEXT';
+  const others = PARTS.map((_, i) => i).filter(i => i !== idx).sort(() => Math.random() - 0.5).slice(0, 3);
+  const opts = [idx, ...others].sort(() => Math.random() - 0.5);
+  const box = document.getElementById('quiz-opts');
+  box.innerHTML = '';
+  opts.forEach(i => {
+    const b = document.createElement('button');
+    b.className = 'btn'; b.textContent = PARTS[i].name.toUpperCase();
+    b.addEventListener('click', () => {
+      if (q.answered) return;
+      q.answered = true;
+      const right = i === idx;
+      if (right) { q.score++; sfx.good(); b.classList.add('right'); }
+      else { sfx.wrong(); b.classList.add('wrong'); [...box.children].find(x => x.textContent === part.name.toUpperCase()).classList.add('right'); }
+      document.getElementById('quiz-score').textContent = `SCORE ${q.score} · BEST ${q.best}`;
+      document.getElementById('quiz-feedback').innerHTML = `${right ? '&#10003;' : '&#10007;'} <b>${part.name}</b> — ${part.desc.charAt(0).toLowerCase() + part.desc.slice(1)}.`;
+    });
+    box.appendChild(b);
+  });
+}
+
+// ─── SHOWCASE ───
+function loadShowcase() { try { return JSON.parse(localStorage.getItem(SHOWCASE_KEY) || '[]'); } catch (e) { return []; } }
+function saveToShowcase(entry) {
+  const list = loadShowcase();
+  list.unshift(entry);
+  while (list.length > 24) list.pop();
+  try { localStorage.setItem(SHOWCASE_KEY, JSON.stringify(list)); } catch (e) {}
+}
+// A 2D portrait of a finished watch, used in the showcase and on the results sheet
+function drawWatchThumb(cv, d, minutes) {
+  const g = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = W * 0.3;
+  const hex = n => '#' + n.toString(16).padStart(6, '0');
+  g.clearRect(0, 0, W, H);
+  const strap = STYLE.strap[d.strap];
+  g.fillStyle = hex(strap[1]);
+  g.fillRect(cx - R * 0.55, 0, R * 1.1, H);
+  if (strap[2]) { g.fillStyle = hex(strap[2]); g.fillRect(cx - R * 0.4, 0, R * 0.22, H); g.fillRect(cx + R * 0.18, 0, R * 0.22, H); }
+  g.fillStyle = hex(STYLE.case[d.case][1]);
+  g.beginPath(); g.arc(cx, cy, R * 1.18, 0, Math.PI * 2); g.fill();
+  g.fillRect(cx + R * 1.1, cy - R * 0.12, R * 0.22, R * 0.24); // crown
+  g.fillStyle = hex(STYLE.dial[d.dial][1]);
+  g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
+  const dark = STYLE.dial[d.dial][1] < 0x808080 * 1.2 && d.dial !== 0 && d.dial !== 4;
+  g.strokeStyle = dark ? 'rgba(255,255,255,0.75)' : 'rgba(20,20,40,0.8)'; g.lineWidth = Math.max(1.5, W / 90);
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * Math.PI * 2, len = i % 3 === 0 ? 0.16 : 0.09;
+    g.beginPath(); g.moveTo(cx + Math.sin(a) * R * 0.88, cy - Math.cos(a) * R * 0.88); g.lineTo(cx + Math.sin(a) * R * (0.88 - len), cy - Math.cos(a) * R * (0.88 - len)); g.stroke();
+  }
+  const hcol = hex(STYLE.hands[d.hands][1]);
+  const hand = (ang, len, w) => { g.strokeStyle = hcol; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(ang) * R * len, cy - Math.cos(ang) * R * len); g.stroke(); };
+  hand((minutes % 720) / 720 * Math.PI * 2, 0.5, W / 40);
+  hand((minutes % 60) / 60 * Math.PI * 2, 0.78, W / 55);
+  g.fillStyle = '#d4af37'; g.beginPath(); g.arc(cx, cy, W / 45, 0, Math.PI * 2); g.fill();
+}
+function showShowcase() {
+  const list = loadShowcase();
+  const grid = document.getElementById('wgrid');
+  grid.innerHTML = '';
+  document.getElementById('showcase-empty').style.display = list.length ? 'none' : 'block';
+  document.getElementById('showcase-sub').textContent = list.length ? `${list.length} WATCH${list.length === 1 ? '' : 'ES'} FINISHED · BEST ${Math.max(...list.map(e => e.s))}` : 'EVERY WATCH YOU HAVE FINISHED';
+  list.forEach(e => {
+    const card = document.createElement('div');
+    card.className = 'wcard';
+    const cv = document.createElement('canvas'); cv.width = 192; cv.height = 192;
+    drawWatchThumb(cv, e.d, e.min || 610);
+    card.appendChild(cv);
+    const dt = new Date(e.t);
+    card.insertAdjacentHTML('beforeend', `<div class="ws">${e.s} PTS</div><div class="wr">${e.r}</div><div class="wd">${e.m.toUpperCase()} · ${dt.getDate()}/${dt.getMonth() + 1}/${String(dt.getFullYear()).slice(2)}</div>`);
+    grid.appendChild(card);
+  });
+  document.getElementById('showcase-overlay').classList.add('show');
 }
 
 // ─── RESULTS ───
-function showResults(regPts, regLabel, rateFinal) {
+function showResults() {
   phase = 'done';
+  updateHud();
+  const regPts = regPtsFinal, regLabel = regLabelFinal;
   const secs = Math.round(elapsed);
-  const timeBonus = Math.max(0, 300 - Math.max(0, secs - 45) * 3);
+  const timeBonus = Math.max(0, 300 - Math.max(0, secs - 150) * 2);
   addScore(timeBonus);
   const placePts = Object.values(grades).reduce((a, g) => a + ({ PERFECT: 100, GOOD: 70, OK: 40 }[g.precision] || 0), 0);
   const seatPts = Object.values(grades).reduce((a, g) => a + (g.seat === 'PERFECT' ? 50 : 25), 0);
   const perfects = Object.values(grades).filter(g => g.precision === 'PERFECT' && g.seat === 'PERFECT').length;
   let rank, sub;
-  if (score >= 1500)      { rank = 'MASTER WATCHMAKER'; sub = 'A movement worthy of a museum'; }
-  else if (score >= 1100) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
-  else if (score >= 700)  { rank = 'APPRENTICE';        sub = 'It ticks! Keep practising'; }
+  if (score >= 2150)      { rank = 'MASTER WATCHMAKER'; sub = 'A watch worthy of a museum'; }
+  else if (score >= 1550) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
+  else if (score >= 950)  { rank = 'APPRENTICE';        sub = 'It ticks and keeps time! Keep practising'; }
   else                    { rank = 'TINKERER';          sub = 'Every master started here'; }
   document.getElementById('rank').textContent = rank;
   document.getElementById('rank-sub').textContent = sub + ' · ' + diff.label;
-  const penalties = placePts + seatPts + regPts + timeBonus - score; // exact: whatever the slips and hints cost
+  const penalties = placePts + seatPts + windPts + regPts + setPts + 25 + timeBonus - score; // exact: whatever the slips and hints cost
   const rows = [
     ['PLACEMENT ACCURACY', `+${placePts}`],
     ['SEATING', `+${seatPts}`],
+    ['WINDING', `+${windPts}`],
     [`REGULATION (${rateFinal > 0 ? '+' : ''}${rateFinal.toFixed(0)} s/day · ${regLabel.toLowerCase()})`, `+${regPts}`],
+    ['SETTING THE TIME', `+${setPts}`],
+    ['FINISHING', '+25'],
     [`TIME BONUS (${fmtTime(secs)})`, `+${timeBonus}`],
     [`SLIPS & HINTS (${mistakes} slips, ${hintsUsed} hints)`, penalties > 0 ? `−${penalties}` : '0'],
   ];
-  if (perfects === 8) rows.push(['FLAWLESS — 8 DOUBLE PERFECTS', '★']);
+  if (perfects === TOTAL) rows.push([`FLAWLESS — ${TOTAL} DOUBLE PERFECTS`, '★']);
   const prev = loadBest(diffName);
   const isBest = !prev || score > prev.score;
   if (isBest) { try { localStorage.setItem(BEST_KEY(diffName), JSON.stringify({ score, time: secs, rank })); } catch (e) {} }
   rows.push(['TOTAL', String(score)]);
+  saveToShowcase({ d: { ...design }, s: score, r: rank, m: diffName, t: Date.now(), min: Math.round(watchTime / 60) });
+  drawWatchThumb(document.getElementById('result-thumb'), design, watchTime / 60);
   document.getElementById('score-grid').innerHTML = rows.map(([k, v], i) =>
     `<div class="${i === rows.length - 1 ? 'total' : ''}"><span class="k">${k}</span></div><div class="${i === rows.length - 1 ? 'total' : ''}"><span class="v ${i === rows.length - 1 && isBest ? 'newbest' : ''}">${v}${i === rows.length - 1 && isBest ? ' · NEW BEST' : ''}</span></div>`
   ).join('');
@@ -1321,7 +2136,12 @@ function updateCamera() {
   camera.position.x = cameraR * Math.sin(cameraPhi) * Math.cos(cameraTheta) + (Math.random()-0.5) * sh;
   camera.position.y = cameraR * Math.cos(cameraPhi) + (Math.random()-0.5) * sh;
   camera.position.z = cameraR * Math.sin(cameraPhi) * Math.sin(cameraTheta) + (Math.random()-0.5) * sh;
-  camera.lookAt(0, 0.5, 0);
+  camera.position.x += camLook.x; camera.position.y += camLook.y - 0.5; camera.position.z += camLook.z;
+  camera.lookAt(camLook.x, camLook.y, camLook.z);
+}
+// Glide the camera toward the slot you are aiming at (and back out afterwards)
+function frameSlot(pos) {
+  camLookTarget = pos ? { x: pos.x * 0.8, y: pos.y, z: pos.z * 0.8 } : { x: 0, y: 0.5, z: 0 };
 }
 function onMouseDown(e) { if (e.target !== renderer.domElement) return; mouseDown = true; mouseX = e.clientX; mouseY = e.clientY; dragDist = 0; }
 let dragDist = 0;
@@ -1334,7 +2154,7 @@ function onMouseMove(e) {
   mouseX = e.clientX; mouseY = e.clientY;
 }
 function onMouseUp() { mouseDown = false; }
-function onWheel(e) { cameraR += e.deltaY * 0.01; updateCamera(); }
+function onWheel(e) { userR = Math.max(5, Math.min(25, userR + e.deltaY * 0.01)); if (selectedPart === null) { cameraR = userR; updateCamera(); } }
 function onCanvasClick(e) { if (dragDist > 8) return; placeAtScreen(e.clientX, e.clientY); }
 
 // ─── TOUCH: one finger orbits, two fingers pinch-zoom, tap places parts ───
@@ -1359,7 +2179,7 @@ function onTouchMove(e) {
     touchState.lx = tx; touchState.ly = ty;
   } else if (touchState.kind === 'pinch' && e.touches.length === 2) {
     const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    if (d > 0) { cameraR = touchState.r0 * (touchState.d0 / d); updateCamera(); }
+    if (d > 0) { userR = Math.max(5, Math.min(25, touchState.r0 * (touchState.d0 / d))); cameraR = userR; updateCamera(); }
   }
 }
 function onTouchEnd(e) {
@@ -1378,12 +2198,18 @@ function resetGame() {
   PARTS.forEach(p => p.placed = false);
   placedCount = 0; selectedPart = null; isComplete = false;
   score = 0; mistakes = 0; hintsUsed = 0; elapsed = 0; timerOn = false;
-  grades = {}; seat = null; reg = null;
+  grades = {}; seat = null; reg = null; wind = null; tset = null;
+  handSpeed = 0; watchTime = 0; windPts = 0; setPts = 0; regPtsFinal = 0;
+  document.body.classList.remove('built');
+  camLookTarget = { x: 0, y: 0.5, z: 0 };
   Object.values(placedMeshes).forEach(m => assemblyGroup.remove(m));
   placedMeshes = {};
   Object.values(ghostMeshes).forEach(g => { g.visible = false; });
   if (particles) { scene.remove(particles); particles = null; }
-  ['seat-overlay','reg-overlay','done-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['seat-overlay','reg-overlay','done-overlay','wind-overlay','time-overlay','style-overlay','showcase-overlay','guide-overlay','quiz-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('lesson-box').classList.remove('show');
+  clearHighlight();
+  lesson = null;
   updateHud();
 }
 
@@ -1396,6 +2222,18 @@ function animate() {
 
   if (timerOn) { elapsed = (performance.now() - startTime) / 1000; document.getElementById('hud-time').textContent = fmtTime(elapsed); }
   if (camShake > 0) { camShake = Math.max(0, camShake - dt); updateCamera(); }
+
+  // Camera glide: frame the selected slot, zoom back out afterwards
+  {
+    const k = Math.min(1, dt * 4);
+    const wantR = selectedPart !== null ? Math.min(userR, 8) : userR;
+    let moved = false;
+    for (const ax of ['x', 'y', 'z']) { const d = camLookTarget[ax] - camLook[ax]; if (Math.abs(d) > 0.001) { camLook[ax] += d * k; moved = true; } }
+    if (Math.abs(wantR - cameraR) > 0.01) { cameraR += (wantR - cameraR) * k; moved = true; }
+    if (moved) updateCamera();
+  }
+  if (phase === 'wind' && wind) drawCrown(dt);
+  if (highlighted.length) { const e = 0.25 + 0.25 * Math.sin(time * 5); highlighted.forEach(({ m }) => m.material.emissive.setRGB(0.83 * e, 0.69 * e, 0.21 * e)); }
 
   // Ghost pulse
   const sel = selectedPart !== null ? ghostMeshes[PARTS[selectedPart].id] : null;
@@ -1434,11 +2272,14 @@ function animate() {
     });
     const barrelMesh = placedMeshes['barrel'];
     if (barrelMesh) barrelMesh.rotation.y = beatT * 0.1;
+    // Hands show watchTime (seconds since 12:00). They spin about the dial axis —
+    // the hand shapes lie flat after rotation.x, so the spin is rotation.z, clockwise.
+    watchTime = (watchTime + dt * handSpeed * rateMul) % 43200;
     const handsMesh = placedMeshes['hands'];
     if (handsMesh) handsMesh.children.forEach(c => {
-      if (c.userData.handType === 'second') c.rotation.y = beatT * (Math.PI*2/60) * 20;
-      if (c.userData.handType === 'minute') c.rotation.y = beatT * (Math.PI*2/3600) * 20;
-      if (c.userData.handType === 'hour') c.rotation.y = beatT * (Math.PI*2/43200) * 20;
+      if (c.userData.handType === 'second') c.rotation.z = -(watchTime % 60) / 60 * Math.PI * 2;
+      if (c.userData.handType === 'minute') c.rotation.z = -(watchTime % 3600) / 3600 * Math.PI * 2;
+      if (c.userData.handType === 'hour') c.rotation.z = -(watchTime % 43200) / 43200 * Math.PI * 2;
     });
     // Audible tick-tock at 8 beats/s (quieter than the UI sounds)
     const beat = Math.floor(beatT * 8);
@@ -1458,9 +2299,11 @@ function animate() {
     }
   }
 
-  // Subtle ambient rotation when not dragging (it stops while you aim a part)
-  if (!mouseDown && !touchState && !isComplete && selectedPart === null && phase !== 'seat') {
-    cameraTheta += dt * 0.05;
+  // Subtle ambient rotation when not dragging (it stops while you aim a part);
+  // a slow showroom turntable once the watch is being cased up
+  const showroom = phase === 'style' || phase === 'done' || (phase === 'lesson' && !highlighted.length);
+  if (!mouseDown && !touchState && selectedPart === null && (showroom || (!isComplete && phase !== 'seat'))) {
+    cameraTheta += dt * (showroom ? 0.12 : 0.05);
     updateCamera();
   }
   renderer.render(scene, camera);

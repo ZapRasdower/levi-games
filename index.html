@@ -305,7 +305,7 @@
     { id: 'brick-breaker',  name: 'Brick Breaker',  emoji: '&#129521;', tag: 'ARCADE',         cat: 'arcade',  tint: '#ff6b6b44',
       desc: 'Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.' },
     { id: 'watchmaker',     name: 'Watchmaker',     emoji: '&#8986;',   tag: '3D BUILDER',     cat: 'build',   tint: '#d4af3744', updated: true,
-      desc: 'Assemble a mechanical watch in 3D: pick parts in order, seat them on the beat, then regulate it to keep time.' },
+      desc: 'A watchmaker school in 3D: learn how a watch works, then build all 12 parts, wind it, regulate it, set the time and style it.' },
     { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44', isNew: true,
       desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
   ];
@@ -328,8 +328,9 @@
     'periodic-table': () => { const q = num('ptable.quizBest'); return q ? `QUIZ BEST ${q}` : null; },
     'squishy-pets':   () => { const s = lsJSON('squishy_pets_v2', null); const k = s && s.k ? s.k.length : 0; return k ? `${k}/40 PETS` : null; },
     'brick-breaker':  () => { const b = num('brickBreaker.best'); return b ? `BEST ${fmt(b)}` : null; },
-    'watchmaker':     () => { const a = lsJSON('watchmaker.best.apprentice', null), m = lsJSON('watchmaker.best.master', null);
-                              const b = [a, m].filter(Boolean).sort((x, y) => y.score - x.score)[0]; return b ? `BEST ${fmt(b.score)} · ${b.rank}` : null; },
+    'watchmaker':     () => { const bests = ['apprentice', 'journeyman', 'master'].map(t => lsJSON('watchmaker.best.' + t, null)).filter(Boolean);
+                              const b = bests.sort((x, y) => y.score - x.score)[0]; const n = lsJSON('watchmaker.showcase', []).length;
+                              return b ? `BEST ${fmt(b.score)} · ${b.rank}${n > 1 ? ` · ${n} WATCHES` : ''}` : null; },
     'levi-galaxy':    () => { const b = num('leviGalaxy.best'); return b ? `BEST ${fmt(b)}` : null; },
   };
 
