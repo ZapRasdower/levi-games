@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Levi Dig - Levi's Games</title>
+<link rel="icon" href="data:,">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: radial-gradient(900px 520px at 50% -80px, #2b1d10, #0f0f1a 70%);
+  color: #fff; font-family: 'Courier New', monospace;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; padding: 12px 10px 24px;
+  user-select: none; -webkit-user-select: none;
+}
+.top { width: 100%; max-width: 680px; display: flex; justify-content: space-between; align-items: center; }
+.back { color: #777; text-decoration: none; font-size: 0.78rem; letter-spacing: 2px; }
+.back:hover { color: #ffe600; }
+h1 { font-size: 1.7rem; color: #ffe600; letter-spacing: 4px; margin: 4px 0 2px; text-shadow: 0 0 18px rgba(255,230,0,0.35); }
+.subtitle { color: #777; font-size: 0.78rem; letter-spacing: 2px; margin-bottom: 10px; text-align: center; }
+#hud { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 680px; margin-bottom: 8px; font-size: 0.74rem; color: #99a; letter-spacing: 1px; }
+.pill { background: #1a1a2e; border: 1px solid #2e2e4e; border-radius: 999px; padding: 5px 11px; white-space: nowrap; }
+.pill b { color: #ffe600; font-size: 0.9rem; margin-left: 4px; }
+#energy { display: inline-block; width: 86px; height: 9px; background: #2a2a3e; border-radius: 5px; vertical-align: middle; margin-left: 6px; overflow: hidden; }
+#energy i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #7bd88f, #c6f26b); transition: width 0.15s; }
+#energy.low i { background: linear-gradient(90deg, #ff5b6b, #ff9f43); }
+#wrap { position: relative; width: 100%; max-width: 680px; }
+canvas { display: block; width: 100%; border: 3px solid #333; border-radius: 10px; background: #000; box-shadow: 0 12px 40px rgba(0,0,0,0.55); touch-action: none; }
+#bar { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; width: 100%; max-width: 680px; }
+button.b { background: #1a1a2e; border: 1px solid #2e2e4e; border-radius: 999px; color: #ffe600; font-family: inherit; font-size: 0.8rem; padding: 7px 14px; cursor: pointer; letter-spacing: 1px; }
+button.b:hover { border-color: #ffe600; }
+button.b.big { background: #ffe600; color: #111; font-weight: bold; border-color: #ffe600; }
+button.b.big:hover { background: #fff27a; }
+button.b:disabled { opacity: 0.4; cursor: default; }
+.keys { color: #555; font-size: 0.7rem; letter-spacing: 1px; margin-top: 10px; text-align: center; line-height: 1.6; }
+
+/* Touch d-pad */
+#pad { display: none; margin-top: 12px; gap: 10px; align-items: center; justify-content: center; width: 100%; max-width: 680px; }
+#pad .grid { display: grid; grid-template-columns: repeat(3, 62px); grid-template-rows: repeat(2, 56px); gap: 6px; }
+#pad button { background: #1a1a2e; border: 1px solid #3a3a5e; border-radius: 12px; color: #ffe600; font-size: 1.5rem; touch-action: none; font-family: inherit; }
+#pad button.on { background: #3a3a1e; border-color: #ffe600; }
+#pad .rope { width: 86px; height: 118px; font-size: 0.85rem; letter-spacing: 1px; line-height: 1.4; }
+@media (pointer: coarse) { #pad { display: flex; } .keys { display: none; } }
+
+/* Messages over the canvas */
+#msg { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 4; pointer-events: none;
+  background: rgba(10,10,20,0.85); border: 1px solid #ffe600; color: #ffe600; border-radius: 8px; padding: 6px 14px;
+  font-size: 0.8rem; letter-spacing: 1px; opacity: 0; transition: opacity 0.3s; white-space: nowrap; max-width: 94%; overflow: hidden; text-overflow: ellipsis; }
+#msg.show { opacity: 1; }
+#msg.bad { border-color: #ff5b6b; color: #ff9f9f; }
+#layer { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 4; pointer-events: none; width: min(92%, 520px);
+  background: rgba(10,10,20,0.88); border: 1px solid #5a5a8e; border-radius: 10px; padding: 10px 14px; text-align: center;
+  opacity: 0; transition: opacity 0.5s; }
+#layer.show { opacity: 1; }
+#layer b { display: block; color: #ffe600; letter-spacing: 3px; font-size: 0.95rem; margin-bottom: 4px; }
+#layer span { color: #bbc; font-size: 0.75rem; line-height: 1.5; }
+
+.overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(5,5,12,0.8); border-radius: 10px; z-index: 6; padding: 12px; }
+.overlay.show { display: flex; }
+.card { background: #141424; border: 2px solid #ffe600; border-radius: 12px; padding: 16px 18px; max-width: 580px; width: 100%;
+  max-height: 100%; overflow-y: auto; text-align: center; box-shadow: 0 16px 50px rgba(0,0,0,0.6); }
+.card h2 { color: #ffe600; letter-spacing: 4px; font-size: 1.3rem; margin-bottom: 6px; }
+.card p { color: #bbc; font-size: 0.8rem; line-height: 1.6; margin: 6px 0; }
+.card .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+.big-emoji { font-size: 3.2rem; line-height: 1.1; margin: 4px 0; }
+.fact { background: #1d1d34; border-left: 3px solid #ffe600; text-align: left; padding: 8px 12px; border-radius: 6px; color: #cdd; font-size: 0.8rem; line-height: 1.55; margin: 8px 0; }
+.sold { font-size: 0.78rem; color: #9fd; margin: 4px 0 8px; line-height: 1.5; }
+.shop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; text-align: left; }
+.up { background: #1a1a2e; border: 1px solid #2e2e4e; border-radius: 10px; padding: 8px 10px; font-size: 0.72rem; color: #99a; line-height: 1.45; }
+.up .un { color: #fff; font-size: 0.82rem; font-weight: bold; }
+.up .ul { color: #7bd88f; font-size: 0.68rem; letter-spacing: 1px; }
+.up button { margin-top: 6px; width: 100%; }
+.museum { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin-top: 8px; text-align: center; }
+.mus { background: #1a1a2e; border: 1px solid #2e2e4e; border-radius: 10px; padding: 8px 6px; font-size: 0.68rem; color: #99a; cursor: pointer; }
+.mus .e { font-size: 1.9rem; height: 2.3rem; }
+.mus.no .e { filter: brightness(0) opacity(0.35); }
+.mus .mn { color: #fff; font-size: 0.72rem; margin-top: 2px; }
+.mus.no .mn { color: #555; }
+.mus:hover { border-color: #ffe600; }
+#rex { margin: 6px auto 0; font-size: 0.78rem; color: #ffcf6b; }
+.stats { font-size: 0.75rem; color: #99a; margin: 6px 0; }
+.stats b { color: #ffe600; }
+@media (max-width: 600px) {
+  .overlay { position: fixed; border-radius: 0; z-index: 20; }
+  .shop { grid-template-columns: 1fr; }
+  h1 { font-size: 1.3rem; }
+  #energy { width: 60px; }
+}
+</style>
+</head>
+<body>
+<div class="top"><a class="back" href="../index.html">&larr; ALL GAMES</a><span></span></div>
+<h1>LEVI DIG</h1>
+<div class="subtitle">DIG DOWN 500 M &middot; FIND FOSSILS, GEMS &amp; THE CRYSTAL CAVE</div>
+<div id="hud">
+  <span class="pill">DEPTH<b id="h-depth">0 m</b></span>
+  <span class="pill">$<b id="h-money">0</b></span>
+  <span class="pill">ENERGY<span id="energy"><i></i></span></span>
+  <span class="pill">BAG<b id="h-bag">0/8</b></span>
+  <span class="pill">LADDERS<b id="h-lad">10</b></span>
+</div>
+<div id="wrap">
+  <canvas id="c" width="680" height="600"></canvas>
+  <div id="msg"></div>
+  <div id="layer"><b></b><span></span></div>
+
+  <div id="ov-title" class="overlay show">
+    <div class="card">
+      <div class="big-emoji">&#9935;&#65039;</div>
+      <h2>LEVI DIG</h2>
+      <p>Levi grabs his shovel and digs <b>straight down</b> through real layers of rock. Collect ores and gems to sell, dig up fossils and treasures for the museum, and try to reach the legendary <b>Crystal Cave, 500 m down</b>.</p>
+      <div class="fact" style="text-align:left">
+        &#11013;&#65039;&#10145;&#65039;&#11015;&#65039; <b>Hold</b> a direction to walk or dig &middot; &#11014;&#65039; climbs: it places a <b>ladder</b> (or digs the rock above)<br>
+        <b>R</b> = ride the rope back to camp to sell loot and buy upgrades. If your <b>energy</b> runs out you get rescued &mdash; but drop half your bag.<br>
+        Watch out for <b>wobbling boulders</b>, <b>gas pockets</b> and <b>lava</b>! Sparkles in the dark are fossils &amp; treasures.
+      </div>
+      <div class="stats" id="title-stats"></div>
+      <div class="row"><button class="b big" id="btn-start">START DIGGING</button></div>
+    </div>
+  </div>
+
+  <div id="ov-find" class="overlay">
+    <div class="card">
+      <div class="big-emoji" id="find-e"></div>
+      <h2 id="find-n"></h2>
+      <div class="fact" id="find-f"></div>
+      <p id="find-r"></p>
+      <div class="row"><button class="b big" id="find-ok">AWESOME!</button></div>
+    </div>
+  </div>
+
+  <div id="ov-camp" class="overlay">
+    <div class="card">
+      <h2>BASE CAMP</h2>
+      <div class="sold" id="camp-sold"></div>
+      <div class="stats" id="camp-stats"></div>
+      <div class="row" style="margin-top:4px">
+        <button class="b big" id="btn-dive">DIVE</button>
+        <button class="b" id="btn-top">START AT THE TOP</button>
+        <button class="b" id="btn-mus2">&#127963;&#65039; MUSEUM</button>
+      </div>
+      <div class="shop" id="shop"></div>
+      <div class="row"><button class="b" id="btn-newsite" style="font-size:0.7rem;color:#888">NEW DIG SITE (keeps your money, gear &amp; museum)</button></div>
+    </div>
+  </div>
+
+  <div id="ov-museum" class="overlay">
+    <div class="card">
+      <h2>&#127963;&#65039; LEVI'S MUSEUM</h2>
+      <p id="mus-count"></p>
+      <div id="rex"></div>
+      <div class="museum" id="museum"></div>
+      <div class="fact" id="mus-fact">Tap a find to read about it.</div>
+      <div class="row"><button class="b big" id="mus-close">BACK</button></div>
+    </div>
+  </div>
+
+  <div id="ov-win" class="overlay">
+    <div class="card">
+      <div class="big-emoji">&#128142;</div>
+      <h2>THE CRYSTAL CAVE!</h2>
+      <p>Levi dug <b>500 metres</b> down and found a giant crystal &mdash; taller than a house!</p>
+      <div class="fact">Real giant crystals like this grow in Mexico's <b>Naica Cave</b>, up to 12 m long. They grew for half a million years in hot, mineral-rich water.<br><br>And Earth's crust here would be about <b>35 km</b> thick &mdash; so Levi dug about 1.4% of the way through it. The planet is BIG!</div>
+      <p id="win-stats"></p>
+      <div class="row"><button class="b big" id="win-ok">KEEP EXPLORING</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="bar">
+  <button class="b" id="btn-rope">&#129698; ROPE UP (R)</button>
+  <button class="b" id="btn-mus">&#127963;&#65039; MUSEUM (M)</button>
+  <button class="b" id="btn-mute">&#128266;</button>
+</div>
+<div id="pad">
+  <div class="grid">
+    <span></span><button data-d="up">&#9650;</button><span></span>
+    <button data-d="left">&#9664;</button><button data-d="down">&#9660;</button><button data-d="right">&#9654;</button>
+  </div>
+  <button class="rope" id="pad-rope">&#129698;<br>ROPE<br>UP</button>
+</div>
+<div class="keys">ARROWS / WASD: walk &amp; dig &middot; UP: ladder / dig up &middot; R: rope up &middot; M: museum &middot; SPACE / ENTER: close pop-ups</div>
+
+<script>
+// ─── WORLD CONSTANTS ───
+const TILE = 40, COLS = 17, ROWS = 262, SURF = 5;     // rows 0..4 are sky; Levi walks on row 4
+const W = COLS * TILE, H = 600;
+const M_PER_ROW = 2;                                   // each tile is 2 m
+const depthOf = r => Math.max(0, (r - SURF + 1) * M_PER_ROW);
+const rowOf = m => SURF - 1 + Math.round(m / M_PER_ROW);
+const SAVE_KEY = 'leviDig.save', MUTE_KEY = 'leviDig.muted';
+
+const T = { AIR: 0, DIRT: 1, CLAY: 2, SAND: 3, LIME: 4, GRAN: 5, BAS: 6, OBS: 7, BED: 8, BOULDER: 9, LAVA: 10, CRYSTAL: 11, HEART: 12, LADDER: 13 };
+const TD = {
+  1: { name: 'Dirt', hard: 1, tier: 1 },        2: { name: 'Clay', hard: 1.6, tier: 1 },
+  3: { name: 'Sandstone', hard: 2.2, tier: 1 }, 4: { name: 'Limestone', hard: 3, tier: 1 },
+  5: { name: 'Granite', hard: 4.5, tier: 2 },   6: { name: 'Basalt', hard: 6, tier: 3 },
+  7: { name: 'Obsidian', hard: 8, tier: 4 },    8: { name: 'Bedrock', hard: 99, tier: 99 },
+  9: { name: 'Boulder', hard: 3.5, tier: 2 },   11: { name: 'Crystal', hard: 2, tier: 1 },
+  12: { name: 'Giant crystal', hard: 3, tier: 1 },
+};
+const solid = t => t !== T.AIR && t !== T.LAVA && t !== T.LADDER;
+const open = t => t === T.AIR || t === T.LADDER;
+
+const LAYERS = [
+  { tile: 1, from: 0,   name: 'TOPSOIL',   fact: 'Topsoil is alive: worms, roots, fungi and billions of bacteria. Just 2 cm of it can take hundreds of years to form.' },
+  { tile: 2, from: 20,  name: 'CLAY',      fact: 'Clay is made of tiny flat grains of weathered rock, so fine it gets sticky when wet. People have made pots from it for 20,000 years.' },
+  { tile: 3, from: 60,  name: 'SANDSTONE', fact: 'Sandstone is old sand from beaches and deserts, squashed and glued together over millions of years. Look for the layers!' },
+  { tile: 4, from: 130, name: 'LIMESTONE', fact: 'Limestone is made from the shells and skeletons of sea creatures. This land was once at the bottom of an ocean — perfect for fossils!' },
+  { tile: 5, from: 220, name: 'GRANITE',   fact: 'Granite cooled very slowly from magma deep underground, so its crystals had time to grow big enough to see. You need a pickaxe!' },
+  { tile: 6, from: 320, name: 'BASALT',    fact: 'Basalt is cooled lava — dark and heavy. Most of the ocean floor is made of it. Only a power drill gets through.' },
+  { tile: 7, from: 430, name: 'OBSIDIAN',  fact: 'Obsidian is volcanic glass: lava that cooled so fast it had no time to form crystals. It\'s sharper than steel. Diamond drill only!' },
+  { tile: 11, from: 494, name: 'CRYSTAL CAVE', fact: 'A hidden cave lined with crystals that grew from hot, mineral-rich water. Somewhere at the bottom is something huge…' },
+];
+const LAYER_COL = { 1: '#7a5230', 2: '#a5603b', 3: '#c9a46a', 4: '#b9b4a2', 5: '#9a8f94', 6: '#3e4048', 7: '#24182e', 8: '#2a2a2e', 11: '#3b2f5a', 12: '#3b2f5a' };
+
+// Ores & gems go in your bag and are sold at camp
+const ORES = [
+  { id: 1, name: 'Copper',   val: 8,   min: 2,   max: 230, w: 10,  col: '#e07b39', gem: false },
+  { id: 2, name: 'Iron',     val: 15,  min: 30,  max: 340, w: 8,   col: '#c46a4a', gem: false },
+  { id: 3, name: 'Silver',   val: 30,  min: 90,  max: 430, w: 5,   col: '#e8eef6', gem: false },
+  { id: 4, name: 'Gold',     val: 60,  min: 160, max: 500, w: 3.2, col: '#ffd23f', gem: false },
+  { id: 5, name: 'Ruby',     val: 120, min: 250, max: 500, w: 2,   col: '#ff2d55', gem: true },
+  { id: 6, name: 'Sapphire', val: 160, min: 300, max: 500, w: 1.6, col: '#3d7bff', gem: true },
+  { id: 7, name: 'Emerald',  val: 220, min: 360, max: 500, w: 1.2, col: '#2ee07a', gem: true },
+  { id: 8, name: 'Diamond',  val: 400, min: 420, max: 500, w: 0.8, col: '#d9fbff', gem: true },
+];
+const GAS = 9, CRYSTAL_SHARD = 10;
+// Fossils & treasures go to the museum
+const ARTS = [
+  { k: 'arrowhead', e: '&#127993;', name: 'Stone arrowhead', min: 4, max: 40, val: 25, fact: 'Made by people chipping flint thousands of years ago. Each strike flaked off a sliver until the edge was razor sharp.' },
+  { k: 'pottery', e: '&#127994;', name: 'Pottery shard', min: 8, max: 50, val: 30, fact: 'Broken pots are an archaeologist\'s best friend: the clay, shape and decoration tell us who lived here and when.' },
+  { k: 'coin', e: '&#129689;', name: 'Ancient coin', min: 12, max: 60, val: 40, fact: 'The first coins were made about 2,600 years ago in Lydia (modern Turkey) from electrum, a natural mix of gold and silver.' },
+  { k: 'mammoth', e: '&#129443;', name: 'Mammoth tooth', min: 26, max: 90, val: 60, fact: 'Woolly mammoths roamed during the last Ice Age. A single tooth could weigh as much as a bowling ball — they ground up tough grass all day.' },
+  { k: 'wood', e: '&#129717;', name: 'Petrified wood', min: 40, max: 120, val: 50, fact: 'Buried trees can turn to stone: minerals in groundwater slowly replace the wood, cell by cell, keeping every ring.' },
+  { k: 'shark', e: '&#129416;', name: 'Megalodon tooth', min: 60, max: 130, val: 80, fact: 'Megalodon was a giant shark up to 18 m long — three times a great white. Its teeth were bigger than your hand.' },
+  { k: 'fern', e: '&#127807;', name: 'Fossil fern', min: 70, max: 160, val: 60, fact: 'Ferns were around before the dinosaurs. Some fossil ferns are over 350 million years old — older than trees with flowers.' },
+  { k: 'amber', e: '&#129439;', name: 'Mosquito in amber', min: 80, max: 170, val: 90, fact: 'Amber is fossilised tree resin. Insects trapped in the sticky resin can be preserved in perfect detail for millions of years.' },
+  { k: 'ammonite', e: '&#128026;', name: 'Ammonite', min: 130, max: 230, val: 90, fact: 'A spiral-shelled cousin of the octopus that swam in ancient seas. Ammonites died out at the same time as the dinosaurs.' },
+  { k: 'trilobite', e: '&#129714;', name: 'Trilobite', min: 140, max: 240, val: 110, fact: 'One of the first animals with eyes! Trilobites scuttled across sea floors for 270 million years.' },
+  { k: 'rexskull', e: '&#129430;', name: 'T. rex skull', min: 100, max: 250, val: 150, rex: true, fact: 'A T. rex skull is about 1.5 m long, with teeth as long as bananas. Its bite was the strongest of any land animal ever.' },
+  { k: 'rexribs', e: '&#129460;', name: 'T. rex ribs', min: 100, max: 250, val: 120, rex: true, fact: 'Bones become fossils when minerals soak in and fill every tiny space, until the bone is rock in the shape of bone.' },
+  { k: 'rexleg', e: '&#129461;', name: 'T. rex leg', min: 100, max: 250, val: 120, rex: true, fact: 'T. rex walked on two huge legs. Scientists think it could walk about as fast as you can jog — but not really run.' },
+  { k: 'rextail', e: '&#129422;', name: 'T. rex tail', min: 100, max: 250, val: 120, rex: true, fact: 'Its long, heavy tail balanced its giant head, like the two sides of a seesaw.' },
+  { k: 'geode', e: '&#128302;', name: 'Geode', min: 220, max: 340, val: 140, fact: 'Looks like a plain round rock — crack it open and it\'s lined with sparkling crystals that grew inside a hollow bubble.' },
+  { k: 'meteorite', e: '&#9732;&#65039;', name: 'Iron meteorite', min: 260, max: 420, val: 200, fact: 'A rock from space! Iron meteorites are pieces of the cores of ancient mini-planets that smashed apart 4.5 billion years ago.' },
+  { k: 'strom', e: '&#129704;', name: 'Stromatolite', min: 380, max: 490, val: 250, fact: 'Layers of rock built by tiny microbes. Stromatolites are among the oldest signs of life on Earth — about 3.5 billion years old.' },
+];
+const ART_BASE = 20; // item id = ART_BASE + index
+const HEART_IDX = -1;
+
+// Upgrades
+const UPG = {
+  tool:  { name: 'Digging tool', lv: [['Shovel', 0, 1, 1], ['Pickaxe', 140, 1.7, 2], ['Power drill', 550, 2.8, 3], ['Diamond drill', 1800, 4.4, 4]], desc: l => `Speed ×${l[2]} · digs ${['dirt to limestone', '+ granite & boulders', '+ basalt', '+ obsidian'][l[3] - 1]}` },
+  food:  { name: 'Lunchbox (energy)', lv: [['Sandwich', 0, 100], ['Big lunch', 70, 150], ['Picnic basket', 240, 220], ['Feast', 650, 310], ['Banquet', 1400, 420]], desc: l => `${l[2]} energy` },
+  bag:   { name: 'Backpack', lv: [['Pocket', 0, 8], ['Backpack', 60, 12], ['Big pack', 200, 18], ['Hiker pack', 520, 26], ['Mine cart pack', 1150, 36]], desc: l => `holds ${l[2]} ores & gems` },
+  lamp:  { name: 'Helmet lamp', lv: [['Candle', 0, 3], ['Lantern', 70, 4.4], ['Headlamp', 260, 6], ['Floodlight', 800, 8]], desc: l => `lights ${l[2]} tiles around you` },
+  helm:  { name: 'Hard hat', lv: [['Cap', 0, 30], ['Hard hat', 160, 14], ['Steel helmet', 520, 5]], desc: l => `boulder hit: −${l[2]} energy` },
+  mask:  { name: 'Gas mask', lv: [['None', 0, 20], ['Gas mask', 280, 0]], desc: l => l[2] ? `gas pocket: −${l[2]} energy` : 'gas pockets are harmless' },
+  radar: { name: 'Fossil radar', lv: [['None', 0, 0], ['Fossil radar', 300, 1]], desc: l => l[2] ? 'points to the nearest treasure' : 'find treasures by their sparkle' },
+};
+const UPG_ORDER = ['tool', 'food', 'bag', 'lamp', 'helm', 'mask', 'radar'];
+
+// ─── CANVAS ───
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const dark = document.createElement('canvas'); dark.width = W; dark.height = H;
+const dctx = dark.getContext('2d');
+const leviImg = new Image(); leviImg.src = 'levi.png';
+
+// ─── SOUND ───
+let muted = (() => { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { return false; } })();
+let audio = null;
+function beep(freq, dur, type = 'square', vol = 0.05, slide = 0) {
+  if (muted) return;
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, audio.currentTime);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), audio.currentTime + dur);
+    g.gain.setValueAtTime(vol, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + dur);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + dur);
+  } catch (e) {}
+}
+function noise(dur, vol = 0.05, freq = 800) {
+  if (muted) return;
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    const n = Math.floor(audio.sampleRate * dur), buf = audio.createBuffer(1, n, audio.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const s = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+    f.type = 'lowpass'; f.frequency.value = freq; g.gain.value = vol;
+    s.buffer = buf; s.connect(f).connect(g).connect(audio.destination); s.start();
+  } catch (e) {}
+}
+const sfx = {
+  scrape(h) { noise(0.06, 0.035, 500 + h * 260); },
+  dug(h)    { noise(0.12, 0.06, 300 + h * 200); beep(120 + h * 30, 0.08, 'triangle', 0.04, -40); },
+  clunk()   { beep(90, 0.12, 'square', 0.05, -30); },
+  ore()     { beep(880, 0.06, 'triangle', 0.05); setTimeout(() => beep(1175, 0.08, 'triangle', 0.05), 60); },
+  gem()     { [1318, 1568, 2093, 2637].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'sine', 0.05), i * 55)); },
+  art()     { [523, 659, 784, 1046, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.06), i * 90)); },
+  ladder()  { beep(520, 0.04, 'square', 0.025); },
+  step()    { beep(140, 0.02, 'triangle', 0.02); },
+  thud()    { noise(0.18, 0.08, 220); },
+  rumble()  { noise(0.5, 0.05, 140); },
+  hit()     { noise(0.3, 0.1, 400); beep(160, 0.3, 'sawtooth', 0.05, -100); },
+  gas()     { noise(0.7, 0.05, 2400); },
+  burn()    { noise(0.6, 0.08, 900); beep(300, 0.5, 'sawtooth', 0.05, -250); },
+  rope()    { beep(300, 0.4, 'triangle', 0.05, 600); },
+  cash()    { [1046, 1318, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.09, 'square', 0.035), i * 70)); },
+  buy()     { beep(660, 0.06, 'square', 0.04); setTimeout(() => beep(990, 0.12, 'square', 0.04), 70); },
+  faint()   { [440, 370, 311, 262].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.05), i * 150)); },
+  layer()   { beep(392, 0.15, 'sine', 0.04); setTimeout(() => beep(523, 0.25, 'sine', 0.04), 150); },
+  win()     { [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.06), i * 120)); },
+};
+const muteBtn = document.getElementById('btn-mute');
+function refreshMute() { muteBtn.innerHTML = muted ? '&#128263;' : '&#128266;'; }
+muteBtn.addEventListener('click', () => { muted = !muted; try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch (e) {} refreshMute(); muteBtn.blur(); });
+refreshMute();
+
+// ─── SEEDED RANDOM ───
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const hash = (c, r) => { let h = (c * 374761393 + r * 668265263) ^ 0x5bd1e995; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+
+// ─── GAME STATE ───
+let S;          // the save: world + progress
+let tiles, items; // Uint8Arrays (ROWS*COLS)
+const idx = (c, r) => r * COLS + c;
+const tileAt = (c, r) => (c < 0 || c >= COLS || r >= ROWS) ? T.BED : r < 0 ? T.AIR : tiles[idx(c, r)];
+const itemAt = (c, r) => (c < 0 || c >= COLS || r < 0 || r >= ROWS) ? 0 : items[idx(c, r)];
+function setTile(c, r, t) { if (c >= 0 && c < COLS && r >= 0 && r < ROWS) tiles[idx(c, r)] = t; }
+function setItem(c, r, v) { if (c >= 0 && c < COLS && r >= 0 && r < ROWS) items[idx(c, r)] = v; }
+
+function freshSave(keep) {
+  return Object.assign({
+    seed: (Math.random() * 1e9) | 0, money: 0, ladders: 10,
+    up: { tool: 0, food: 0, bag: 0, lamp: 0, helm: 0, mask: 0, radar: 0 },
+    museum: {}, best: 0, layers: {}, rope: null, bag: [], won: false, digs: 0, trips: 0, sites: 1,
+  }, keep || {});
+}
+
+function layerIdx(m, c) {
+  for (let i = LAYERS.length - 1; i > 0; i--) {
+    const wob = i === LAYERS.length - 1 ? 0 : Math.round(Math.sin(c * 0.8 + i * 1.7 + S.seed % 7) * 1.4) * 2;
+    if (m >= LAYERS[i].from + wob) return i;
+  }
+  return 0;
+}
+
+function generate() {
+  const rnd = mulberry32(S.seed);
+  tiles = new Uint8Array(ROWS * COLS); items = new Uint8Array(ROWS * COLS);
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    let t;
+    if (r < SURF) t = T.AIR;
+    else if (c === 0 || c === COLS - 1 || r >= ROWS - 5) t = T.BED;
+    else t = LAYERS[layerIdx(depthOf(r), c)].tile;
+    if (t === T.CRYSTAL) t = T.OBS; // the cave itself is carved below
+    tiles[idx(c, r)] = t;
+  }
+  // Caves: little pockets of open space, more of them deeper down
+  for (let r = rowOf(40); r < rowOf(488); r++) for (let c = 1; c < COLS - 1; c++) {
+    if (rnd() < 0.0045 + depthOf(r) / 500 * 0.004) {
+      const rx = 1 + rnd() * 2, ry = 0.6 + rnd() * 1.2;
+      for (let y = -2; y <= 2; y++) for (let x = -3; x <= 3; x++)
+        if ((x * x) / (rx * rx) + (y * y) / (ry * ry) <= 1 && c + x > 0 && c + x < COLS - 1 && r + y < rowOf(488)) setTile(c + x, r + y, T.AIR);
+    }
+  }
+  // Boulders, lava, ores and gas pockets
+  for (let r = SURF + 1; r < rowOf(492); r++) for (let c = 1; c < COLS - 1; c++) {
+    const t = tileAt(c, r), m = depthOf(r);
+    if (!solid(t) || t === T.BED) continue;
+    if (m >= 60 && rnd() < (m < 220 ? 0.035 : 0.045)) { setTile(c, r, T.BOULDER); continue; }
+    if (m >= 360 && rnd() < 0.012 + (m - 360) / 140 * 0.01) { setTile(c, r, T.LAVA); if (rnd() < 0.3 && c + 1 < COLS - 1) setTile(c + 1, r, T.LAVA); continue; }
+    if (m >= 130 && m < 440 && rnd() < 0.028) { setItem(c, r, GAS); continue; }
+    if (rnd() < 0.12 + Math.min(0.06, m / 5000)) {
+      const pool = ORES.filter(o => m >= o.min && m <= o.max);
+      let tot = pool.reduce((a, o) => a + o.w, 0), x = rnd() * tot;
+      for (const o of pool) { x -= o.w; if (x <= 0) { setItem(c, r, o.id); break; } }
+    }
+  }
+  // Keep the start column friendly: plain dirt under the winch
+  for (let r = SURF; r < rowOf(10); r++) { setTile(8, r, T.DIRT); setItem(8, r, 0); }
+  // Treasures: 3 of each (2 of each dinosaur bone), each sitting inside rock
+  ARTS.forEach((a, i) => {
+    const copies = a.rex ? 2 : 3;
+    for (let n = 0, guard = 0; n < copies && guard < 500; guard++) {
+      const r = rowOf(a.min + rnd() * (a.max - a.min)), c = 1 + Math.floor(rnd() * (COLS - 2));
+      const t = tileAt(c, r);
+      if (!solid(t) || t === T.BED || t === T.BOULDER || itemAt(c, r) === GAS) continue;
+      if (itemAt(c, r) >= ART_BASE) continue;
+      setItem(c, r, ART_BASE + i); n++;
+    }
+  });
+  // The Crystal Cave at the bottom
+  const top = rowOf(494), floor = ROWS - 6;
+  for (let r = top; r <= floor; r++) for (let c = 1; c < COLS - 1; c++) {
+    const edge = r === top || r === floor || c === 1 || c === COLS - 2;
+    const inner = r > top + 1 && r < floor - 1 && c > 2 && c < COLS - 3;
+    setItem(c, r, 0);
+    if (edge || (!inner && rnd() < 0.55)) { setTile(c, r, T.CRYSTAL); if (rnd() < 0.35) setItem(c, r, CRYSTAL_SHARD); }
+    else setTile(c, r, T.AIR);
+  }
+  setTile(8, floor, T.HEART); setTile(8, floor - 1, T.HEART); setItem(8, floor, 0);
+}
+
+// Pack the world into the save (one character per tile / item)
+function packWorld() {
+  let t = '', it = '';
+  for (let i = 0; i < tiles.length; i++) { t += String.fromCharCode(48 + tiles[i]); it += String.fromCharCode(48 + items[i]); }
+  S.tiles = t; S.items = it;
+}
+function unpackWorld() {
+  tiles = new Uint8Array(ROWS * COLS); items = new Uint8Array(ROWS * COLS);
+  for (let i = 0; i < tiles.length; i++) { tiles[i] = S.tiles.charCodeAt(i) - 48; items[i] = S.items.charCodeAt(i) - 48; }
+}
+function save() { try { packWorld(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (s && s.tiles && s.tiles.length === ROWS * COLS) { S = Object.assign(freshSave(), s); S.up = Object.assign(freshSave().up, s.up); unpackWorld(); return true; }
+  } catch (e) {}
+  S = freshSave(); generate(); return false;
+}
+
+const lv = k => UPG[k].lv[S.up[k]];
+const maxEnergy = () => lv('food')[2];
+const bagCap = () => lv('bag')[2];
+
+// ─── LEVI ───
+const L = { c: 8, r: SURF - 1, x: 0, y: 0, face: 1, act: null, energy: 100, fall: 0, stun: 0, dig: null, bob: 0 };
+function placeLevi(c, r) { L.c = c; L.r = r; L.x = c * TILE; L.y = r * TILE; L.act = null; L.fall = 0; L.dig = null; }
+
+let state = 'title'; // title | play | camp | popup | rope
+let camY = 0, time = 0, shake = 0;
+const parts = [];          // particles
+const held = { left: false, right: false, up: false, down: false };
+let lastDir = null;
+const digProg = new Map(); // partial digs remembered per tile
+const wobble = new Map();  // boulder key -> seconds until it falls
+let hazardT = 0, msgT = 0, layerT = 0, saveT = 0, warned = false;
+
+// ─── UI HELPERS ───
+const $ = id => document.getElementById(id);
+function say(text, bad) { const m = $('msg'); m.textContent = text; m.className = 'show' + (bad ? ' bad' : ''); msgT = 2.6; }
+function hud() {
+  $('h-depth').textContent = depthOf(L.r) + ' m';
+  $('h-money').textContent = S.money;
+  const e = Math.max(0, L.energy / maxEnergy());
+  $('energy').firstElementChild.style.width = (e * 100) + '%';
+  $('energy').classList.toggle('low', e < 0.25);
+  $('h-bag').textContent = S.bag.length + '/' + bagCap();
+  $('h-lad').textContent = S.ladders;
+}
+function show(id) { document.querySelectorAll('.overlay').forEach(o => o.classList.toggle('show', o.id === id)); }
+function hideAll() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show')); }
+
+// ─── TILE ART (pre-rendered variants) ───
+const art = {};
+function mk(fn) { const c = document.createElement('canvas'); c.width = TILE; c.height = TILE; fn(c.getContext('2d')); return c; }
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  r = Math.max(0, Math.min(255, r * f)); g = Math.max(0, Math.min(255, g * f)); b = Math.max(0, Math.min(255, b * f));
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+function buildArt() {
+  for (const t of [1, 2, 3, 4, 5, 6, 7, 8, 11]) {
+    art[t] = [];
+    for (let v = 0; v < 4; v++) art[t].push(mk(g => {
+      const base = LAYER_COL[t], R = mulberry32(t * 97 + v * 13);
+      g.fillStyle = base; g.fillRect(0, 0, TILE, TILE);
+      if (t === 3 || t === 4) { // strata lines
+        for (let y = 6 + v * 2; y < TILE; y += 11) { g.fillStyle = shade(base, 0.86); g.fillRect(0, y, TILE, 2); }
+      }
+      if (t === 6) { g.strokeStyle = shade(base, 0.7); g.lineWidth = 2; g.beginPath(); g.moveTo(TILE * 0.5, 0); g.lineTo(TILE * 0.45, TILE); g.stroke(); }
+      const specks = t === 5 ? 26 : 14;
+      for (let i = 0; i < specks; i++) {
+        const x = R() * TILE, y = R() * TILE, s = 1 + R() * (t === 5 ? 3 : 2.5);
+        let col = shade(base, R() < 0.5 ? 0.75 : 1.22);
+        if (t === 5) col = ['#e9d6d9', '#3a3438', '#c9a0a4', '#f4f1ea'][Math.floor(R() * 4)];
+        if (t === 7) col = R() < 0.3 ? '#5b3d7a' : '#140c1c';
+        if (t === 11) col = R() < 0.5 ? '#9b7fe0' : '#cdb8ff';
+        g.fillStyle = col; g.fillRect(x, y, s, s);
+      }
+      if (t === 7) { g.fillStyle = 'rgba(200,170,255,0.18)'; g.beginPath(); g.moveTo(4, 4); g.lineTo(18, 4); g.lineTo(6, 16); g.fill(); }
+      if (t === 8) { g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 1; for (let k = -TILE; k < TILE; k += 8) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + TILE, TILE); g.stroke(); } }
+      if (t === 11) { // crystal points
+        for (let k = 0; k < 3; k++) {
+          const x = 6 + R() * 28, w = 4 + R() * 5, h = 10 + R() * 16;
+          g.fillStyle = ['#b69cff', '#e2d6ff', '#8f6bf0'][k]; g.beginPath(); g.moveTo(x, TILE); g.lineTo(x + w / 2, TILE - h); g.lineTo(x + w, TILE); g.fill();
+        }
+      }
+      // soft bevel
+      g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(0, 0, TILE, 2); g.fillRect(0, 0, 2, TILE);
+      g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(0, TILE - 2, TILE, 2); g.fillRect(TILE - 2, 0, 2, TILE);
+    }));
+  }
+  // Dug-out tunnel backgrounds, one per layer colour
+  art.bg = {};
+  for (const t of [1, 2, 3, 4, 5, 6, 7, 11]) art.bg[t] = mk(g => {
+    g.fillStyle = shade(LAYER_COL[t], t === 7 ? 0.6 : 0.36); g.fillRect(0, 0, TILE, TILE);
+    const R = mulberry32(t * 7);
+    for (let i = 0; i < 8; i++) { g.fillStyle = shade(LAYER_COL[t], 0.28); g.fillRect(R() * TILE, R() * TILE, 3, 3); }
+  });
+  art.boulder = mk(g => {
+    const gr = g.createRadialGradient(15, 13, 3, 20, 20, 19);
+    gr.addColorStop(0, '#b8b4ac'); gr.addColorStop(1, '#55524d');
+    g.fillStyle = gr; g.beginPath(); g.ellipse(20, 21, 18, 17, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(12, 14); g.lineTo(20, 22); g.lineTo(17, 31); g.stroke();
+  });
+  art.ladder = mk(g => {
+    g.fillStyle = '#8b5a2b'; g.fillRect(8, 0, 4, TILE); g.fillRect(28, 0, 4, TILE);
+    g.fillStyle = '#c08a4a'; for (let y = 5; y < TILE; y += 10) g.fillRect(8, y, 24, 3);
+  });
+}
+
+// ─── WORLD DRAWING ───
+function drawSky() {
+  const sky = ctx.createLinearGradient(0, -camY, 0, SURF * TILE - camY);
+  sky.addColorStop(0, '#5bb8ff'); sky.addColorStop(1, '#bfe6ff');
+  ctx.fillStyle = sky; ctx.fillRect(0, -camY, W, SURF * TILE);
+  // sun & clouds
+  ctx.fillStyle = '#fff3a0'; ctx.beginPath(); ctx.arc(W - 70, 40 - camY, 24, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  for (let i = 0; i < 3; i++) {
+    const x = ((time * (8 + i * 4) + i * 260) % (W + 160)) - 80, y = 30 + i * 26 - camY;
+    ctx.beginPath(); ctx.ellipse(x, y, 34, 11, 0, 0, Math.PI * 2); ctx.ellipse(x + 20, y - 7, 20, 10, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  const gy = SURF * TILE - camY;
+  // Camp shop (left) and museum (right)
+  ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(18, gy); ctx.lineTo(80, gy - 74); ctx.lineTo(142, gy); ctx.fill();
+  ctx.fillStyle = '#7a1f16'; ctx.beginPath(); ctx.moveTo(66, gy); ctx.lineTo(80, gy - 40); ctx.lineTo(94, gy); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center'; ctx.fillText('CAMP', 80, gy - 82);
+  ctx.fillStyle = '#e8e2d0'; ctx.fillRect(W - 150, gy - 64, 124, 64);
+  ctx.fillStyle = '#cfc6ae'; ctx.beginPath(); ctx.moveTo(W - 160, gy - 64); ctx.lineTo(W - 88, gy - 96); ctx.lineTo(W - 16, gy - 64); ctx.fill();
+  ctx.fillStyle = '#b8ae94'; for (let i = 0; i < 4; i++) ctx.fillRect(W - 140 + i * 30, gy - 58, 9, 58);
+  ctx.fillStyle = '#333'; ctx.fillText('MUSEUM', W - 88, gy - 70);
+  // Winch over the start shaft
+  const wx = 8 * TILE + TILE / 2;
+  ctx.strokeStyle = '#6b4a2b'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(wx - 34, gy); ctx.lineTo(wx, gy - 92); ctx.lineTo(wx + 34, gy); ctx.stroke();
+  ctx.fillStyle = '#8b6a3b'; ctx.beginPath(); ctx.arc(wx, gy - 92, 7, 0, Math.PI * 2); ctx.fill();
+  // grass
+  ctx.fillStyle = '#4caf50'; ctx.fillRect(0, gy - 4, W, 8);
+}
+
+function drawWorld() {
+  const hearts = [];
+  const r0 = Math.max(0, Math.floor(camY / TILE) - 1), r1 = Math.min(ROWS - 1, Math.ceil((camY + H) / TILE) + 1);
+  for (let r = Math.max(r0, SURF); r <= r1; r++) for (let c = 0; c < COLS; c++) {
+    const t = tiles[idx(c, r)], x = c * TILE, y = r * TILE - camY;
+    const li = LAYERS[layerIdx(depthOf(r), c)].tile;
+    const v = Math.floor(hash(c, r) * 4);
+    if (t === T.AIR || t === T.LADDER || t === T.BOULDER || t === T.LAVA || t === T.HEART) ctx.drawImage(art.bg[li] || art.bg[1], x, y);
+    if (t >= 1 && t <= 8 || t === T.CRYSTAL) ctx.drawImage(art[t][v], x, y);
+    if (t === T.LADDER) ctx.drawImage(art.ladder, x, y);
+    if (t === T.BOULDER) {
+      const wb = wobble.get(idx(c, r));
+      ctx.drawImage(art.boulder, x + (wb !== undefined && wb > 0 ? Math.sin(time * 50) * 2.5 : 0), y);
+    }
+    if (t === T.LAVA) {
+      ctx.fillStyle = '#ff5a00'; ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#ffb000';
+      for (let k = 0; k < 3; k++) { const ph = time * 1.5 + hash(c + k, r) * 6; ctx.beginPath(); ctx.arc(x + 8 + k * 12, y + 20 + Math.sin(ph) * 8, 4 + Math.sin(ph * 1.3) * 2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = 'rgba(255,240,150,0.5)'; ctx.fillRect(x, y, TILE, 3);
+    }
+    if (t === T.HEART) hearts.push([x, y, r]);
+    if (r === SURF && solid(t)) { ctx.fillStyle = '#4caf50'; ctx.fillRect(x, y, TILE, 5); }
+    // Items
+    const it = items[idx(c, r)];
+    if (it) drawItem(it, x, y, c, r, t);
+    // Dig cracks
+    const dp = digProg.get(idx(c, r));
+    if (dp && solid(t)) drawCracks(x, y, dp);
+  }
+  hearts.forEach(h => drawHeart(...h)); // the giant crystal spans two tiles: draw it on top
+}
+function drawHeart(x, y, r) {
+  if (tileAt(8, r - 1) === T.HEART) return; // draw once, from the top half
+  const cx = x + TILE / 2, top = y, bot = y + TILE * 2;
+  const glow = 0.6 + Math.sin(time * 2) * 0.2;
+  ctx.fillStyle = `rgba(190,150,255,${glow * 0.35})`; ctx.beginPath(); ctx.arc(cx, y + TILE, 46, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#d6c4ff'; ctx.beginPath(); ctx.moveTo(cx, top - 8); ctx.lineTo(cx + 16, top + 22); ctx.lineTo(cx + 12, bot); ctx.lineTo(cx - 12, bot); ctx.lineTo(cx - 16, top + 22); ctx.fill();
+  ctx.fillStyle = '#9b7fe0'; ctx.beginPath(); ctx.moveTo(cx, top - 8); ctx.lineTo(cx + 16, top + 22); ctx.lineTo(cx + 12, bot); ctx.lineTo(cx, bot); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(cx - 7, top + 10, 3, 30);
+}
+function drawItem(it, x, y, c, r, t) {
+  const cx = x + TILE / 2, cy = y + TILE / 2;
+  if (it === GAS) { // a faint green hint for sharp eyes
+    ctx.fillStyle = 'rgba(140,255,120,0.35)';
+    for (let k = 0; k < 4; k++) ctx.fillRect(x + 6 + hash(c, r + k) * 26, y + 6 + hash(c + k, r) * 26, 3, 3);
+    return;
+  }
+  if (it === CRYSTAL_SHARD) { ctx.fillStyle = '#f0e8ff'; ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + 5, cy); ctx.lineTo(cx, cy + 10); ctx.lineTo(cx - 5, cy); ctx.fill(); return; }
+  if (it < ART_BASE) {
+    const o = ORES[it - 1];
+    if (o.gem) {
+      ctx.fillStyle = o.col; ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + 10, cy - 2); ctx.lineTo(cx, cy + 11); ctx.lineTo(cx - 10, cy - 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx - 4, cy - 2); ctx.lineTo(cx - 10, cy - 2); ctx.fill();
+      if (Math.sin(time * 3 + c * 7 + r) > 0.92) { ctx.fillStyle = '#fff'; ctx.fillRect(cx + 4, cy - 9, 2, 6); ctx.fillRect(cx + 2, cy - 7, 6, 2); }
+    } else {
+      for (let k = 0; k < 6; k++) {
+        const px = x + 7 + hash(c * 3 + k, r) * 24, py = y + 7 + hash(c, r * 3 + k) * 24;
+        ctx.fillStyle = shade(o.col, 0.6); ctx.fillRect(px + 1, py + 1, 6, 6);
+        ctx.fillStyle = o.col; ctx.fillRect(px, py, 5, 5);
+      }
+    }
+    return;
+  }
+  const a = ARTS[it - ART_BASE];
+  ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.globalAlpha = solid(t) ? 0.85 : 1;
+  ctx.fillText(decode(a.e), cx, cy + 1);
+  ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+}
+const decodeCache = {};
+function decode(html) { if (!decodeCache[html]) { const d = document.createElement('div'); d.innerHTML = html; decodeCache[html] = d.textContent; } return decodeCache[html]; }
+function drawCracks(x, y, p) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 2;
+  const n = Math.ceil(p * 5);
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = i * 1.3 + 0.4;
+    ctx.moveTo(x + 20, y + 20); ctx.lineTo(x + 20 + Math.cos(a) * 18 * p, y + 20 + Math.sin(a) * 18 * p);
+  }
+  ctx.stroke();
+}
+
+function drawLevi() {
+  const x = L.x, y = L.y - camY;
+  if (!leviImg.complete || !leviImg.naturalWidth) return;
+  const h = 54, w = h * (leviImg.naturalWidth / leviImg.naturalHeight);
+  const bob = L.act && L.act.kind === 'walk' ? Math.abs(Math.sin(time * 18)) * 2 : 0;
+  const digging = L.dig ? Math.sin(time * 30) * 2 : 0;
+  ctx.save();
+  ctx.translate(x + TILE / 2, y + TILE + 1 - bob);
+  if (L.stun > 0) ctx.rotate(Math.sin(time * 25) * 0.12);
+  ctx.scale(L.face, 1);
+  // tool
+  const toolLv = S.up.tool;
+  ctx.save(); ctx.translate(w * 0.32, -h * 0.42); ctx.rotate(0.5 + digging * 0.2 + (L.dig && L.dig.dy > 0 ? 0.9 : L.dig && L.dig.dy < 0 ? -1.2 : 0));
+  ctx.fillStyle = '#8b5a2b'; ctx.fillRect(-1.5, 0, 3, 18);
+  ctx.fillStyle = ['#9aa', '#bbb', '#f39c12', '#7fe8ff'][toolLv];
+  if (toolLv === 0) ctx.fillRect(-4, 16, 8, 8);
+  else if (toolLv === 1) { ctx.fillRect(-8, 16, 16, 3); }
+  else { ctx.beginPath(); ctx.moveTo(-4, 16); ctx.lineTo(4, 16); ctx.lineTo(0, 27); ctx.fill(); }
+  ctx.restore();
+  ctx.drawImage(leviImg, -w / 2, -h, w, h);
+  // hard hat with lamp
+  ctx.fillStyle = S.up.helm ? '#ffd23f' : '#3d7bff';
+  ctx.beginPath(); ctx.ellipse(-1.5, -h + 5, 8.5, 6, 0, Math.PI, 0); ctx.fill();
+  ctx.fillRect(-10, -h + 4, 19, 2.5);
+  ctx.fillStyle = '#fffbe0'; ctx.beginPath(); ctx.arc(4, -h + 1.5, 2.3, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  if (L.stun > 0) { ctx.fillStyle = '#ffe600'; ctx.font = '14px serif'; ctx.textAlign = 'center'; for (let k = 0; k < 3; k++) { const a = time * 6 + k * 2.1; ctx.fillText('★', x + TILE / 2 + Math.cos(a) * 12, y - 18 + Math.sin(a) * 4); } }
+}
+
+function drawDarkness() {
+  const m = depthOf(L.r);
+  const a = Math.min(0.97, Math.max(0, (m - 2) / 18));
+  if (a <= 0.01) return;
+  dctx.globalCompositeOperation = 'source-over';
+  dctx.clearRect(0, 0, W, H);
+  dctx.fillStyle = `rgba(4,3,8,${a})`; dctx.fillRect(0, 0, W, H);
+  dctx.globalCompositeOperation = 'destination-out';
+  const cut = (x, y, rad, k = 1) => {
+    const g = dctx.createRadialGradient(x, y, rad * 0.25, x, y, rad);
+    g.addColorStop(0, `rgba(0,0,0,${k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    dctx.fillStyle = g; dctx.beginPath(); dctx.arc(x, y, rad, 0, Math.PI * 2); dctx.fill();
+  };
+  const flick = 1 + Math.sin(time * 9) * 0.015;
+  cut(L.x + TILE / 2, L.y + TILE / 2 - camY, lv('lamp')[2] * TILE * flick);
+  // Sky light still reaches the top of the shaft
+  if (camY < SURF * TILE + 200) { dctx.fillStyle = 'rgba(0,0,0,1)'; dctx.fillRect(0, 0, W, SURF * TILE - camY); }
+  // Lava glows
+  const r0 = Math.floor(camY / TILE), r1 = r0 + Math.ceil(H / TILE) + 1;
+  for (let r = r0; r <= r1; r++) for (let c = 0; c < COLS; c++) {
+    const t = tileAt(c, r);
+    if (t === T.LAVA) cut(c * TILE + 20, r * TILE + 20 - camY, TILE * 1.6, 0.85);
+    if (t === T.HEART) cut(c * TILE + 20, r * TILE + 20 - camY, TILE * 3, 0.9);
+  }
+  ctx.drawImage(dark, 0, 0);
+  // Treasures twinkle through the dark
+  for (let r = r0; r <= r1; r++) for (let c = 0; c < COLS; c++) {
+    const it = itemAt(c, r);
+    if (it < ART_BASE && !(it >= 5 && it <= 8)) continue;
+    const tw = Math.sin(time * 2.5 + c * 1.7 + r * 0.9);
+    if (tw > 0.55) {
+      const s = (tw - 0.55) * 9, x = c * TILE + 20, y = r * TILE + 20 - camY;
+      ctx.fillStyle = it >= ART_BASE ? 'rgba(255,230,120,0.9)' : 'rgba(220,240,255,0.8)';
+      ctx.fillRect(x - s / 2, y - 0.75, s, 1.5); ctx.fillRect(x - 0.75, y - s / 2, 1.5, s);
+    }
+  }
+}
+
+function drawRadar() {
+  if (!S.up.radar || depthOf(L.r) < 2) return;
+  let best = null, bd = 1e9;
+  for (let r = Math.max(SURF, L.r - 40); r < Math.min(ROWS, L.r + 40); r++) for (let c = 1; c < COLS - 1; c++) {
+    const it = itemAt(c, r);
+    if (it >= ART_BASE && !S.museum[ARTS[it - ART_BASE].k]) { const d = Math.hypot(c - L.c, r - L.r); if (d < bd) { bd = d; best = { c, r }; } }
+  }
+  if (!best || bd < 1.5) return;
+  const a = Math.atan2(best.r - L.r, best.c - L.c);
+  const x = L.x + 20, y = L.y + 20 - camY;
+  ctx.save(); ctx.translate(x + Math.cos(a) * 34, y + Math.sin(a) * 34); ctx.rotate(a);
+  ctx.fillStyle = `rgba(255,214,90,${0.6 + Math.sin(time * 5) * 0.3})`;
+  ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-5, -6); ctx.lineTo(-5, 6); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,214,90,0.9)'; ctx.font = '10px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText(Math.round(bd * M_PER_ROW) + 'm', x + Math.cos(a) * 34, y + Math.sin(a) * 34 + 16);
+}
+
+function drawGauge() {
+  // A depth gauge on the right edge: layers, deepest point, Levi
+  const gx = W - 16, gy = 16, gh = H - 32, maxM = 510;
+  ctx.globalAlpha = 0.85;
+  LAYERS.forEach((ly, i) => {
+    const a = ly.from, b = i + 1 < LAYERS.length ? LAYERS[i + 1].from : maxM;
+    ctx.fillStyle = LAYER_COL[ly.tile]; ctx.fillRect(gx, gy + a / maxM * gh, 8, (b - a) / maxM * gh);
+  });
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(gx - 0.5, gy - 0.5, 9, gh + 1);
+  ctx.fillStyle = '#7bd88f'; ctx.fillRect(gx - 4, gy + S.best / maxM * gh - 1, 16, 2);
+  const ly = gy + depthOf(L.r) / maxM * gh;
+  ctx.fillStyle = '#ffe600'; ctx.beginPath(); ctx.moveTo(gx - 2, ly); ctx.lineTo(gx - 9, ly - 5); ctx.lineTo(gx - 9, ly + 5); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawParticles(dt) {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.life -= dt; if (p.life <= 0) { parts.splice(i, 1); continue; }
+    p.vy += (p.g ?? 500) * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    ctx.globalAlpha = Math.min(1, p.life * 2);
+    ctx.fillStyle = p.col;
+    if (p.text) { ctx.font = 'bold 13px Courier New'; ctx.textAlign = 'center'; ctx.fillText(p.text, p.x, p.y - camY); }
+    else ctx.fillRect(p.x - p.s / 2, p.y - camY - p.s / 2, p.s, p.s);
+  }
+  ctx.globalAlpha = 1;
+}
+function burst(c, r, col, n = 10, speed = 160) {
+  for (let i = 0; i < n; i++) parts.push({ x: c * TILE + 20, y: r * TILE + 20, vx: (Math.random() - 0.5) * speed * 2, vy: -Math.random() * speed, s: 3 + Math.random() * 4, col, life: 0.5 + Math.random() * 0.4 });
+}
+function floatText(c, r, text, col = '#ffe600') { parts.push({ x: c * TILE + 20, y: r * TILE, vx: 0, vy: -60, g: 0, text, col, life: 1.2 }); }
+
+// ─── RULES ───
+function supported() {
+  const here = tileAt(L.c, L.r), below = tileAt(L.c, L.r + 1);
+  return here === T.LADDER || solid(below) || below === T.LADDER;
+}
+function digTime(t) { return 0.14 + TD[t].hard * 0.2 / lv('tool')[2]; }
+function digCost(t) { return 0.6 + TD[t].hard * 0.55; }
+
+function tryDir(dir) {
+  const dx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0, dy = dir === 'up' ? -1 : dir === 'down' ? 1 : 0;
+  if (dx) L.face = dx;
+  const tc = L.c + dx, tr = L.r + dy, t = tileAt(tc, tr);
+  // Surface: up visits the camp / museum
+  if (dir === 'up' && L.r <= SURF - 1) {
+    if (L.c <= 3) openCamp(false); else if (L.c >= COLS - 4) openMuseum(); else say('Walk to the CAMP (left) or the MUSEUM (right) — or dig down!');
+    held.up = false; return;
+  }
+  if (tr < 0) return;
+  if (t === T.LAVA) { say('Too hot! That\'s lava!', true); held[dir] = false; return; }
+  if (open(t)) {
+    if (dy < 0) {
+      // Climbing: needs a ladder in the tile you leave
+      if (tileAt(L.c, L.r) !== T.LADDER) {
+        if (S.ladders <= 0) { say('Out of ladders! Press R to ride the rope up.', true); held.up = false; return; }
+        if (L.r >= SURF) { setTile(L.c, L.r, T.LADDER); S.ladders--; sfx.ladder(); }
+      }
+      L.energy -= 0.25;
+      return startMove(tc, tr, 0.17, 'climb');
+    }
+    if (dy > 0) return startMove(tc, tr, 0.15, 'climb');
+    return startMove(tc, tr, 0.13, 'walk');
+  }
+  // Solid: dig it
+  if (t === T.BED) { sfx.clunk(); say('Bedrock — nothing can dig through that!', true); held[dir] = false; return; }
+  const def = TD[t];
+  if (lv('tool')[3] < def.tier) {
+    sfx.clunk(); burst(tc, tr, '#ddd', 4, 80);
+    say(`${def.name} is too hard! You need a ${UPG.tool.lv[def.tier - 1][0]}.`, true); held[dir] = false; return;
+  }
+  if (dy < 0 && !supported()) return;
+  L.dig = { c: tc, r: tr, dy, t: digProg.get(idx(tc, tr)) ? digProg.get(idx(tc, tr)) * digTime(t) : 0, total: digTime(t), dir };
+}
+
+function startMove(c, r, dur, kind) {
+  L.act = { kind, x0: L.x, y0: L.y, c, r, t: 0, dur };
+}
+
+function finishDig() {
+  const d = L.dig; L.dig = null;
+  const t = tileAt(d.c, d.r);
+  digProg.delete(idx(d.c, d.r));
+  L.energy -= digCost(t);
+  S.digs++;
+  sfx.dug(TD[t].hard);
+  burst(d.c, d.r, t === T.BOULDER ? '#999' : LAYER_COL[t] || '#888', 12);
+  setTile(d.c, d.r, T.AIR);
+  if (t === T.HEART) { setTile(8, d.r === ROWS - 6 ? d.r - 1 : d.r + 1, T.AIR); return winGame(); }
+  const it = itemAt(d.c, d.r);
+  if (it === GAS) { setItem(d.c, d.r, 0); gasBurst(d.c, d.r); }
+  else if (it) collect(d.c, d.r);
+}
+
+function collect(c, r) {
+  const it = itemAt(c, r);
+  if (!it || it === GAS) return;
+  if (it >= ART_BASE) {
+    setItem(c, r, 0);
+    const a = ARTS[it - ART_BASE];
+    const isNew = !S.museum[a.k];
+    S.money += isNew ? a.val : Math.round(a.val / 2);
+    S.museum[a.k] = (S.museum[a.k] || 0) + 1;
+    sfx.art();
+    burst(c, r, '#ffe600', 18, 200);
+    if (isNew) showFind(a); else floatText(c, r, `${a.name} again! +$${Math.round(a.val / 2)}`);
+    save();
+    return;
+  }
+  if (S.bag.length >= bagCap()) { if (msgT <= 0) say('Backpack full! Press R to rope up and sell.', true); return; }
+  setItem(c, r, 0);
+  if (it === CRYSTAL_SHARD) { S.bag.push(0); floatText(c, r, 'Crystal +$90', '#e2d6ff'); sfx.gem(); return; }
+  const o = ORES[it - 1];
+  S.bag.push(it);
+  floatText(c, r, `${o.name} +$${o.val}`, o.col);
+  if (o.gem) { sfx.gem(); burst(c, r, o.col, 14, 180); } else sfx.ore();
+}
+const bagValue = id => id === 0 ? 90 : ORES[id - 1].val;
+
+function gasBurst(c, r) {
+  const dmg = lv('mask')[2];
+  sfx.gas();
+  for (let i = 0; i < 26; i++) parts.push({ x: c * TILE + 20, y: r * TILE + 20, vx: (Math.random() - 0.5) * 140, vy: (Math.random() - 0.5) * 140, g: -20, s: 8 + Math.random() * 10, col: 'rgba(120,230,90,0.35)', life: 1.2 + Math.random() });
+  if (dmg) { L.energy -= dmg; say(`GAS POCKET! −${dmg} energy (a gas mask would help)`, true); } else say('Gas pocket — your mask kept you safe!');
+}
+
+function hurtBoulder() {
+  const dmg = lv('helm')[2];
+  L.energy -= dmg; L.stun = 0.7; shake = 0.4;
+  sfx.hit(); burst(L.c, L.r, '#aaa', 16, 220);
+  say(`BONK! A boulder fell on Levi! −${dmg} energy`, true);
+}
+
+function burn() {
+  sfx.burn(); shake = 0.5;
+  rescue('Levi touched lava! OUCH!');
+}
+
+// Boulders wobble, then fall; lava flows. Only near Levi, a few times a second.
+function updateHazards(dt) {
+  wobble.forEach((v, k) => { if (v > 0) wobble.set(k, v - dt); });
+  hazardT -= dt;
+  if (hazardT > 0) return;
+  hazardT = 0.09;
+  const r0 = Math.max(SURF, L.r - 16), r1 = Math.min(ROWS - 2, L.r + 16);
+  for (let r = r1; r >= r0; r--) for (let c = 1; c < COLS - 1; c++) {
+    const t = tiles[idx(c, r)], below = tileAt(c, r + 1), k = idx(c, r);
+    if (t === T.BOULDER) {
+      if (!open(below) && !(below === T.LAVA)) { wobble.delete(k); continue; }
+      if (!wobble.has(k)) { wobble.set(k, 0.75); sfx.rumble(); continue; }
+      if (wobble.get(k) > 0) continue;
+      // fall one tile
+      wobble.delete(k);
+      if (below === T.LAVA) { setTile(c, r, T.AIR); burst(c, r + 1, '#ff8a00', 8); continue; } // sinks into lava
+      setTile(c, r, T.AIR); setTile(c, r + 1, T.BOULDER);
+      wobble.set(idx(c, r + 1), -1); // already moving: no second wobble
+      if (L.c === c && (L.r === r + 1 || (L.act && L.act.r === r + 1 && L.act.c === c))) { setTile(c, r + 1, T.AIR); wobble.delete(idx(c, r + 1)); hurtBoulder(); }
+      else if (!open(tileAt(c, r + 2))) { sfx.thud(); shake = Math.max(shake, 0.15); wobble.delete(idx(c, r + 1)); }
+    } else if (t === T.LAVA && hash(c, r + Math.floor(time * 3)) < 0.5) {
+      let tc = c, tr = r;
+      if (open(below)) tr = r + 1;
+      else { // spill sideways, but only toward a drop, so pools settle instead of sloshing forever
+        const s = hash(r, c + Math.floor(time)) < 0.5 ? -1 : 1;
+        if (open(tileAt(c + s, r)) && open(tileAt(c + s, r + 1))) tc = c + s;
+        else if (open(tileAt(c - s, r)) && open(tileAt(c - s, r + 1))) tc = c - s;
+      }
+      if (tc !== c || tr !== r) {
+        setTile(c, r, T.AIR); setTile(tc, tr, T.LAVA);
+        if (L.c === tc && L.r === tr) return burn();
+      }
+    }
+  }
+}
+
+// ─── CAMP, ROPE & RESCUE ───
+function ropeUp() {
+  if (state !== 'play') return;
+  if (L.r <= SURF - 1) { openCamp(false); return; }
+  S.rope = { c: L.c, r: L.r };
+  sfx.rope();
+  state = 'rope';
+  ropeAnim = { t: 0, y0: L.y };
+}
+let ropeAnim = null;
+
+function rescue(why) {
+  sfx.faint();
+  const lost = Math.floor(S.bag.length / 2);
+  for (let i = 0; i < lost; i++) S.bag.splice(Math.floor(Math.random() * S.bag.length), 1);
+  S.rope = null;
+  state = 'rope';
+  ropeAnim = { t: 0, y0: L.y, rescue: `${why} The rescue team hauled Levi up${lost ? ` — but ${lost} item${lost > 1 ? 's' : ''} fell out of the bag` : ''}.` };
+}
+
+function arriveAtCamp(note) {
+  placeLevi(8, SURF - 1);
+  camY = 0;
+  S.trips++;
+  openCamp(true, note);
+}
+
+function openCamp(arrived, note) {
+  state = 'camp';
+  held.left = held.right = held.up = held.down = false;
+  let soldHtml = '';
+  if (S.bag.length) {
+    const counts = {};
+    S.bag.forEach(id => { const n = id === 0 ? 'Crystal' : ORES[id - 1].name; counts[n] = (counts[n] || 0) + 1; });
+    const total = S.bag.reduce((a, id) => a + bagValue(id), 0);
+    S.money += total;
+    soldHtml = `SOLD: ${Object.entries(counts).map(([n, k]) => `${k} ${n}`).join(', ')} &rarr; <b style="color:#ffe600">+$${total}</b>`;
+    S.bag = [];
+    sfx.cash();
+  } else if (arrived) soldHtml = 'Nothing to sell this trip.';
+  if (note) soldHtml = `<span style="color:#ff9f9f">${note}</span><br>` + soldHtml;
+  $('camp-sold').innerHTML = soldHtml;
+  L.energy = maxEnergy();
+  renderShop();
+  save();
+  hud();
+  show('ov-camp');
+}
+
+function renderShop() {
+  const found = Object.keys(S.museum).length;
+  $('camp-stats').innerHTML = `$<b>${S.money}</b> &middot; deepest <b>${S.best} m</b> &middot; museum <b>${found}/${ARTS.length}</b>${S.won ? ' &middot; <b>&#128142; crystal cave reached</b>' : ''}`;
+  const shop = $('shop'); shop.innerHTML = '';
+  UPG_ORDER.forEach(k => {
+    const u = UPG[k], cur = u.lv[S.up[k]], next = u.lv[S.up[k] + 1];
+    const el = document.createElement('div'); el.className = 'up';
+    el.innerHTML = `<div class="un">${u.name}</div><div>${cur[0]} &mdash; ${u.desc(cur)}</div>` +
+      (next ? `<div class="ul">NEXT: ${next[0]} &mdash; ${u.desc(next)}</div><button class="b ${S.money >= next[1] ? 'big' : ''}" ${S.money >= next[1] ? '' : 'disabled'}>BUY $${next[1]}</button>` : '<div class="ul">&#10003; MAXED OUT</div>');
+    const b = el.querySelector('button');
+    if (b) b.addEventListener('click', () => { if (S.money < next[1]) return; S.money -= next[1]; S.up[k]++; sfx.buy(); if (k === 'food') L.energy = maxEnergy(); renderShop(); hud(); save(); });
+    shop.appendChild(el);
+  });
+  const lad = document.createElement('div'); lad.className = 'up';
+  lad.innerHTML = `<div class="un">Ladders</div><div>You have ${S.ladders}. Climbing up places one.</div><div class="ul">10 LADDERS FOR $12</div><button class="b ${S.money >= 12 ? 'big' : ''}" ${S.money >= 12 ? '' : 'disabled'}>BUY 10 &middot; $12</button>`;
+  lad.querySelector('button').addEventListener('click', () => { if (S.money < 12) return; S.money -= 12; S.ladders += 10; sfx.buy(); renderShop(); hud(); save(); });
+  shop.appendChild(lad);
+  const ropeOk = S.rope && open(tileAt(S.rope.c, S.rope.r));
+  $('btn-dive').textContent = ropeOk ? `DIVE TO ${depthOf(S.rope.r)} m` : 'START DIGGING';
+}
+
+function dive(fromTop) {
+  hideAll();
+  const ropeOk = !fromTop && S.rope && open(tileAt(S.rope.c, S.rope.r));
+  if (ropeOk) placeLevi(S.rope.c, S.rope.r); else placeLevi(8, SURF - 1);
+  camY = Math.max(0, L.y - H * 0.42);
+  L.energy = maxEnergy(); warned = false;
+  state = 'play';
+  sfx.rope();
+  hud();
+}
+
+// ─── POP-UPS ───
+function showFind(a) {
+  state = 'popup';
+  held.left = held.right = held.up = held.down = false;
+  $('find-e').innerHTML = a.e; $('find-n').textContent = a.name.toUpperCase();
+  $('find-f').textContent = a.fact;
+  let extra = `+$${a.val} finder's reward &middot; added to the museum (${Object.keys(S.museum).length}/${ARTS.length})`;
+  const rex = ARTS.filter(x => x.rex);
+  if (a.rex) {
+    const have = rex.filter(x => S.museum[x.k]).length;
+    if (have === rex.length) { S.money += 500; extra += '<br><b style="color:#ffcf6b">&#129430; T. REX SKELETON COMPLETE! +$500 bonus — go see it in the museum!</b>'; }
+    else extra += `<br>T. rex bones: ${have}/${rex.length}`;
+  }
+  $('find-r').innerHTML = extra;
+  show('ov-find');
+}
+function closeFind() { hideAll(); state = 'play'; hud(); }
+
+let museumFrom = null;
+function openMuseum() {
+  museumFrom = state;
+  state = 'museum';
+  held.left = held.right = held.up = held.down = false;
+  const found = ARTS.filter(a => S.museum[a.k]).length;
+  $('mus-count').textContent = `${found} of ${ARTS.length} finds on display` + (found === ARTS.length ? ' — the collection is COMPLETE!' : '');
+  const rex = ARTS.filter(x => x.rex), have = rex.filter(x => S.museum[x.k]).length;
+  $('rex').innerHTML = have === rex.length ? '&#129430; The T. rex skeleton stands in the main hall!' : `&#129430; T. rex skeleton: ${have}/${rex.length} bones (100–250 m down)`;
+  const box = $('museum'); box.innerHTML = '';
+  ARTS.forEach(a => {
+    const got = S.museum[a.k];
+    const el = document.createElement('div'); el.className = 'mus' + (got ? '' : ' no');
+    el.innerHTML = `<div class="e">${a.e}</div><div class="mn">${got ? a.name : '???'}</div><div>${a.min}–${a.max} m</div>`;
+    el.addEventListener('click', () => { $('mus-fact').innerHTML = got ? `<b>${a.name}</b> &mdash; ${a.fact}` : `Not found yet. Look ${a.min}–${a.max} m down for a golden sparkle.`; });
+    box.appendChild(el);
+  });
+  $('mus-fact').textContent = 'Tap a find to read about it.';
+  show('ov-museum');
+}
+function closeMuseum() { if (museumFrom === 'camp') { state = 'camp'; renderShop(); show('ov-camp'); } else { hideAll(); state = 'play'; } }
+
+function winGame() {
+  sfx.win();
+  const first = !S.won;
+  S.won = true;
+  S.money += first ? 2000 : 0;
+  state = 'popup';
+  for (let i = 0; i < 60; i++) parts.push({ x: L.x + 20, y: L.y, vx: (Math.random() - 0.5) * 400, vy: -Math.random() * 400, s: 4 + Math.random() * 5, col: ['#d6c4ff', '#ffe600', '#9b7fe0', '#fff'][i % 4], life: 1.5 });
+  $('win-stats').innerHTML = `${first ? '<b style="color:#ffe600">+$2000 crystal bonus!</b><br>' : ''}Digs: ${S.digs} &middot; trips: ${S.trips} &middot; museum: ${Object.keys(S.museum).length}/${ARTS.length}`;
+  save();
+  setTimeout(() => show('ov-win'), 600);
+}
+
+function showLayer(i) {
+  const ly = LAYERS[i];
+  if (S.layers[ly.name]) return;
+  S.layers[ly.name] = 1;
+  const el = $('layer');
+  el.querySelector('b').textContent = ly.from ? `${ly.name} · ${ly.from} m` : ly.name;
+  el.querySelector('span').textContent = ly.fact;
+  el.classList.add('show'); layerT = 7;
+  sfx.layer();
+}
+
+// ─── MAIN LOOP ───
+function update(dt) {
+  if (msgT > 0 && (msgT -= dt) <= 0) $('msg').classList.remove('show');
+  if (layerT > 0 && (layerT -= dt) <= 0) $('layer').classList.remove('show');
+  if (shake > 0) shake = Math.max(0, shake - dt);
+
+  if (state === 'rope' && ropeAnim) {
+    ropeAnim.t += dt;
+    L.y = ropeAnim.y0 - (ropeAnim.y0 + 200) * Math.pow(Math.min(1, ropeAnim.t / 1.1), 2);
+    camY = Math.max(0, L.y - H * 0.42);
+    if (ropeAnim.t >= 1.2) { const note = ropeAnim.rescue; ropeAnim = null; arriveAtCamp(note); }
+    return;
+  }
+  if (state !== 'play') return;
+
+  updateHazards(dt);
+  if (state !== 'play') return;
+  if (L.stun > 0) L.stun -= dt;
+
+  if (L.act) {
+    const a = L.act;
+    a.t += dt;
+    const k = Math.min(1, a.t / a.dur);
+    L.x = a.x0 + (a.c * TILE - a.x0) * k; L.y = a.y0 + (a.r * TILE - a.y0) * k;
+    if (k >= 1) {
+      L.c = a.c; L.r = a.r; L.act = null;
+      if (tileAt(L.c, L.r) === T.LAVA) return burn();
+      if (tileAt(L.c, L.r) === T.BOULDER) { setTile(L.c, L.r, T.AIR); hurtBoulder(); }
+      if (a.kind === 'fall') {
+        L.fall++;
+        if (supported()) {
+          if (L.fall > 3) { const dmg = (L.fall - 3) * 5; L.energy -= dmg; shake = 0.25; sfx.thud(); say(`Ouch! Fell ${L.fall * M_PER_ROW} m. −${dmg} energy`, true); }
+          else if (L.fall > 1) sfx.thud();
+          L.fall = 0;
+        }
+      } else if (a.kind === 'walk') { sfx.step(); L.energy -= 0.05; }
+      else if (a.kind === 'climb') sfx.ladder();
+      collect(L.c, L.r);
+      if (state !== 'play') return;
+      const m = depthOf(L.r);
+      if (m > S.best) S.best = m;
+      if (L.r >= SURF) showLayer(layerIdx(m, L.c));
+    }
+  } else if (!supported()) {
+    L.dig = null;
+    const sp = Math.max(0.05, 0.13 - L.fall * 0.015);
+    startMove(L.c, L.r + 1, sp, 'fall');
+  } else if (L.dig) {
+    const d = L.dig;
+    if (!held[d.dir] || L.stun > 0) { digProg.set(idx(d.c, d.r), d.t / d.total); L.dig = null; }
+    else {
+      d.t += dt;
+      if (Math.floor(d.t / 0.11) !== Math.floor((d.t - dt) / 0.11)) { sfx.scrape(TD[tileAt(d.c, d.r)] ? TD[tileAt(d.c, d.r)].hard : 1); burst(d.c, d.r, '#00000055', 1, 60); }
+      digProg.set(idx(d.c, d.r), d.t / d.total);
+      if (d.t >= d.total) finishDig();
+    }
+  } else if (L.stun <= 0) {
+    const order = ['down', 'left', 'right', 'up'];
+    const dir = lastDir && held[lastDir] ? lastDir : order.find(k => held[k]);
+    if (dir) tryDir(dir);
+  }
+
+  if (state === 'play' && L.energy <= 0) { L.energy = 0; return rescue('Levi is exhausted!'); }
+  if (!warned && L.energy < maxEnergy() * 0.25) { warned = true; say('Energy low! Press R to rope up before you run out.', true); }
+  saveT += dt; if (saveT > 8) { saveT = 0; save(); }
+  hud();
+}
+
+function render(dt) {
+  const target = Math.max(0, Math.min(ROWS * TILE - H, L.y - H * 0.42));
+  camY += (target - camY) * Math.min(1, dt * 8);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * shake * 18, (Math.random() - 0.5) * shake * 18);
+  ctx.fillStyle = '#000'; ctx.fillRect(-20, -20, W + 40, H + 40);
+  if (camY < SURF * TILE) drawSky();
+  drawWorld();
+  // the rope
+  if (state === 'rope') { ctx.strokeStyle = '#d9c38a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x + 20, -10); ctx.lineTo(L.x + 20, L.y - camY - 40); ctx.stroke(); }
+  drawLevi();
+  drawParticles(dt);
+  drawDarkness();
+  drawRadar();
+  ctx.restore();
+  drawGauge();
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  time += dt;
+  update(dt);
+  render(dt);
+  requestAnimationFrame(loop);
+}
+
+// ─── INPUT ───
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down' };
+window.addEventListener('keydown', e => {
+  const d = KEYMAP[e.code];
+  if (d) { e.preventDefault(); if (!held[d]) lastDir = d; held[d] = true; }
+  if (e.code === 'KeyR') ropeUp();
+  if (e.code === 'KeyM') { if (state === 'museum') closeMuseum(); else if (state === 'play' || state === 'camp') openMuseum(); }
+  if (e.code === 'Space' || e.code === 'Enter') {
+    if (state === 'popup' && $('ov-find').classList.contains('show')) { e.preventDefault(); closeFind(); }
+    else if (state === 'popup' && $('ov-win').classList.contains('show')) { e.preventDefault(); closeFind(); }
+    else if (state === 'title') { e.preventDefault(); startGame(); }
+    else if (state === 'museum') { e.preventDefault(); closeMuseum(); }
+  }
+  if (e.code === 'Escape' && state === 'museum') closeMuseum();
+});
+window.addEventListener('keyup', e => { const d = KEYMAP[e.code]; if (d) held[d] = false; });
+window.addEventListener('blur', () => { held.left = held.right = held.up = held.down = false; });
+document.querySelectorAll('#pad [data-d]').forEach(b => {
+  const d = b.dataset.d;
+  const on = e => { e.preventDefault(); held[d] = true; lastDir = d; b.classList.add('on'); };
+  const off = e => { e.preventDefault(); held[d] = false; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+});
+$('pad-rope').addEventListener('click', ropeUp);
+$('btn-rope').addEventListener('click', () => { ropeUp(); $('btn-rope').blur(); });
+$('btn-mus').addEventListener('click', () => { if (state === 'play' || state === 'camp') openMuseum(); $('btn-mus').blur(); });
+$('btn-mus2').addEventListener('click', openMuseum);
+$('mus-close').addEventListener('click', closeMuseum);
+$('find-ok').addEventListener('click', closeFind);
+$('win-ok').addEventListener('click', closeFind);
+$('btn-dive').addEventListener('click', () => dive(false));
+$('btn-top').addEventListener('click', () => dive(true));
+$('btn-newsite').addEventListener('click', () => {
+  if (!confirm('Start a brand-new dig site? The ground resets, but you keep your money, gear and museum.')) return;
+  S.seed = (Math.random() * 1e9) | 0; S.rope = null; S.sites++; S.best = 0;
+  generate(); digProg.clear(); wobble.clear(); save(); renderShop();
+});
+$('btn-start').addEventListener('click', startGame);
+
+function startGame() {
+  hideAll();
+  state = 'play';
+  L.energy = maxEnergy();
+  placeLevi(8, SURF - 1);
+  if (S.trips === 0 && S.digs === 0) say('Hold ↓ to dig! Ores & gems go in your bag.');
+  else if (S.rope && open(tileAt(S.rope.c, S.rope.r))) { openCamp(false); }
+  hud();
+}
+
+// ─── BOOT ───
+buildArt();
+const had = load();
+placeLevi(8, SURF - 1);
+$('title-stats').innerHTML = had ? `Welcome back! $<b>${S.money}</b> &middot; deepest <b>${S.best} m</b> &middot; museum <b>${Object.keys(S.museum).length}/${ARTS.length}</b>` : '';
+if (had) $('btn-start').textContent = 'KEEP DIGGING';
+hud();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
