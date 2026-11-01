@@ -1044,11 +1044,11 @@ function drawDialPrint(cv) {
     // power reserve at 8 o'clock: E to F
     const rx = C - 1.55 / 3.2 * R, ry = C + 0.95 / 3.2 * R, rr = R * 0.15;
     g.strokeStyle = soft; g.lineWidth = 2.5; g.beginPath(); g.arc(rx, ry, rr, Math.PI * 0.75, Math.PI * 1.25); g.stroke();
-    for (let k = 0; k <= 4; k++) { const a = Math.PI * (0.75 + 0.125 * k); line.call(null, 0, 0, 0, 0, soft); g.beginPath(); g.moveTo(rx + Math.cos(a) * rr, ry + Math.sin(a) * rr); g.lineTo(rx + Math.cos(a) * (rr - (k % 2 ? 5 : 9)), ry + Math.sin(a) * (rr - (k % 2 ? 5 : 9))); g.stroke(); }
+    for (let k = 0; k <= 4; k++) { const a = Math.PI * (0.75 + 0.125 * k); g.beginPath(); g.moveTo(rx + Math.cos(a) * rr, ry + Math.sin(a) * rr); g.lineTo(rx + Math.cos(a) * (rr - (k % 2 ? 5 : 9)), ry + Math.sin(a) * (rr - (k % 2 ? 5 : 9))); g.stroke(); }
     text('E', rx + Math.cos(Math.PI * 0.75) * (rr + 11), ry + Math.sin(Math.PI * 0.75) * (rr + 11), 'bold 11px sans-serif', ink);
     text('F', rx + Math.cos(Math.PI * 1.25) * (rr + 11), ry + Math.sin(Math.PI * 1.25) * (rr + 11), 'bold 11px sans-serif', ink);
-    text('GLIDE WHEEL', C, C + R * 0.3, '11px sans-serif', soft);
-    text('±1 SEC / DAY', C, C + R * 0.38, '10px sans-serif', soft);
+    text('GLIDE WHEEL', C, C + R * 0.58, '11px sans-serif', soft);
+    text('±1 SEC / DAY', C, C + R * 0.66, '10px sans-serif', soft);
     gradeY = C - R * 0.22;
   } else if (wtype === 'auto') {
     for (let i = 0; i < 60; i++) line(i / 60 * Math.PI * 2, 0.97, i % 5 ? 0.94 : 0.9, i % 5 ? 1.5 : 3, i % 5 ? soft : ink);
@@ -1422,8 +1422,8 @@ function createRotor() {
   // Heavy rim: the weight that makes it swing (real ones use tungsten or gold)
   const rim = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.04, 10, 48, Math.PI), metalMat(grade === 'chronometer' ? 0xd4af37 : 0x9aa0ac));
   rim.rotation.x = -Math.PI / 2; rim.position.y = 0.89; rim.castShadow = true; g.add(rim);
-  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 24), metalMat(0xccccdd)); hub.position.y = 0.89; g.add(hub);
-  for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; g.add(bluedScrew(Math.cos(a) * 0.2, 0.905, Math.sin(a) * 0.2)); }
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 24), metalMat(0xccccdd)); hub.position.y = 0.885; g.add(hub);
+  for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; g.add(bluedScrew(Math.cos(a) * 0.2, 0.89, Math.sin(a) * 0.2)); } // slot tops stay under the dial (0.94)
   g.userData.partId = 'rotor';
   return g;
 }
