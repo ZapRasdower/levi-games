@@ -305,7 +305,7 @@
     { id: 'brick-breaker',  name: 'Brick Breaker',  emoji: '&#129521;', tag: 'ARCADE',         cat: 'arcade',  tint: '#ff6b6b44',
       desc: 'Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.' },
     { id: 'watchmaker',     name: 'Watchmaker',     emoji: '&#8986;',   tag: '3D BUILDER',     cat: 'build',   tint: '#d4af3744', updated: true,
-      desc: 'A watchmaker school in 3D: build all 12 parts, wind, regulate and style it — then run a Repair Shop and fix customers\' broken watches.' },
+      desc: 'Build real watches from history — pocket, trench, pilot, diver, moon-phase & Moon chronograph — at three grades of craftsmanship. Plus a Repair Shop!' },
     { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44', isNew: true,
       desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
     { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', isNew: true,
@@ -333,7 +333,8 @@
     'watchmaker':     () => { const bests = ['apprentice', 'journeyman', 'master'].map(t => lsJSON('watchmaker.best.' + t, null)).filter(Boolean);
                               const b = bests.sort((x, y) => y.score - x.score)[0]; const n = lsJSON('watchmaker.showcase', []).length;
                               const rp = lsJSON('watchmaker.repair', null); const fixed = rp && rp.fixed ? ` · ${rp.fixed} REPAIRED` : '';
-                              return b ? `BEST ${fmt(b.score)} · ${b.rank}${n > 1 ? ` · ${n} WATCHES` : ''}${fixed}` : (fixed ? fixed.slice(3) : null); },
+                              const coll = Object.keys(lsJSON('watchmaker.collection', {})).length; const cs = coll ? ` · ${coll}/17 COLLECTED` : '';
+                              return b ? `BEST ${fmt(b.score)} · ${b.rank}${cs}${fixed}` : ((cs + fixed).slice(3) || null); },
     'levi-galaxy':    () => { const b = num('leviGalaxy.best'); return b ? `BEST ${fmt(b)}` : null; },
     'levi-dig':       () => { const s = lsJSON('leviDig.save', null); if (!s || !s.best) return null; const f = Object.keys(s.museum || {}).length;
                               return `DEEPEST ${s.best} m · ${f}/17 FINDS${s.won ? ' · &#128142;' : ''}`; },

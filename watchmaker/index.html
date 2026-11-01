@@ -289,7 +289,52 @@ canvas { display: block; }
 .lessonbox b { color: #fff; font-weight: 600; }
 #paid-overlay .sheet { max-height: 90vh; overflow-y: auto; }
 
+/* Commission: watch type & grade */
+#commission-overlay .sheet, #history-overlay .sheet { max-width: min(780px, 96vw); max-height: 92vh; overflow-y: auto; }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 8px 0 4px; }
+.tcard { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 8px 10px; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.2s; }
+.tcard:hover { border-color: rgba(212,175,55,0.5); }
+.tcard.sel { border-color: var(--gold); background: rgba(212,175,55,0.12); box-shadow: 0 0 0 1px rgba(212,175,55,0.3); }
+.tcard canvas { width: 76px; height: 76px; display: block; margin: 0 auto 4px; }
+.tcard .ty { font-size: 9px; letter-spacing: 2px; color: var(--gold); }
+.tcard .tn { font-size: 13px; color: #ddd; margin-top: 2px; }
+.tcard .tx { font-size: 9px; color: #8ab4ff; margin-top: 3px; letter-spacing: 1px; }
+.tcard .tc { font-size: 11px; color: var(--gold); margin-top: 4px; letter-spacing: 2px; }
+#grade-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gcard { text-align: left; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 12px; cursor: pointer; background: rgba(255,255,255,0.03); }
+.gcard.sel { border-color: var(--gold); background: rgba(212,175,55,0.12); }
+.gcard.locked { opacity: 0.4; cursor: not-allowed; }
+.gcard .gn { font-size: 13px; letter-spacing: 3px; color: var(--gold); }
+.gcard .gj { font-size: 9px; letter-spacing: 1px; color: #7bd88f; margin: 3px 0; }
+.gcard .gd { font-size: 11px; color: #999; line-height: 1.45; }
+/* Hand finishing */
+#finish-overlay { background: rgba(0,0,0,0.45); }
+#finish-box { background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 16px 22px 14px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6); max-width: 94vw; }
+#finish-box .lbl { font-size: 12px; letter-spacing: 5px; color: var(--gold); margin-bottom: 4px; }
+#finish-box .sub { font-size: 11px; color: #999; margin-bottom: 10px; line-height: 1.5; max-width: 440px; }
+#finish-cv { width: 360px; height: 360px; max-width: 80vw; max-height: 80vw; display: block; margin: 0 auto; touch-action: none; cursor: crosshair; border-radius: 50%; }
+#finish-hint { font-size: 10px; color: #888; letter-spacing: 2px; margin-top: 8px; }
+/* History timeline */
+.tl { display: grid; grid-template-columns: 70px 1fr; gap: 0 14px; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06); text-align: left; }
+.tly { font-size: 15px; color: var(--gold); letter-spacing: 1px; font-weight: 300; text-align: right; }
+.tlt { font-size: 14px; color: #ddd; font-weight: 600; }
+.tlx { font-size: 12px; color: #aaa; line-height: 1.55; margin-top: 2px; }
+.tlk { font-size: 9px; letter-spacing: 2px; color: #8ab4ff; margin-top: 5px; }
+#quiz-q { font-size: 16px; color: #ddd; text-align: center; margin: 10px 0 6px; line-height: 1.5; }
+#quiz-q:empty { display: none; }
+#result-type { font-size: 10px; letter-spacing: 3px; color: #8ab4ff; margin-bottom: 6px; }
+#done-overlay .sheet { max-height: 92vh; overflow-y: auto; }
+.coll { text-align: left; margin: 4px auto 14px; max-width: 360px; font-size: 11px; }
+.cth { font-size: 10px; letter-spacing: 3px; color: var(--gold); margin-bottom: 6px; text-align: center; }
+.crow { display: flex; align-items: center; gap: 6px; padding: 2px 0; color: #aaa; }
+.crow span { flex: 1; }
+.crow b { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; border: 1px solid rgba(255,255,255,0.15); color: #555; font-weight: 400; }
+.crow b.got { background: rgba(212,175,55,0.25); border-color: var(--gold); color: var(--gold); }
+.crow b.na { border-style: dashed; color: #444; }
+
 @media (max-width: 720px) {
+  #grade-row { grid-template-columns: 1fr; }
+  .tgrid { grid-template-columns: repeat(2, 1fr); }
   :root { --tray-w: 100vw; }
   #title { font-size: 16px; letter-spacing: 6px; top: 10px; }
   #hud { top: 34px; font-size: 10px; gap: 10px; letter-spacing: 2px; }
@@ -344,9 +389,10 @@ canvas { display: block; }
 <div id="start-overlay" class="overlay show">
   <div class="sheet">
     <h2>WATCHMAKER</h2>
-    <div class="sub">BUILD A COMPLETE MECHANICAL WATCH</div>
+    <div class="sub">BUILD REAL WATCHES FROM 130 YEARS OF HISTORY</div>
     <div class="steps">
-      <b>1.</b> Build the movement, then case it: 12 parts, each in its proper order<br>
+      <b>0.</b> Choose a watch from history and a grade of craftsmanship<br>
+      <b>1.</b> Hand-finish the plate, build the movement, then case it &mdash; every part in its proper order<br>
       <b>2.</b> Tap each part's glowing slot &mdash; closer to the bullseye, more points<br>
       <b>3.</b> Seat it: stop the needle in the gold zone<br>
       <b>4.</b> Wind the mainspring to bring it to life &mdash; don't overwind!<br>
@@ -379,8 +425,43 @@ canvas { display: block; }
       <button id="lesson-btn" class="btn gold">&#9654; LESSON: HOW A WATCH WORKS</button>
       <button id="guide-btn" class="btn">&#128214; PARTS GUIDE</button>
       <button id="quiz-btn" class="btn">&#10067; NAME THAT PART</button>
+      <button id="history-btn" class="btn">&#128220; WATCH HISTORY</button>
       <button id="showcase-btn" class="btn">&#9201; SHOWCASE</button>
     </div>
+  </div>
+</div>
+
+<!-- Commission: which watch, which grade -->
+<div id="commission-overlay" class="overlay">
+  <div class="sheet">
+    <h2>COMMISSION</h2>
+    <div class="sub">WHICH WATCH WILL YOU MAKE?</div>
+    <div class="tgrid" id="type-grid"></div>
+    <div class="sub" style="margin:14px 0 8px">CRAFTSMANSHIP</div>
+    <div id="grade-row"></div>
+    <div class="lessonbox" id="commission-note"></div>
+    <div class="row"><button id="commission-go" class="btn gold">BEGIN THE BUILD &#9654;</button><button id="commission-back" class="btn">BACK</button></div>
+  </div>
+</div>
+
+<!-- Hand finishing: Côtes de Genève -->
+<div id="finish-overlay" class="overlay">
+  <div id="finish-box">
+    <div class="lbl">HAND FINISHING &middot; C&Ocirc;TES DE GEN&Egrave;VE</div>
+    <div class="sub" id="finish-sub"></div>
+    <canvas id="finish-cv" width="440" height="440"></canvas>
+    <div id="finish-hint"></div>
+    <div class="row"><button id="finish-done" class="btn gold">DONE</button></div>
+  </div>
+</div>
+
+<!-- Watch history -->
+<div id="history-overlay" class="overlay">
+  <div class="sheet">
+    <h2 style="text-align:center">WATCH HISTORY</h2>
+    <div class="sub" style="text-align:center">FIVE HUNDRED YEARS OF KEEPING TIME</div>
+    <div id="timeline"></div>
+    <div class="row" style="justify-content:center"><button id="history-quiz" class="btn gold">&#10067; HISTORY QUIZ</button><button id="history-close" class="btn">BACK</button></div>
   </div>
 </div>
 
@@ -412,6 +493,7 @@ canvas { display: block; }
   <div class="sheet">
     <div id="quiz-head"><span id="quiz-progress"></span><span id="quiz-score"></span></div>
     <img id="quiz-img" class="qthumb" alt="">
+    <div id="quiz-q"></div>
     <div class="qopts" id="quiz-opts"></div>
     <div id="quiz-feedback"></div>
     <div class="row" style="justify-content:center"><button id="quiz-next" class="btn gold">NEXT</button><button id="quiz-close" class="btn">BACK</button></div>
@@ -423,6 +505,7 @@ canvas { display: block; }
   <div class="sheet">
     <h2>SHOWCASE</h2>
     <div class="sub" id="showcase-sub">EVERY WATCH YOU HAVE FINISHED</div>
+    <div id="collection"></div>
     <div class="wgrid" id="wgrid"></div>
     <div id="showcase-empty">NO WATCHES YET &mdash; BUILD ONE!</div>
     <div class="row"><button id="showcase-close" class="btn gold">BACK</button></div>
@@ -522,8 +605,10 @@ canvas { display: block; }
     <h2>MASTERPIECE</h2>
     <div class="sub">YOUR WATCH IS ALIVE</div>
     <canvas id="result-thumb" width="220" height="220"></canvas>
+    <div id="result-type"></div>
     <div id="rank"></div>
     <div id="rank-sub"></div>
+    <div class="lessonbox" id="result-history"></div>
     <div class="score-grid" id="score-grid"></div>
     <div class="row">
       <button id="again-btn" class="btn gold">BUILD ANOTHER</button>
@@ -535,7 +620,7 @@ canvas { display: block; }
 <script src="three.min.js"></script>
 <script>
 // ─── CONFIG ───
-const PARTS = [
+const BASE_PARTS = [
   { id:'mainplate', name:'Mainplate', role:'FOUNDATION', desc:'The foundation — houses all jewel bearings and pivot points', color:0x8888aa,
     lore:'The red dots are synthetic rubies. Steel pivots spin inside them with almost no friction or wear — that is why a good watch is "17 jewels" or more.' },
   { id:'barrel', name:'Barrel & Mainspring', role:'POWER', desc:'Cylindrical power source storing energy in a coiled spring', color:0xb8960c,
@@ -561,7 +646,7 @@ const PARTS = [
   { id:'strap', name:'Strap', role:'WEARING', desc:'Leather, fabric or a metal bracelet, attached at the lugs with spring bars', color:0x6b3f1e,
     lore:'Spring bars are tiny spring-loaded pins that click into holes in the lugs. A NATO strap is a single piece of nylon that passes under the case — invented for British soldiers in 1973.' },
 ];
-const TOTAL = PARTS.length;
+let PARTS = BASE_PARTS.map(p => Object.assign({}, p)), TOTAL = PARTS.length;
 // Why each part must wait for the one before it — shown when you pick too early.
 const WHY_NOT = {
   barrel: 'the barrel needs the mainplate to sit in',
@@ -590,9 +675,543 @@ const STYLE = {
   case:  [['STEEL', 0xc8ccd4], ['GOLD', 0xd4af37], ['ROSE GOLD', 0xd9a07a], ['BLACK', 0x2a2a30]],
   dial:  [['CREAM', 0xf5f0e8], ['BLACK', 0x15151c], ['BLUE', 0x1f3f8f], ['GREEN', 0x1d5a3a], ['SALMON', 0xf2b49a]],
   hands: [['BLUED', 0x111133], ['GOLD', 0xd4af37], ['WHITE', 0xf4f4f4], ['ORANGE', 0xff7a1a]],
-  strap: [['BROWN LEATHER', 0x6b3f1e], ['BLACK LEATHER', 0x1a1a1a], ['BLUE', 0x2a4a9a], ['NATO STRIPE', 0x2d5b3a, 0xd9c36a], ['STEEL BRACELET', 0xb8bcc4]],
+  strap: [['BROWN LEATHER', 0x6b3f1e], ['BLACK LEATHER', 0x1a1a1a], ['BLUE', 0x2a4a9a], ['NATO STRIPE', 0x2d5b3a, 0xd9c36a], ['STEEL BRACELET', 0xb8bcc4], ['RUBBER', 0x1b1c20]],
 };
 const MUTE_KEY = 'watchmaker.muted';
+
+// ─── WATCH TYPES (each one a moment in watch history) ───
+const TYPE_ORDER = ['pocket', 'trench', 'pilot', 'dress', 'diver', 'chrono'];
+const WATCH_TYPES = {
+  pocket: { name: 'Railroad Pocket Watch', short: 'POCKET', year: 1893, era: 'THE AGE OF STEAM', extras: [], minGrade: 'fine',
+    blurb: 'After a deadly train crash blamed on a watch that had stopped, American railroads made strict rules for their watches: at least 17 jewels, an open face with bold numbers, the crown at 12, set by a hidden lever, and accurate to 30 seconds a week.',
+    look: 'Crown at 12, small seconds at 6, a dial with every minute numbered, Breguet hands, bow & chain.',
+    defaults: { case: 1, dial: 0, hands: 0, strap: 0 },
+    override: {
+      crown: { desc: 'Winds at 12 o\'clock. The hands are set with a hidden lever, so they can\'t be knocked by accident', lore: 'Railroad rules banned setting the time with the crown — too easy to bump. You had to open the bezel and pull out a little lever first ("lever-set").' },
+      strap: { name: 'Bow & Chain', role: 'WEARING', desc: 'The ring at the top and the chain that clips to a waistcoat', why: 'the bow and chain attach to the finished case',
+        lore: 'The chain clipped to a waistcoat button so the watch could never fall. A conductor would pull it out, read it at a glance, and call "All aboard!"', okNote: 'Bow and chain are sound — no weak links.' },
+    } },
+  trench: { name: 'Trench Watch', short: 'TRENCH', year: 1917, era: 'WORLD WAR I', extras: [],
+    blurb: 'Soldiers needed both hands free, so pocket-watch movements went into small cases with wire lugs and were strapped to the wrist. Many had a red 12 and glowing radium numbers. After the war, the wristwatch was here to stay.',
+    look: 'Wire lugs, big Arabic numerals with a red 12, sword hands.',
+    defaults: { case: 0, dial: 0, hands: 0, strap: 0 } },
+  pilot: { name: 'Pilot\'s Watch', short: 'PILOT', year: 1940, era: 'THE AGE OF FLIGHT', extras: [],
+    blurb: 'Navigators flew with huge observation watches: a black dial with big white numbers, a triangle at 12 to find "up" in the dark, and an onion crown big enough to turn in thick gloves.',
+    look: 'Black dial, triangle at 12, onion crown, long riveted strap.',
+    defaults: { case: 0, dial: 1, hands: 2, strap: 1 } },
+  dress: { name: 'Moon-phase Dress Watch', short: 'DRESS', year: 1941, era: 'THE GOLDEN AGE', extras: ['moon'],
+    blurb: 'A slim gold watch for special occasions, with a complication: a moon-phase. Its disc has 59 teeth and two moons and is pushed on one tooth every night, so it follows the real Moon\'s 29½-day cycle.',
+    look: 'Thin gold case with a stepped bezel, applied gold batons, dauphine hands, and a moon window that shows tonight\'s real moon.',
+    defaults: { case: 1, dial: 0, hands: 1, strap: 0 } },
+  diver: { name: 'Dive Watch', short: 'DIVER', year: 1953, era: 'UNDER THE SEA', extras: ['bezel'],
+    blurb: 'Scuba divers needed to know how long they had been underwater. The answer: a thick sealed case, glowing dots, and a rotating bezel to line up with the minute hand when you dive in.',
+    look: 'Thick case with crown guards, glowing lume dots, arrow hands, a one-way bezel and a rubber strap.',
+    defaults: { case: 0, dial: 1, hands: 2, strap: 5 } },
+  chrono: { name: 'Moon Chronograph', short: 'CHRONO', year: 1969, era: 'THE SPACE AGE', extras: ['chrono', 'pushers'],
+    blurb: 'A chronograph is a watch with a stopwatch built in. In 1969 one was worn on the surface of the Moon, and in 1970 the Apollo 13 crew used one to time a life-saving 14-second engine burn.',
+    look: 'Three sub-dials, a tachymeter scale, start/stop and reset pushers, and a column-wheel stopwatch mechanism.',
+    defaults: { case: 0, dial: 1, hands: 2, strap: 4 } },
+};
+const EXTRA_PARTS = {
+  moon: { id: 'moon', name: 'Moon-phase Disc', role: 'COMPLICATION', after: 'balance', color: 0x1f3f8f,
+    desc: 'A starry disc with two moons that moves on one tooth every night',
+    lore: 'It has 59 teeth — two moons × 29½ days. Each night a finger on the gear train nudges it one tooth. Look at the dial when it\'s done: it shows tonight\'s real Moon!',
+    why: 'the moon disc sits on the finished movement, under the dial', okNote: 'The 59-tooth moon disc is clean and clicks on one tooth a night.' },
+  chrono: { id: 'chrono', name: 'Chronograph Works', role: 'COMPLICATION', after: 'balance', color: 0x99aacc,
+    desc: 'Column wheel, chronograph wheel and levers — a stopwatch inside the watch',
+    lore: 'The castle-shaped column wheel is the brain: each push turns it one step, and its columns lift or drop the levers that start, stop and reset. A heart-shaped cam snaps the hand back to zero.',
+    why: 'the stopwatch works are built on top of the running movement', okNote: 'The column wheel turns crisply and every lever drops cleanly between its columns.' },
+  pushers: { id: 'pushers', name: 'Pushers', role: 'CONTROL', after: 'crown', color: 0xc8ccd4,
+    desc: 'Two buttons by the crown: start/stop at 2 o\'clock, reset at 4',
+    lore: 'Press the top pusher to start and stop the stopwatch hand, and the bottom one to snap it back to zero. Each press turns the column wheel inside one step.',
+    why: 'the pushers go through the case next to the crown, and they need the case first', okNote: 'Both pushers spring back smartly and their seals are good.' },
+  bezel: { id: 'bezel', name: 'Dive Bezel', role: 'SAFETY', after: 'crystal', color: 0x22252c,
+    desc: 'A ring marked in minutes that turns one way only, to time your dive',
+    lore: 'Before diving, turn the triangle to the minute hand; the hand then shows minutes underwater. It only turns anticlockwise, so a knock can only make your dive look longer — never shorter.',
+    why: 'the bezel clips onto the case around the crystal', okNote: 'The bezel clicks round anticlockwise only — 120 crisp clicks.' },
+};
+const GRADE_ORDER = ['standard', 'fine', 'chronometer'];
+const GRADES = {
+  standard:    { label: 'STANDARD', jewels: 7, spec: 15, bonus: 50, finishing: false, specLabel: '±15 s/day',
+    desc: '7 jewels and plain plates. An honest everyday watch.' },
+  fine:        { label: 'FINE', jewels: 17, spec: 8, bonus: 120, finishing: true, specLabel: '±8 s/day',
+    desc: '17 jewels, blued steel screws, and Côtes de Genève stripes you cut into the plate by hand.' },
+  chronometer: { label: 'CHRONOMETER', jewels: 21, lo: -4, hi: 6, bonus: 220, finishing: true, specLabel: '−4 to +6 s/day (official chronometer test)',
+    desc: '21 jewels in gold settings, a screw balance, hand finishing — and it must pass the official chronometer standard: −4 to +6 seconds a day.' },
+};
+const SLOT_EXTRA = { moon: [0, 0.78, 1.3], chrono: [0.7, 0.66, 0.7], pushers: [3.95, 0.55, 0], bezel: [0, 1.3, 0] };
+const SIZE_EXTRA = { moon: [0.9, 0.06, 0.9], chrono: [1.5, 0.12, 1.5], pushers: [0.35, 0.3, 2.4], bezel: [3.95, 0.12, 3.95] };
+
+let wtype = 'trench', grade = 'standard';
+let finishTex = null, finishVer = 0, finishPts = 0, finishLabel = '', specPtsFinal = 0, specOkFinal = false;
+let pendingDiff = 'apprentice', moonOffset = 0;
+let pick = { type: 'trench', grade: 'standard' };
+
+function buildParts(tk) {
+  const T = WATCH_TYPES[tk], list = [];
+  BASE_PARTS.forEach(p => {
+    list.push(Object.assign({}, p, (T.override || {})[p.id] || {}, { placed: false }));
+    T.extras.filter(x => EXTRA_PARTS[x].after === p.id).forEach(x => list.push(Object.assign({}, EXTRA_PARTS[x], { placed: false })));
+  });
+  return list;
+}
+function setWatchType(tk, gk) {
+  wtype = tk; if (gk) grade = gk;
+  PARTS = buildParts(tk); TOTAL = PARTS.length;
+  if (assemblyGroup) { Object.values(ghostMeshes).forEach(g => assemblyGroup.remove(g)); ghostMeshes = {}; createGhosts(); }
+}
+function withType(tk, fn) { const s = [wtype, PARTS, TOTAL]; wtype = tk; PARTS = buildParts(tk); try { return fn(); } finally { [wtype, PARTS, TOTAL] = s; } }
+function slotPos(id) {
+  if (wtype === 'pocket' && id === 'crown') return [0, 0.55, -4.4];
+  if (wtype === 'pocket' && id === 'strap') return [0, 0.45, -5.1];
+  return SLOT_POS[id] || SLOT_EXTRA[id];
+}
+function slotSize(id) { if (wtype === 'pocket' && id === 'strap') return [0.8, 0.12, 0.8]; return SLOT_SIZE[id] || SIZE_EXTRA[id]; }
+function specOk(rate) {
+  if (wtype === 'pocket') return Math.abs(rate) <= 4.3;
+  const g = GRADES[grade];
+  return g.lo !== undefined ? rate >= g.lo && rate <= g.hi : Math.abs(rate) <= g.spec;
+}
+function specLabel() { return wtype === 'pocket' ? 'railroad standard: within 30 s a week (about ±4 s/day)' : GRADES[grade].specLabel; }
+
+// ─── THE MOON (for the moon-phase dial) ───
+function moonAge(d = new Date()) { const syn = 29.530588853, ref = Date.UTC(2000, 0, 6, 18, 14); return ((((d - ref) / 86400000) % syn) + syn) % syn; }
+function moonName(a) {
+  const p = a / 29.530588853;
+  return p < 0.03 || p > 0.97 ? 'new moon' : p < 0.22 ? 'waxing crescent' : p < 0.28 ? 'first quarter' : p < 0.47 ? 'waxing gibbous'
+    : p < 0.53 ? 'full moon' : p < 0.72 ? 'waning gibbous' : p < 0.78 ? 'last quarter' : 'waning crescent';
+}
+function drawMoon(g, x, y, r, age) {
+  const p = age / 29.530588853;
+  g.fillStyle = '#f2d36b'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  // shadow circle slides across: none at full, all at new; lit on the right while waxing
+  const off = (p <= 0.5 ? -1 : 1) * 2 * r * (1 - Math.abs(1 - 2 * p));
+  g.save(); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.clip();
+  g.fillStyle = 'rgba(10,18,50,0.93)'; g.beginPath(); g.arc(x + off, y, r * 1.02, 0, Math.PI * 2); g.fill();
+  g.restore();
+}
+
+// ─── PRINTED DIALS (drawn on a canvas, so the dial colour and type are real) ───
+const hexs = n => '#' + n.toString(16).padStart(6, '0');
+function isDark(n) { const r = n >> 16, g = (n >> 8) & 255, b = n & 255; return 0.299 * r + 0.587 * g + 0.114 * b < 140; }
+function shadeHex(n, f) { const r = Math.min(255, (n >> 16) * f), g = Math.min(255, ((n >> 8) & 255) * f), b = Math.min(255, (n & 255) * f); return `rgb(${r | 0},${g | 0},${b | 0})`; }
+function drawDialPrint(cv) {
+  const g = cv.getContext('2d'), S = cv.width, C = S / 2, R = S / 2;
+  const dcol = STYLE.dial[design.dial][1], dark = isDark(dcol);
+  const ink = dark ? '#f2efe6' : '#1d1d2a', soft = dark ? 'rgba(255,255,255,0.6)' : 'rgba(20,20,40,0.6)', red = '#c0392b';
+  g.clearRect(0, 0, S, S);
+  const bg = g.createRadialGradient(C, C * 0.75, 10, C, C, R);
+  bg.addColorStop(0, shadeHex(dcol, 1.12)); bg.addColorStop(1, shadeHex(dcol, 0.82));
+  g.fillStyle = bg; g.beginPath(); g.arc(C, C, R, 0, Math.PI * 2); g.fill();
+  const P = (f, a) => [C + Math.sin(a) * R * f, C - Math.cos(a) * R * f];
+  const line = (a, f0, f1, w, col) => { const [x0, y0] = P(f0, a), [x1, y1] = P(f1, a); g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+  const track = (f0, f1, f5) => { for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2; line(a, f0, i % 5 ? f1 : f5, i % 5 ? 2 : 4, i % 5 ? soft : ink); } };
+  const text = (s, x, y, font, col) => { g.font = font; g.fillStyle = col; g.fillText(s, x, y); };
+  const subdial = (x, y, r, labels) => {
+    g.fillStyle = dark ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.06)'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = soft; g.lineWidth = 2; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; g.strokeStyle = ink; g.lineWidth = 2; g.beginPath(); g.moveTo(x + Math.sin(a) * r * 0.9, y - Math.cos(a) * r * 0.9); g.lineTo(x + Math.sin(a) * r * 0.72, y - Math.cos(a) * r * 0.72); g.stroke(); }
+    if (labels) labels.forEach((l, i) => { const a = i / labels.length * Math.PI * 2; text(l, x + Math.sin(a) * r * 0.5, y - Math.cos(a) * r * 0.5, '13px sans-serif', ink); });
+  };
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  let gradeY = C + R * 0.3;
+  if (wtype === 'trench') {
+    track(0.97, 0.92, 0.9);
+    for (let h = 1; h <= 12; h++) { const [x, y] = P(0.72, h / 12 * Math.PI * 2); text(String(h), x, y, 'bold 46px Georgia, serif', h === 12 ? red : ink); }
+  } else if (wtype === 'pocket') {
+    // a "Montgomery" style railroad dial: every minute numbered
+    track(0.86, 0.82, 0.8);
+    for (let m = 1; m <= 60; m++) { const [x, y] = P(0.93, m / 60 * Math.PI * 2); text(String(m), x, y, (m % 5 ? '' : 'bold ') + '11px sans-serif', m % 5 ? soft : red); }
+    for (let h = 1; h <= 12; h++) { if (h === 6) continue; const [x, y] = P(0.66, h / 12 * Math.PI * 2); text(String(h), x, y, 'bold 44px Georgia, serif', ink); }
+    subdial(C, C + R * 0.5, R * 0.2, ['60', '15', '30', '45']);
+    gradeY = C - R * 0.22;
+  } else if (wtype === 'pilot') {
+    track(0.97, 0.92, 0.88);
+    for (let h = 1; h <= 11; h++) { const [x, y] = P(0.72, h / 12 * Math.PI * 2); text(String(h), x, y, 'bold 52px Arial, sans-serif', ink); }
+    const [tx, ty] = P(0.8, 0);
+    g.fillStyle = ink; g.beginPath(); g.moveTo(tx - 20, ty - 16); g.lineTo(tx + 20, ty - 16); g.lineTo(tx, ty + 22); g.fill();
+    g.beginPath(); g.arc(tx - 28, ty - 14, 5, 0, Math.PI * 2); g.arc(tx + 28, ty - 14, 5, 0, Math.PI * 2); g.fill();
+  } else if (wtype === 'diver') {
+    track(0.97, 0.93, 0.93);
+    const [tx, ty] = P(0.72, 0);
+    g.strokeStyle = ink; g.lineWidth = 5; g.beginPath(); g.moveTo(tx - 22, ty - 22); g.lineTo(tx + 22, ty - 22); g.lineTo(tx, ty + 14); g.closePath(); g.stroke();
+    text('200 m / 660 ft', C, C + R * 0.42, 'bold 15px sans-serif', red);
+    text('DIVER', C, C + R * 0.52, '13px sans-serif', ink);
+  } else if (wtype === 'dress') {
+    for (let i = 0; i < 60; i++) line(i / 60 * Math.PI * 2, 0.97, 0.94, 1.5, soft);
+    g.strokeStyle = soft; g.lineWidth = 1.5; g.beginPath(); g.arc(C, C, R * 0.97, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.arc(C, C, R * 0.94, 0, Math.PI * 2); g.stroke();
+    // moon window at 6
+    const mx = C, my = C + R * 0.44, mr = R * 0.2;
+    g.save(); g.beginPath(); g.arc(mx, my, mr, Math.PI, 0); g.lineTo(mx + mr, my + mr * 0.35); g.lineTo(mx - mr, my + mr * 0.35); g.closePath(); g.clip();
+    g.fillStyle = '#13235c'; g.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+    g.fillStyle = '#f2d36b'; [[-0.6, -0.5], [0.5, -0.7], [0.75, -0.2], [-0.3, -0.85], [0.1, -0.4]].forEach(([sx, sy]) => g.fillRect(mx + sx * mr, my + sy * mr, 2.5, 2.5));
+    drawMoon(g, mx, my - mr * 0.25, mr * 0.42, (moonAge() + moonOffset) % 29.530588853);
+    g.fillStyle = bg; // the two "hills" the moon rises from behind
+    g.beginPath(); g.arc(mx - mr * 0.5, my + mr * 0.3, mr * 0.5, Math.PI, 0); g.arc(mx + mr * 0.5, my + mr * 0.3, mr * 0.5, Math.PI, 0); g.lineTo(mx + mr, my + mr); g.lineTo(mx - mr, my + mr); g.fill();
+    g.restore();
+    g.strokeStyle = '#d4af37'; g.lineWidth = 3; g.beginPath(); g.arc(mx, my, mr, Math.PI, 0); g.stroke();
+    gradeY = C - R * 0.22;
+  } else if (wtype === 'chrono') {
+    // tachymeter: speed = 3600 ÷ seconds
+    g.strokeStyle = soft; g.lineWidth = 2; g.beginPath(); g.arc(C, C, R * 0.86, 0, Math.PI * 2); g.stroke();
+    [500, 400, 300, 250, 200, 180, 160, 140, 120, 110, 100, 90, 80, 70, 60].forEach(v => {
+      const a = (3600 / v) / 60 * Math.PI * 2, [x, y] = P(0.93, a);
+      g.save(); g.translate(x, y); g.rotate(a); text(String(v), 0, 0, 'bold 13px sans-serif', ink); g.restore();
+      line(a, 0.86, 0.885, 2, ink);
+    });
+    for (let i = 0; i < 60; i++) line(i / 60 * Math.PI * 2, 0.84, i % 5 ? 0.81 : 0.78, i % 5 ? 1.5 : 3, i % 5 ? soft : ink);
+    subdial(C + R * 0.46, C, R * 0.18, ['30', '10', '20']);
+    subdial(C - R * 0.46, C, R * 0.18, ['60', '20', '40']);
+    subdial(C, C + R * 0.46, R * 0.18, ['12', '3', '6', '9']);
+    text('CHRONOGRAPH', C, C - R * 0.22, '13px sans-serif', ink);
+    gradeY = C - R * 0.12;
+  }
+  text('LEVI', C, C - R * 0.36, '600 30px Georgia, serif', ink);
+  const gtxt = grade === 'chronometer' ? 'CHRONOMETER' : grade === 'fine' ? '17 JEWELS' : '7 JEWELS';
+  text(wtype === 'pocket' ? gtxt + ' · RAILROAD' : gtxt, C, gradeY, grade === 'chronometer' ? 'italic 15px Georgia, serif' : '12px sans-serif', grade === 'chronometer' ? red : soft);
+}
+function redrawDial() {
+  const d = placedMeshes['dial'];
+  if (d) d.traverse(c => { if (c.userData.dialPrint) { drawDialPrint(c.userData.dialPrint.cv); c.userData.dialPrint.tex.needsUpdate = true; } });
+}
+
+// ─── EXTRA PARTS (complications) ───
+function createMoonDisc() {
+  const g = new THREE.Group();
+  const navy = new THREE.MeshStandardMaterial({ color: 0x13235c, metalness: 0.5, roughness: 0.35 });
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.05, 48), navy);
+  disc.position.set(0, 0.78, 1.3); g.add(disc);
+  const teeth = createGearMesh(0.78, 0.92, 59, 0.06, 0.04, 0x2a3a7a, 0.6); // 59 teeth: two moons x 29.5 days
+  teeth.rotation.x = -Math.PI / 2; teeth.position.set(0, 0.76, 1.3); g.add(teeth);
+  for (const sx of [-0.48, 0.48]) {
+    const moon = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.06, 32), new THREE.MeshStandardMaterial({ color: 0xf2d36b, metalness: 0.9, roughness: 0.25, emissive: 0x332200 }));
+    moon.position.set(sx, 0.8, 1.3); g.add(moon);
+  }
+  for (let i = 0; i < 9; i++) {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshBasicMaterial({ color: 0xffe9a0 }));
+    s.position.set(Math.cos(i * 2.3) * 0.6, 0.81, 1.3 + Math.sin(i * 2.3) * 0.55); g.add(s);
+  }
+  g.userData.partId = 'moon';
+  return g;
+}
+function createChronoWorks() {
+  const g = new THREE.Group();
+  const steel = new THREE.MeshStandardMaterial({ color: 0xc8ccd8, metalness: 0.9, roughness: 0.2 });
+  const blued = new THREE.MeshStandardMaterial({ color: 0x1d2c7a, metalness: 0.8, roughness: 0.25 });
+  // chronograph wheel on the centre (carries the stopwatch hand) with its heart-shaped reset cam
+  const cw = createGearMesh(0.08, 0.62, 60, 0.04, 0.05, 0xd9c070, 0.85);
+  cw.rotation.x = -Math.PI / 2; cw.position.set(0, 0.66, 0); cw.userData.gearId = 'chrono'; g.add(cw);
+  const heart = new THREE.Shape();
+  heart.moveTo(0, -0.22); heart.bezierCurveTo(0.3, 0, 0.18, 0.24, 0, 0.12); heart.bezierCurveTo(-0.18, 0.24, -0.3, 0, 0, -0.22);
+  const hm = new THREE.Mesh(new THREE.ExtrudeGeometry(heart, { depth: 0.05, bevelEnabled: false }), steel);
+  hm.rotation.x = -Math.PI / 2; hm.position.set(0, 0.72, 0); g.add(hm);
+  // the column wheel: a little castle that decides start / stop / reset
+  const cwx = 1.5, cwz = 1.5;
+  const base = createGearMesh(0.05, 0.34, 18, 0.06, 0.08, 0xc8ccd8, 0.9);
+  base.rotation.x = -Math.PI / 2; base.position.set(cwx, 0.6, cwz); base.userData.gearId = 'column'; g.add(base);
+  const colG = new THREE.Group(); colG.position.set(cwx, 0.7, cwz); colG.userData.gearId = 'columnTop';
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const col = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.1), blued); col.position.set(Math.cos(a) * 0.2, 0, Math.sin(a) * 0.2); colG.add(col); }
+  g.add(colG);
+  // levers from the column wheel to the chronograph wheel
+  for (const [dx, dz, len, rot] of [[0.75, 1.15, 1.5, 0.95], [1.05, 0.65, 1.3, 0.35]]) {
+    const lv = new THREE.Mesh(new THREE.BoxGeometry(len, 0.04, 0.09), steel);
+    lv.position.set(dx, 0.7, dz); lv.rotation.y = rot; g.add(lv);
+  }
+  g.userData.partId = 'chrono';
+  return g;
+}
+function createPushers() {
+  const g = new THREE.Group();
+  const caseCol = STYLE.case[design.case][1];
+  for (const ang of [Math.PI / 6, -Math.PI / 6]) { // 2 and 4 o'clock
+    const piv = new THREE.Group(); piv.rotation.y = ang;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.4, 16), metalMat(caseCol));
+    stem.rotation.z = Math.PI / 2; stem.position.set(4.0, 0.55, 0); stem.userData.caseMetal = true; piv.add(stem);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.18, 16), metalMat(caseCol));
+    cap.rotation.z = Math.PI / 2; cap.position.set(4.25, 0.55, 0); cap.userData.caseMetal = true; piv.add(cap);
+    g.add(piv);
+  }
+  g.userData.partId = 'pushers';
+  return g;
+}
+function bezelCanvas() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+  const g = cv.getContext('2d'), C = 256, Ro = 256, Ri = 256 * 3.05 / 3.95;
+  g.fillStyle = '#16181f'; g.beginPath(); g.arc(C, C, Ro, 0, Math.PI * 2); g.fill();
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let i = 0; i < 60; i++) {
+    const a = i / 60 * Math.PI * 2, long = i % 5 === 0;
+    if (i > 15 && !long) continue; // the first 15 minutes are marked in full
+    const r0 = Ro - 8, r1 = long ? Ro - 30 : Ro - 20;
+    g.strokeStyle = '#e8e6dc'; g.lineWidth = long ? 5 : 2.5;
+    g.beginPath(); g.moveTo(C + Math.sin(a) * r0, C - Math.cos(a) * r0); g.lineTo(C + Math.sin(a) * r1, C - Math.cos(a) * r1); g.stroke();
+  }
+  for (let n = 10; n <= 50; n += 10) { const a = n / 60 * Math.PI * 2, r = (Ro + Ri) / 2 + 4; g.save(); g.translate(C + Math.sin(a) * r, C - Math.cos(a) * r); g.rotate(a); g.font = 'bold 30px Arial'; g.fillStyle = '#e8e6dc'; g.fillText(String(n), 0, 0); g.restore(); }
+  g.fillStyle = '#e8f5d0'; g.beginPath(); g.moveTo(C - 16, C - Ro + 10); g.lineTo(C + 16, C - Ro + 10); g.lineTo(C, C - Ro + 38); g.fill();
+  return cv;
+}
+function createBezel() {
+  const g = new THREE.Group();
+  const tex = new THREE.CanvasTexture(bezelCanvas());
+  const ring = new THREE.Mesh(new THREE.RingGeometry(3.05, 3.95, 120), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.3, roughness: 0.4 }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 1.37; g.add(ring);
+  const edge = new THREE.Mesh(new THREE.CylinderGeometry(3.98, 3.98, 0.28, 120, 1, true), metalMat(STYLE.case[design.case][1]));
+  edge.material.side = THREE.DoubleSide; edge.position.y = 1.23; edge.userData.caseMetal = true; g.add(edge);
+  for (let i = 0; i < 60; i++) { // coin-edge grip
+    const a = i / 60 * Math.PI * 2, n = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.24, 0.08), new THREE.MeshStandardMaterial({ color: 0x333338, metalness: 0.8 }));
+    n.position.set(Math.sin(a) * 3.99, 1.23, -Math.cos(a) * 3.99); n.rotation.y = -a; g.add(n);
+  }
+  g.userData.partId = 'bezel';
+  return g;
+}
+
+// ─── HAND FINISHING: Côtes de Genève ───
+const FIN_S = 440, FIN_R = 205, FIN_BANDS = 7, FIN_COLS = 44;
+let fin = null;
+function finBandH() { return (FIN_R * 2) / FIN_BANDS; }
+function beginFinishing(next) {
+  phase = 'finish';
+  const strict = grade === 'chronometer';
+  const paint = document.createElement('canvas'); paint.width = paint.height = FIN_S;
+  const pg = paint.getContext('2d');
+  const base = pg.createRadialGradient(FIN_S / 2 - 60, FIN_S / 2 - 60, 20, FIN_S / 2, FIN_S / 2, FIN_R);
+  base.addColorStop(0, '#b9bdc8'); base.addColorStop(1, '#7d8190');
+  pg.fillStyle = base; pg.beginPath(); pg.arc(FIN_S / 2, FIN_S / 2, FIN_R, 0, Math.PI * 2); pg.fill();
+  fin = { paint, cov: Array.from({ length: FIN_BANDS }, () => new Uint8Array(FIN_COLS)), dev: 0, samples: 0, down: false, last: null, band: 0,
+    t: 0, limit: strict ? 20 : 25, strict, next, done: false };
+  document.getElementById('finish-sub').innerHTML = `A <b>${GRADES[grade].label}</b> movement is finished by hand before it is built. Drag <b>straight across</b> the plate to cut each stripe with the polishing wheel. Cover every band and keep your line steady${strict ? ' — chronometer grade is judged strictly' : ''}.`;
+  document.getElementById('finish-overlay').classList.add('show');
+  updateHud();
+  setInstr('');
+}
+function finPos(e) {
+  const cv = document.getElementById('finish-cv'), r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * FIN_S, y: (e.clientY - r.top) / r.height * FIN_S };
+}
+function finDown(e) {
+  if (!fin || fin.done) return;
+  e.preventDefault();
+  const p = finPos(e), top = FIN_S / 2 - FIN_R;
+  fin.down = true; fin.last = p;
+  fin.band = Math.max(0, Math.min(FIN_BANDS - 1, Math.floor((p.y - top) / finBandH())));
+  e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
+}
+function finMove(e) {
+  if (!fin || !fin.down || fin.done) return;
+  const p = finPos(e), a = fin.last; fin.last = p;
+  const bh = finBandH(), top = FIN_S / 2 - FIN_R + fin.band * bh, mid = top + bh / 2;
+  const dev = Math.abs(p.y - mid);
+  fin.dev += Math.min(dev, bh); fin.samples++;
+  // Paint the stripe: the bright crest follows your hand, so a wobbly hand shows
+  const crest = Math.max(top + 4, Math.min(top + bh - 4, p.y));
+  const pg = fin.paint.getContext('2d');
+  pg.save(); pg.beginPath(); pg.arc(FIN_S / 2, FIN_S / 2, FIN_R, 0, Math.PI * 2); pg.clip();
+  const gr = pg.createLinearGradient(0, top, 0, top + bh);
+  const k = (crest - top) / bh;
+  gr.addColorStop(0, '#8d929c'); gr.addColorStop(Math.max(0.01, k - 0.18), '#d9dde4'); gr.addColorStop(k, '#fbfcfe'); gr.addColorStop(Math.min(0.99, k + 0.12), '#c4c8d0'); gr.addColorStop(1, '#6f7480');
+  pg.fillStyle = gr;
+  const x0 = Math.min(a.x, p.x) - 3, x1 = Math.max(a.x, p.x) + 3;
+  pg.fillRect(x0, top, x1 - x0, bh);
+  pg.restore();
+  const left = FIN_S / 2 - FIN_R;
+  for (let c = Math.max(0, Math.floor((x0 - left) / (FIN_R * 2) * FIN_COLS)); c <= Math.min(FIN_COLS - 1, Math.floor((x1 - left) / (FIN_R * 2) * FIN_COLS)); c++) fin.cov[fin.band][c] = 1;
+  if (Math.random() < 0.3) beep(1800 + Math.random() * 400, 0.03, 'sawtooth', 0.012);
+  if (finCoverage() >= 0.97) finishFinishing();
+}
+function finUp() { if (fin) fin.down = false; }
+function finCoverage() {
+  let got = 0, all = 0;
+  const bh = finBandH();
+  for (let b = 0; b < FIN_BANDS; b++) {
+    const y = -FIN_R + (b + 0.5) * bh;
+    for (let c = 0; c < FIN_COLS; c++) {
+      const x = -FIN_R + (c + 0.5) / FIN_COLS * FIN_R * 2;
+      if (x * x + y * y > FIN_R * FIN_R * 0.97) continue;
+      all++; got += fin.cov[b][c];
+    }
+  }
+  return all ? got / all : 0;
+}
+function drawFinish(dt) {
+  if (!fin) return;
+  if (!fin.done) { fin.t += dt; if (fin.t >= fin.limit) finishFinishing(); }
+  const cv = document.getElementById('finish-cv'), g = cv.getContext('2d');
+  g.clearRect(0, 0, FIN_S, FIN_S);
+  g.drawImage(fin.paint, 0, 0);
+  const bh = finBandH(), top = FIN_S / 2 - FIN_R;
+  g.save(); g.beginPath(); g.arc(FIN_S / 2, FIN_S / 2, FIN_R, 0, Math.PI * 2); g.clip();
+  g.setLineDash([6, 8]); g.strokeStyle = 'rgba(212,175,55,0.45)'; g.lineWidth = 1;
+  for (let b = 1; b < FIN_BANDS; b++) { g.beginPath(); g.moveTo(0, top + b * bh); g.lineTo(FIN_S, top + b * bh); g.stroke(); }
+  g.restore();
+  g.strokeStyle = 'rgba(212,175,55,0.6)'; g.lineWidth = 2; g.beginPath(); g.arc(FIN_S / 2, FIN_S / 2, FIN_R, 0, Math.PI * 2); g.stroke();
+  const left = Math.max(0, fin.limit - fin.t);
+  document.getElementById('finish-hint').textContent = `COVERED ${Math.round(finCoverage() * 100)}% · ${left.toFixed(1)} s LEFT`;
+}
+function finishFinishing() {
+  if (!fin || fin.done) return;
+  fin.done = true; fin.down = false;
+  const cov = finCoverage(), neat = fin.samples ? 1 - Math.min(1, (fin.dev / fin.samples) / (finBandH() * (fin.strict ? 0.35 : 0.5))) : 0;
+  const q = cov * (0.35 + 0.65 * neat);
+  const maxPts = fin.strict ? 200 : 150;
+  finishPts = Math.round(maxPts * q);
+  finishLabel = q >= 0.85 ? 'MIRROR-PERFECT STRIPES' : q >= 0.65 ? 'FINE STRIPES' : q >= 0.4 ? 'WAVY STRIPES' : 'ROUGH FINISH';
+  finishTex = new THREE.CanvasTexture(fin.paint); finishVer++;
+  addScore(finishPts);
+  if (q >= 0.85) sfx.perfect(); else sfx.good();
+  toast(finishLabel, `+${finishPts} · ${Math.round(cov * 100)}% covered, ${Math.round(neat * 100)}% steady`);
+  const next = fin.next;
+  setTimeout(() => { document.getElementById('finish-overlay').classList.remove('show'); fin = null; next(); }, 900);
+}
+// Customer watches in the repair shop come already finished
+function autoFinishTex() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = FIN_S;
+  const g = cv.getContext('2d'), bh = finBandH(), top = FIN_S / 2 - FIN_R;
+  g.beginPath(); g.arc(FIN_S / 2, FIN_S / 2, FIN_R, 0, Math.PI * 2); g.clip();
+  for (let b = 0; b < FIN_BANDS; b++) {
+    const y = top + b * bh, gr = g.createLinearGradient(0, y, 0, y + bh);
+    gr.addColorStop(0, '#8d929c'); gr.addColorStop(0.35, '#d9dde4'); gr.addColorStop(0.5, '#fbfcfe'); gr.addColorStop(0.62, '#c4c8d0'); gr.addColorStop(1, '#6f7480');
+    g.fillStyle = gr; g.fillRect(0, y, FIN_S, bh);
+  }
+  finishVer++;
+  return new THREE.CanvasTexture(cv);
+}
+
+// ─── COMMISSION: choose a watch from history and a grade ───
+const COLLECTION_KEY = 'watchmaker.collection';
+function loadCollection() { try { return JSON.parse(localStorage.getItem(COLLECTION_KEY) || '{}'); } catch (e) { return {}; } }
+function startGame(d) {
+  pendingDiff = d;
+  document.getElementById('start-overlay').classList.remove('show');
+  renderCommission();
+  document.getElementById('commission-overlay').classList.add('show');
+  sfx.select();
+}
+function renderCommission() {
+  const col = loadCollection();
+  const gridEl = document.getElementById('type-grid'); gridEl.innerHTML = '';
+  TYPE_ORDER.forEach(tk => {
+    const T = WATCH_TYPES[tk];
+    const card = document.createElement('div'); card.className = 'tcard' + (pick.type === tk ? ' sel' : '');
+    const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
+    drawWatchThumb(cv, T.defaults, 610, tk);
+    card.appendChild(cv);
+    const done = GRADE_ORDER.filter(gk => col[tk + ':' + gk]).length;
+    card.insertAdjacentHTML('beforeend', `<div class="ty">${T.year} · ${T.era}</div><div class="tn">${T.name}</div>` +
+      (T.extras.length ? `<div class="tx">+ ${T.extras.map(x => EXTRA_PARTS[x].name).join(' + ')}</div>` : '') +
+      `<div class="tc">${'★'.repeat(done)}${'☆'.repeat(3 - done)}</div>`);
+    card.addEventListener('click', () => { pick.type = tk; if (tk === 'pocket' && pick.grade === 'standard') pick.grade = 'fine'; sfx.select(); renderCommission(); });
+    gridEl.appendChild(card);
+  });
+  const row = document.getElementById('grade-row'); row.innerHTML = '';
+  GRADE_ORDER.forEach(gk => {
+    const G = GRADES[gk], locked = gk === 'standard' && pick.type === 'pocket';
+    const b = document.createElement('div'); b.className = 'gcard' + (pick.grade === gk ? ' sel' : '') + (locked ? ' locked' : '');
+    b.innerHTML = `<div class="gn">${G.label}</div><div class="gj">${G.jewels} JEWELS · ${G.specLabel.split(' (')[0]}</div><div class="gd">${locked ? 'Railroad rules: at least 17 jewels!' : G.desc}</div>`;
+    if (!locked) b.addEventListener('click', () => { pick.grade = gk; sfx.select(); renderCommission(); });
+    row.appendChild(b);
+  });
+  const T = WATCH_TYPES[pick.type];
+  document.getElementById('commission-note').innerHTML = `<b>${T.name}, ${T.year}.</b> ${T.blurb}<br><br><b>What makes it one:</b> ${T.look}`;
+}
+function beginCommission() {
+  document.getElementById('commission-overlay').classList.remove('show');
+  resetGame();
+  setWatchType(pick.type, pick.grade);
+  finishTex = null; finishPts = 0; finishLabel = '';
+  diffName = pendingDiff; diff = DIFF[pendingDiff];
+  score = 0; startTime = performance.now(); elapsed = 0; timerOn = true;
+  if (GRADES[grade].finishing) beginFinishing(beginBuild); else beginBuild();
+}
+
+// ─── WATCH HISTORY ───
+const HISTORY = [
+  { y: 'c. 1510', n: 1510, t: 'Clocks you can carry', x: 'Peter Henlein, a locksmith in Nuremberg, is often credited with the first small spring-driven clocks you could carry. They had just an hour hand and could be off by an hour a day.', part: 'barrel' },
+  { y: '1675', n: 1675, t: 'The balance spring', x: 'Christiaan Huygens (and Robert Hooke, who argued he was first) added a spiral hairspring to the balance wheel. Watches went from being off by an hour a day to a few minutes.', part: 'balance' },
+  { y: '1704', n: 1704, t: 'Jewel bearings', x: 'Nicolas Fatio de Duillier and the Debaufre brothers patented drilled ruby bearings in London. Hard, slippery jewels mean pivots barely wear out.', part: 'mainplate' },
+  { y: '1755', n: 1755, t: 'The lever escapement', x: 'English watchmaker Thomas Mudge invented the detached lever escapement. Nearly every mechanical watch made today still uses his idea — it\'s the pallet fork in your watch.', part: 'pallet' },
+  { y: '1761', n: 1761, t: 'Harrison\'s H4', x: 'John Harrison\'s H4 sea watch sailed to Jamaica and lost only about 5 seconds in 81 days. Sailors could finally work out their longitude — where they were east or west.' },
+  { y: '1801', n: 1801, t: 'The tourbillon', x: 'Abraham-Louis Breguet patented the tourbillon, a spinning cage that carries the escapement around so gravity\'s pull evens out. The looped "Breguet hands" are named after him too.' },
+  { y: '1868', n: 1868, t: 'An early wristwatch', x: 'Patek Philippe made one of the first wristwatches, for Countess Koscowicz of Hungary. For decades wristwatches were seen as jewellery for women; men carried pocket watches.' },
+  { y: '1893', n: 1893, t: 'Railroad standards', x: 'After a deadly 1891 crash at Kipton, Ohio was blamed on an engineer\'s watch that had stopped, US railroads made strict rules: 17+ jewels, open face, lever-set, and within 30 seconds a week.', type: 'pocket' },
+  { y: '1904', n: 1904, t: 'A watch for a flyer', x: 'Louis Cartier designed a wristwatch for the aviator Alberto Santos-Dumont, who couldn\'t take his hands off the controls to fish out a pocket watch.' },
+  { y: '1917', n: 1917, t: 'Trench watches', x: 'World War I soldiers needed both hands free, so watches moved to the wrist, with wire lugs, a red 12 and glowing radium numbers (later found to be dangerous). Men\'s wristwatches were here to stay.', type: 'trench' },
+  { y: '1923', n: 1923, t: 'The self-winding wristwatch', x: 'John Harwood, a watch repairer from Bolton, England, patented a wristwatch that wound itself with a swinging weight as you moved your arm.' },
+  { y: '1926', n: 1926, t: 'The waterproof Oyster', x: 'Rolex patented the Oyster, a screw-down sealed case. In 1927 Mercedes Gleitze wore one while swimming the English Channel.' },
+  { y: '1940', n: 1940, t: 'Pilot\'s watches', x: 'Navigators\' "B-Uhr" observation watches were 55 mm wide, with an onion crown you could turn in gloves and a triangle at 12 to read in the dark.', type: 'pilot' },
+  { y: '1941', n: 1941, t: 'Complications', x: 'Fine watchmakers added "complications" — anything beyond the time: calendars, moon phases, chimes. Patek Philippe\'s reference 1518 of 1941 put a perpetual calendar, moon phase and chronograph in one wristwatch.', type: 'dress' },
+  { y: '1953', n: 1953, t: 'The dive watch', x: 'The Blancpain Fifty Fathoms and Rolex Submariner arrived with rotating bezels, so divers could time how long they\'d been underwater.', type: 'diver' },
+  { y: '1969', n: 1969, t: 'A watch on the Moon', x: 'In July 1969 Buzz Aldrin wore an Omega Speedmaster chronograph on the Moon. In 1970 Apollo 13\'s crew used one to time a crucial 14-second engine burn.', type: 'chrono' },
+  { y: '1969', n: 1969.9, t: 'Quartz arrives', x: 'On Christmas Day 1969 Seiko launched the Astron, the first quartz wristwatch: a crystal vibrating 8,192 times a second. Cheap, accurate quartz nearly wiped out Swiss watchmaking — the "quartz crisis".' },
+  { y: '1973', n: 1973, t: 'Official chronometers', x: 'The Swiss COSC began testing movements for 15 days, in 5 positions and at 3 temperatures. To be called a chronometer, a watch must stay within −4 to +6 seconds a day.' },
+  { y: '1983', n: 1983, t: 'The Swatch', x: 'A plastic quartz watch with just 51 parts helped rescue the Swiss watch industry. Mechanical watches came back as craftsmanship and art — like yours.' },
+  { y: '1999', n: 1999, t: 'The co-axial escapement', x: 'George Daniels, one of the greatest watchmakers ever, invented a new escapement that needs less oil. Omega put it into production in 1999 — the first new practical escapement in about 250 years.' },
+];
+function showHistory() {
+  const el = document.getElementById('timeline');
+  el.innerHTML = HISTORY.map(h => `
+    <div class="tl"><div class="tly">${h.y}</div><div class="tlb"><div class="tlt">${h.t}</div><div class="tlx">${h.x}</div>
+      ${h.type ? `<div class="tlk">&#9881; BUILD IT: ${WATCH_TYPES[h.type].name.toUpperCase()}</div>` : h.part ? `<div class="tlk">&#128269; IN YOUR WATCH: ${BASE_PARTS.find(p => p.id === h.part).name.toUpperCase()}</div>` : ''}</div></div>`).join('');
+  document.getElementById('history-overlay').classList.add('show');
+}
+const HIST_QUIZ_KEY = 'watchmaker.historyBest';
+function startHistoryQuiz() {
+  document.getElementById('history-overlay').classList.remove('show');
+  const shuffled = HISTORY.slice().sort(() => Math.random() - 0.5);
+  const qs = [];
+  for (let i = 0; qs.length < 8 && i < shuffled.length; i++) {
+    const h = shuffled[i];
+    if (qs.length % 2 === 0) {
+      const years = [...new Set(HISTORY.map(x => x.y))].filter(y => y !== h.y).sort(() => Math.random() - 0.5).slice(0, 3);
+      qs.push({ text: `When: <b>${h.t}</b>?`, opts: [h.y, ...years].sort(() => Math.random() - 0.5), answer: h.y, explain: `<b>${h.y}</b> — ${h.x}` });
+    } else {
+      const far = HISTORY.filter(x => Math.abs(x.n - h.n) >= 20);
+      const o = far[Math.floor(Math.random() * far.length)];
+      const first = h.n < o.n ? h : o;
+      qs.push({ text: 'Which came <b>first</b>?', opts: [h.t, o.t].sort(() => Math.random() - 0.5), answer: first.t, explain: `<b>${first.t}</b> (${first.y}) came before <b>${(first === h ? o : h).t}</b> (${(first === h ? o : h).y}).` });
+    }
+  }
+  quiz = { mode: 'history', qs, i: 0, score: 0, answered: false, best: parseInt(localStorage.getItem(HIST_QUIZ_KEY) || '0', 10) };
+  document.getElementById('quiz-overlay').classList.add('show');
+  showQuizQ();
+}
+function showHistoryQ() {
+  const q = quiz;
+  document.getElementById('quiz-img').style.display = 'none';
+  const qEl = document.getElementById('quiz-q');
+  if (q.i >= q.qs.length) {
+    if (q.score > q.best) { q.best = q.score; try { localStorage.setItem(HIST_QUIZ_KEY, String(q.best)); } catch (e) {} }
+    document.getElementById('quiz-progress').textContent = 'HISTORY QUIZ · FINISHED';
+    document.getElementById('quiz-score').textContent = `BEST ${q.best}/${q.qs.length}`;
+    qEl.innerHTML = '';
+    document.getElementById('quiz-opts').innerHTML = '';
+    document.getElementById('quiz-feedback').innerHTML = `<b style="color:var(--gold);font-size:18px;letter-spacing:4px">${q.score} / ${q.qs.length}</b><br>${q.score === q.qs.length ? 'A true horological historian!' : 'Read the Watch History timeline and try again.'}`;
+    document.getElementById('quiz-next').textContent = 'PLAY AGAIN';
+    q.answered = true; q.done = true;
+    return;
+  }
+  const item = q.qs[q.i];
+  q.answered = false;
+  document.getElementById('quiz-progress').textContent = `HISTORY · QUESTION ${q.i + 1} / ${q.qs.length}`;
+  document.getElementById('quiz-score').textContent = `SCORE ${q.score} · BEST ${q.best}`;
+  qEl.innerHTML = item.text;
+  document.getElementById('quiz-feedback').textContent = '';
+  document.getElementById('quiz-next').textContent = 'NEXT';
+  const box = document.getElementById('quiz-opts'); box.innerHTML = '';
+  item.opts.forEach(o => {
+    const b = document.createElement('button'); b.className = 'btn'; b.textContent = o;
+    b.addEventListener('click', () => {
+      if (q.answered) return;
+      q.answered = true;
+      const right = o === item.answer;
+      if (right) { q.score++; sfx.good(); b.classList.add('right'); }
+      else { sfx.wrong(); b.classList.add('wrong'); [...box.children].find(x => x.textContent === item.answer).classList.add('right'); }
+      document.getElementById('quiz-score').textContent = `SCORE ${q.score} · BEST ${q.best}`;
+      document.getElementById('quiz-feedback').innerHTML = (right ? '&#10003; ' : '&#10007; ') + item.explain;
+    });
+    box.appendChild(b);
+  });
+}
+
 
 let scene, camera, renderer, clock;
 let assemblyGroup;
@@ -753,6 +1372,15 @@ function init() {
   document.querySelectorAll('.diff[data-diff]').forEach(el => el.addEventListener('click', () => startGame(el.dataset.diff)));
   document.getElementById('hint-btn').addEventListener('click', useHint);
   document.getElementById('repair-btn').addEventListener('click', startRepairDay);
+  document.getElementById('commission-go').addEventListener('click', beginCommission);
+  document.getElementById('commission-back').addEventListener('click', () => { document.getElementById('commission-overlay').classList.remove('show'); showStart(); });
+  document.getElementById('history-btn').addEventListener('click', showHistory);
+  document.getElementById('history-close').addEventListener('click', () => document.getElementById('history-overlay').classList.remove('show'));
+  document.getElementById('history-quiz').addEventListener('click', startHistoryQuiz);
+  const fcv = document.getElementById('finish-cv');
+  fcv.addEventListener('pointerdown', finDown); fcv.addEventListener('pointermove', finMove);
+  fcv.addEventListener('pointerup', finUp); fcv.addEventListener('pointercancel', finUp);
+  document.getElementById('finish-done').addEventListener('click', finishFinishing);
   document.getElementById('ticket-go').addEventListener('click', beginInspect);
   document.getElementById('seat-overlay').addEventListener('mousedown', e => { e.preventDefault(); stopNeedle(); });
   document.getElementById('seat-overlay').addEventListener('touchstart', e => { e.preventDefault(); stopNeedle(); }, { passive: false });
@@ -767,7 +1395,7 @@ function init() {
   document.getElementById('lesson-exit').addEventListener('click', endLesson);
   document.getElementById('quiz-btn').addEventListener('click', startQuiz);
   document.getElementById('quiz-close').addEventListener('click', () => { document.getElementById('quiz-overlay').classList.remove('show'); quiz = null; });
-  document.getElementById('quiz-next').addEventListener('click', () => { if (!quiz) return; if (quiz.done) { startQuiz(); return; } if (!quiz.answered) return; quiz.i++; showQuizQ(); });
+  document.getElementById('quiz-next').addEventListener('click', () => { if (!quiz) return; if (quiz.done) { if (quiz.mode === 'history') startHistoryQuiz(); else startQuiz(); return; } if (!quiz.answered) return; quiz.i++; showQuizQ(); });
   document.getElementById('showcase-close').addEventListener('click', () => document.getElementById('showcase-overlay').classList.remove('show'));
   // Winding: hold anywhere on the overlay, circle to wind faster, release to stop
   const wo = document.getElementById('wind-overlay');
@@ -798,6 +1426,7 @@ function init() {
     if (e.code === 'Enter' && phase === 'settime') pushCrownIn();
     if (e.code === 'Enter' && phase === 'style') finishWatch();
     if (e.code === 'Enter' && phase === 'ticket') beginInspect();
+    if (e.code === 'Enter' && document.getElementById('commission-overlay').classList.contains('show')) beginCommission();
     if (e.code === 'Enter' && phase === 'paid') { const b = document.querySelector('#paid-row .btn.gold'); if (b) b.click(); }
     if (phase === 'lesson' && (e.code === 'ArrowRight' || e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); lessonNext(1); }
     if (phase === 'lesson' && e.code === 'ArrowLeft') lessonNext(-1);
@@ -847,39 +1476,51 @@ function createGearMesh(innerR, outerR, teeth, toothDepth, thickness, color, met
 }
 
 // ─── CREATE PART MESHES ───
+// Jewel positions: the first 7 for a standard movement, more for finer grades
+const JEWEL_POS = [[0,0],[1.2,0.8],[-0.8,1.5],[1.8,-0.5],[-1.5,-1.0],[0.5,-1.8],[-2.0,0.5]];
+for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2 + 0.2, r = k % 2 ? 2.75 : 2.3; JEWEL_POS.push([Math.cos(a) * r, Math.sin(a) * r]); }
 function createMainplate() {
   const group = new THREE.Group();
-  // Main disc
-  const geo = new THREE.CylinderGeometry(3.5, 3.5, 0.2, 64);
-  const mat = new THREE.MeshStandardMaterial({ color: 0x8888aa, metalness: 0.7, roughness: 0.4 });
-  const plate = new THREE.Mesh(geo, mat);
+  const G = GRADES[grade];
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.2, 64),
+    new THREE.MeshStandardMaterial({ color: 0x8888aa, metalness: 0.7, roughness: 0.4 }));
   plate.castShadow = true;
   group.add(plate);
-
-  // Jewel bearings (ruby dots)
-  const jewelPositions = [[0,0],[1.2,0.8],[-0.8,1.5],[1.8,-0.5],[-1.5,-1.0],[0.5,-1.8],[-2.0,0.5]];
-  jewelPositions.forEach(([x,z]) => {
-    const jGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.22, 12);
-    const jMat = new THREE.MeshStandardMaterial({ color: 0xff3366, metalness: 0.5, roughness: 0.2, transparent: true, opacity: 0.8 });
-    const jewel = new THREE.Mesh(jGeo, jMat);
+  // Côtes de Genève: the stripes you cut by hand become the plate's real surface
+  if (G.finishing && finishTex) {
+    const top = new THREE.Mesh(new THREE.CircleGeometry(3.45, 64), new THREE.MeshStandardMaterial({ map: finishTex, metalness: 0.75, roughness: 0.28 }));
+    top.rotation.x = -Math.PI / 2; top.position.y = 0.101; group.add(top);
+  }
+  // Jewel bearings (ruby dots) — gold settings ("chatons") on a chronometer
+  JEWEL_POS.slice(0, G.jewels).forEach(([x, z]) => {
+    const jewel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.22, 12),
+      new THREE.MeshStandardMaterial({ color: 0xff3366, metalness: 0.5, roughness: 0.2, transparent: true, opacity: 0.85 }));
     jewel.position.set(x, 0.1, z);
     group.add(jewel);
+    if (grade === 'chronometer') {
+      const ch = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.04, 8, 20), new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 }));
+      ch.rotation.x = Math.PI / 2; ch.position.set(x, 0.12, z); group.add(ch);
+    }
   });
-
   // Pivot holes
-  const holePositions = [[2.2,1.0],[-1.2,-2.0],[2.5,-1.5]];
-  holePositions.forEach(([x,z]) => {
-    const hGeo = new THREE.RingGeometry(0.1, 0.18, 16);
-    const hMat = new THREE.MeshStandardMaterial({ color: 0x555577, metalness: 0.9, roughness: 0.2 });
-    const hole = new THREE.Mesh(hGeo, hMat);
+  [[2.2,1.0],[-1.2,-2.0],[2.5,-1.5]].forEach(([x,z]) => {
+    const hole = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.18, 16), new THREE.MeshStandardMaterial({ color: 0x555577, metalness: 0.9, roughness: 0.2 }));
     hole.rotation.x = -Math.PI/2;
     hole.position.set(x, 0.12, z);
     group.add(hole);
   });
-
+  // Blued steel screws: steel heated to about 290°C turns a deep blue
+  if (grade !== 'standard') for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2 + 0.5;
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.07, 16), new THREE.MeshStandardMaterial({ color: 0x1d2c9a, metalness: 0.85, roughness: 0.2 }));
+    s.position.set(Math.cos(a) * 3.15, 0.12, Math.sin(a) * 3.15); group.add(s);
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.035), new THREE.MeshStandardMaterial({ color: 0x0a0f30 }));
+    slot.position.set(Math.cos(a) * 3.15, 0.16, Math.sin(a) * 3.15); slot.rotation.y = a; group.add(slot);
+  }
   group.userData.partId = 'mainplate';
   return group;
 }
+
 
 function createBarrel() {
   const group = new THREE.Group();
@@ -1100,103 +1741,115 @@ function createBalanceWheel() {
   roller.position.set(-1.5, 0.55, -0.2);
   group.add(roller);
 
+  if (grade === 'chronometer') for (let i = 0; i < 12; i++) { // gold timing screws around the rim
+    const a = i / 12 * Math.PI * 2;
+    const sc = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 }));
+    sc.position.set(-1.5 + Math.cos(a) * 0.86, 0.6, -1.0 + Math.sin(a) * 0.86); group.add(sc);
+  }
   group.userData.partId = 'balance';
   return group;
 }
 
+const MARKER_STYLE = { dress: 'baton', chrono: 'baton', diver: 'dot', trench: 'stud', pocket: 'stud', pilot: 'stud' };
+function colorMarkers(group) {
+  const dark = isDark(STYLE.dial[design.dial][1]);
+  for (let i = 1; i <= 12; i++) {
+    const m = group.children[i]; if (!m || !m.userData.marker) continue;
+    const st = MARKER_STYLE[wtype];
+    if (st === 'dot') { m.material.color.setHex(0xe8f5d0); m.material.emissive.setHex(0x3a5a22); }
+    else if (wtype === 'dress') m.material.color.setHex(STYLE.case[design.case][1]);
+    else m.material.color.setHex(dark ? 0xeeeeee : 0x222244);
+  }
+}
 function createDial() {
   const group = new THREE.Group();
-
-  // Dial face
-  const dialGeo = new THREE.CylinderGeometry(3.2, 3.2, 0.08, 64);
-  const dialMat = new THREE.MeshStandardMaterial({ color: 0xf5f0e8, metalness: 0.1, roughness: 0.6 });
-  const dial = new THREE.Mesh(dialGeo, dialMat);
+  const dial = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.08, 64),
+    new THREE.MeshStandardMaterial({ color: STYLE.dial[design.dial][1], metalness: 0.1, roughness: 0.6 }));
   dial.userData.isDialFace = true;
   dial.position.y = 0.9;
   dial.castShadow = true;
   group.add(dial);
-
-  // Hour markers
+  // Hour markers are children 1..12 (index 4 = 3 o'clock): applied batons, lume dots or small studs
+  const st = MARKER_STYLE[wtype];
   for (let i = 0; i < 12; i++) {
     const a = (i/12)*Math.PI*2;
-    const markerGeo = new THREE.BoxGeometry(0.08, 0.05, i%3===0 ? 0.35 : 0.2);
-    const markerMat = new THREE.MeshStandardMaterial({ color: 0x222244, metalness: 0.8, roughness: 0.3 });
-    const marker = new THREE.Mesh(markerGeo, markerMat);
-    const r = 2.7;
-    marker.position.set(Math.sin(a)*r, 0.96, -Math.cos(a)*r);
-    marker.rotation.y = a;
+    let geo, r = 2.7;
+    if (st === 'dot') geo = new THREE.CylinderGeometry(i % 3 === 0 ? 0.2 : 0.15, i % 3 === 0 ? 0.2 : 0.15, 0.06, 20);
+    else if (st === 'baton') { geo = new THREE.BoxGeometry(0.1, 0.06, i % 3 === 0 ? 0.42 : 0.28); if (wtype === 'chrono') r = 2.4; }
+    else { geo = new THREE.BoxGeometry(0.06, 0.03, 0.12); r = wtype === 'pocket' ? 2.72 : 3.04; }
+    const marker = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x222244, metalness: 0.8, roughness: 0.3 }));
+    marker.position.set(Math.sin(a)*r, 0.97, -Math.cos(a)*r);
+    marker.rotation.y = -a;
+    marker.userData.marker = true;
     group.add(marker);
   }
-
-  // Minute ticks
-  for (let i = 0; i < 60; i++) {
-    if (i % 5 === 0) continue;
-    const a = (i/60)*Math.PI*2;
-    const tickGeo = new THREE.BoxGeometry(0.03, 0.04, 0.1);
-    const tickMat = new THREE.MeshStandardMaterial({ color: 0x555577, metalness: 0.6, roughness: 0.4 });
-    const tick = new THREE.Mesh(tickGeo, tickMat);
-    const r = 2.85;
-    tick.position.set(Math.sin(a)*r, 0.96, -Math.cos(a)*r);
-    tick.rotation.y = a;
-    group.add(tick);
-  }
-
-  // Date window cutout visual
-  const dateGeo = new THREE.BoxGeometry(0.4, 0.06, 0.25);
-  const dateMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0, roughness: 0.8 });
-  const dateWin = new THREE.Mesh(dateGeo, dateMat);
-  dateWin.position.set(2.0, 0.96, 0);
-  group.add(dateWin);
-
+  // The printed dial: numerals, tracks, sub-dials, moon window — drawn for this watch type
+  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+  drawDialPrint(cv);
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4;
+  const print = new THREE.Mesh(new THREE.CircleGeometry(3.2, 96), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.1, roughness: 0.6 }));
+  print.rotation.x = -Math.PI / 2; print.position.y = 0.942;
+  print.userData.dialPrint = { cv, tex };
+  group.add(print);
+  colorMarkers(group);
   group.userData.partId = 'dial';
   return group;
 }
 
+const HAND_STYLE = { trench: ['sword', 'sword'], pocket: ['breguet', 'breguet'], pilot: ['sword', 'sword'], dress: ['dauphine', 'dauphine'], diver: ['arrow', 'sword'], chrono: ['stick', 'stick'] };
+const LUME = { trench: true, pilot: true, diver: true, chrono: true };
+function handShape(style, w, len) {
+  const s = new THREE.Shape();
+  if (style === 'sword') { s.moveTo(-w, 0); s.lineTo(-w, len * 0.82); s.lineTo(0, len); s.lineTo(w, len * 0.82); s.lineTo(w, 0); }
+  else if (style === 'dauphine') { s.moveTo(0, -0.12); s.lineTo(w * 1.4, len * 0.22); s.lineTo(0, len); s.lineTo(-w * 1.4, len * 0.22); }
+  else if (style === 'arrow') { s.moveTo(-w * 0.6, 0); s.lineTo(-w * 0.6, len * 0.6); s.lineTo(-w * 2, len * 0.6); s.lineTo(0, len); s.lineTo(w * 2, len * 0.6); s.lineTo(w * 0.6, len * 0.6); s.lineTo(w * 0.6, 0); }
+  else { s.moveTo(-w, 0); s.lineTo(0, len); s.lineTo(w, 0); } // stick, and the stem of a Breguet hand
+  s.closePath();
+  return s;
+}
+function makeHand(type, style, w, len, y, depth, color) {
+  const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25 });
+  const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(handShape(style, w, len), { depth, bevelEnabled: false }), mat);
+  mesh.rotation.x = -Math.PI/2;
+  mesh.position.set(0, y, 0);
+  mesh.userData.handType = type;
+  if (style === 'breguet') { // the hollow "apple" near the tip
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(len * 0.085, 0.03, 8, 24), mat.clone());
+    ring.position.set(0, len * 0.7, depth / 2); ring.userData.handTrim = true; mesh.add(ring);
+  }
+  if (LUME[wtype]) {
+    const l = new THREE.Mesh(new THREE.ExtrudeGeometry(handShape(style === 'arrow' ? 'sword' : style, w * 0.45, len * 0.72), { depth: 0.01, bevelEnabled: false }),
+      new THREE.MeshStandardMaterial({ color: 0xe8f5d0, emissive: 0x2a4a1a, roughness: 0.6 }));
+    l.position.set(0, len * 0.14, depth + 0.002); mesh.add(l);
+  }
+  return mesh;
+}
+function stickHand(type, len, tail, w, color, x, z, y) {
+  const sh = new THREE.Shape(); sh.moveTo(-w, -tail); sh.lineTo(0, len); sh.lineTo(w, -tail); sh.closePath();
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.02, bevelEnabled: false }), new THREE.MeshStandardMaterial({ color, metalness: 0.8, roughness: 0.3 }));
+  m.rotation.x = -Math.PI/2; m.position.set(x, y, z); m.userData.handType = type;
+  return m;
+}
 function createHands() {
   const group = new THREE.Group();
-  const handMat = new THREE.MeshStandardMaterial({ color: 0x111133, metalness: 0.85, roughness: 0.25 });
-
-  // Hour hand
-  const hourShape = new THREE.Shape();
-  hourShape.moveTo(-0.06, 0); hourShape.lineTo(0, 1.6);
-  hourShape.lineTo(0.06, 0); hourShape.closePath();
-  const hourGeo = new THREE.ExtrudeGeometry(hourShape, { depth: 0.04, bevelEnabled: false });
-  const hourHand = new THREE.Mesh(hourGeo, handMat.clone());
-  hourHand.rotation.x = -Math.PI/2;
-  hourHand.position.set(0, 1.05, 0);
-  hourHand.userData.handType = 'hour';
-  group.add(hourHand);
-
-  // Minute hand
-  const minShape = new THREE.Shape();
-  minShape.moveTo(-0.04, 0); minShape.lineTo(0, 2.3);
-  minShape.lineTo(0.04, 0); minShape.closePath();
-  const minGeo = new THREE.ExtrudeGeometry(minShape, { depth: 0.03, bevelEnabled: false });
-  const minHand = new THREE.Mesh(minGeo, handMat.clone());
-  minHand.rotation.x = -Math.PI/2;
-  minHand.position.set(0, 1.1, 0);
-  minHand.userData.handType = 'minute';
-  group.add(minHand);
-
-  // Second hand
-  const secMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, metalness: 0.8, roughness: 0.3 });
-  const secShape = new THREE.Shape();
-  secShape.moveTo(-0.015, -0.3); secShape.lineTo(0, 2.5);
-  secShape.lineTo(0.015, -0.3); secShape.closePath();
-  const secGeo = new THREE.ExtrudeGeometry(secShape, { depth: 0.02, bevelEnabled: false });
-  const secHand = new THREE.Mesh(secGeo, secMat);
-  secHand.rotation.x = -Math.PI/2;
-  secHand.position.set(0, 1.15, 0);
-  secHand.userData.handType = 'second';
-  group.add(secHand);
-
-  // Center cap
-  const capGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16);
-  const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.15 });
-  const cap = new THREE.Mesh(capGeo, capMat);
+  const col = STYLE.hands[design.hands][1];
+  const [hs, ms] = HAND_STYLE[wtype];
+  const wide = wtype === 'pilot' ? 1.5 : 1;
+  group.add(makeHand('hour', hs, (hs === 'sword' ? 0.09 : hs === 'arrow' ? 0.05 : 0.06) * wide, 1.6, 1.05, 0.04, col));
+  group.add(makeHand('minute', ms, (ms === 'sword' ? 0.065 : 0.045) * wide, 2.3, 1.1, 0.03, col));
+  if (wtype === 'pocket') {
+    group.add(stickHand('second', 0.52, 0.1, 0.02, 0x1d2c7a, 0, 1.6, 1.0));           // small seconds at 6
+  } else if (wtype === 'chrono') {
+    group.add(stickHand('second', 0.5, 0.08, 0.02, 0xeeeeee, -1.47, 0, 1.0));         // running seconds at 9
+    group.add(stickHand('counter', 0.5, 0.08, 0.02, 0xeeeeee, 1.47, 0, 1.0));         // 30-minute counter at 3
+    group.add(stickHand('counter', 0.5, 0.08, 0.02, 0xeeeeee, 0, 1.47, 1.0));         // 12-hour counter at 6
+    group.add(stickHand('chronoSec', 2.6, 0.4, 0.018, 0xe03030, 0, 0, 1.15));        // stopwatch hand, waiting at zero
+  } else {
+    group.add(stickHand('second', 2.5, 0.3, 0.015, wtype === 'dress' ? 0xd4af37 : 0xcc2222, 0, 0, 1.15));
+  }
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.15 }));
   cap.position.set(0, 1.15, 0);
   group.add(cap);
-
   group.userData.partId = 'hands';
   return group;
 }
@@ -1214,9 +1867,9 @@ const SLOT_SIZE = {
 };
 function createGhosts() {
   PARTS.forEach(part => {
-    const s = SLOT_SIZE[part.id], p = SLOT_POS[part.id];
+    const s = slotSize(part.id), p = slotPos(part.id);
     let geo;
-    if (['mainplate','barrel','dial','balance','escape','case','crystal'].includes(part.id)) {
+    if (['mainplate','barrel','dial','balance','escape','case','crystal','moon','bezel'].includes(part.id)) {
       geo = new THREE.CylinderGeometry(s[0], s[0], s[1], 32);
     } else {
       geo = new THREE.BoxGeometry(s[0]*2, s[1]*2, s[2]*2);
@@ -1229,7 +1882,6 @@ function createGhosts() {
     ghost.userData.radius = Math.max(s[0], s[2]);
     assemblyGroup.add(ghost);
     ghostMeshes[part.id] = ghost;
-    // A bullseye marker on the slot so "closer to centre" is something you can see
     const bull = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.11, 24),
       new THREE.MeshBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
     bull.rotation.x = -Math.PI/2;
@@ -1238,38 +1890,66 @@ function createGhosts() {
   });
 }
 
-// ─── CASE PARTS (built with the current design colours) ───
+// ─── CASE PARTS (shaped by the watch type, built with the current design colours) ───
 function metalMat(color) { return new THREE.MeshStandardMaterial({ color, metalness: 0.9, roughness: 0.25 }); }
 function createCase() {
   const g = new THREE.Group();
   const caseCol = STYLE.case[design.case][1];
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(3.85, 3.85, 1.5, 96, 1, true), metalMat(caseCol));
-  band.material.side = THREE.DoubleSide; band.position.y = 0.3; band.castShadow = true; band.userData.caseMetal = true;
-  g.add(band);
-  const bezel = new THREE.Mesh(new THREE.TorusGeometry(3.6, 0.27, 16, 96), metalMat(caseCol));
-  bezel.rotation.x = Math.PI / 2; bezel.position.y = 1.05; bezel.castShadow = true; bezel.userData.caseMetal = true;
-  g.add(bezel);
-  const back = new THREE.Mesh(new THREE.CylinderGeometry(3.85, 3.85, 0.1, 96), metalMat(caseCol));
-  back.position.y = -0.4; back.userData.caseMetal = true; g.add(back);
-  for (const sgn of [1, -1]) for (const sx of [1, -1]) {
-    const lug = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 1.2), metalMat(caseCol));
-    lug.position.set(sx * 1.45, 0.25, sgn * 4.05); lug.userData.caseMetal = true; g.add(lug);
+  const H = { trench: 1.35, pocket: 1.6, pilot: 1.45, diver: 1.85, dress: 1.05, chrono: 1.55 }[wtype] || 1.5;
+  const top = 1.05, rb = wtype === 'pocket' ? 3.55 : 3.85;
+  const add = (m, y) => { m.position.y = y; m.castShadow = true; m.userData.caseMetal = true; g.add(m); return m; };
+  const band = add(new THREE.Mesh(new THREE.CylinderGeometry(3.85, rb, H, 96, 1, true), metalMat(caseCol)), top - H / 2);
+  band.material.side = THREE.DoubleSide;
+  const tube = { trench: 0.22, pocket: 0.3, pilot: 0.16, diver: 0.3, dress: 0.2, chrono: 0.27 }[wtype] || 0.27;
+  add(new THREE.Mesh(new THREE.TorusGeometry(3.6, tube, 16, 96), metalMat(caseCol)), top).rotation.x = Math.PI / 2;
+  if (wtype === 'dress') add(new THREE.Mesh(new THREE.TorusGeometry(3.42, 0.09, 12, 96), metalMat(caseCol)), top + 0.14).rotation.x = Math.PI / 2; // stepped bezel
+  add(new THREE.Mesh(new THREE.CylinderGeometry(rb, rb, 0.1, 96), metalMat(caseCol)), top - H);
+  if (wtype === 'pocket') {
+    const neck = add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 0.5, 16), metalMat(caseCol)), 0.55);
+    neck.rotation.x = Math.PI / 2; neck.position.z = -3.95;   // the pendant at 12
+  } else if (wtype === 'trench') {
+    for (const sgn of [1, -1]) { // soldered wire lugs
+      const wire = add(new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.07, 8, 24, Math.PI), metalMat(caseCol)), 0.3);
+      wire.rotation.x = sgn > 0 ? Math.PI / 2 : -Math.PI / 2; wire.position.z = sgn * 3.6;
+    }
+  } else {
+    const len = { pilot: 1.5, dress: 1.0, diver: 1.25, chrono: 1.2 }[wtype] || 1.2;
+    const w = wtype === 'dress' ? 0.22 : wtype === 'diver' ? 0.38 : 0.3, x = wtype === 'dress' ? 1.25 : 1.45;
+    for (const sgn of [1, -1]) for (const sx of [1, -1]) {
+      const lug = add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.6, len), metalMat(caseCol)), 0.25);
+      lug.position.set(sx * x, 0.25, sgn * (3.45 + len / 2));
+    }
+  }
+  if (wtype === 'diver') for (const sz of [1, -1]) { // crown guards
+    const cg = add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.22), metalMat(caseCol)), 0.55);
+    cg.position.set(4.02, 0.55, sz * 0.45);
   }
   g.userData.partId = 'case';
   return g;
 }
 function createCrown() {
-  const g = new THREE.Group();
+  const g = new THREE.Group(), sub = new THREE.Group();
   const caseCol = STYLE.case[design.case][1];
-  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.4, 24), metalMat(caseCol));
-  crown.rotation.z = Math.PI / 2; crown.position.set(4.08, 0.55, 0); crown.userData.caseMetal = true; crown.castShadow = true; g.add(crown);
-  for (let i = 0; i < 12; i++) { // knurling
-    const a = i / 12 * Math.PI * 2;
-    const k = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.06), metalMat(0x8a7430));
-    k.position.set(4.08, 0.55 + Math.cos(a) * 0.28, Math.sin(a) * 0.28); k.rotation.x = -a; g.add(k);
+  const big = { pilot: 1.35, diver: 1.15, pocket: 1.2, dress: 0.85 }[wtype] || 1;
+  if (wtype === 'pilot') { // onion crown: big enough to turn in flying gloves
+    [[0, 0.4], [0.2, 0.32], [-0.18, 0.3]].forEach(([x, r]) => {
+      const o = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), metalMat(caseCol));
+      o.scale.set(0.55, 1, 1); o.position.x = x + 0.1; o.userData.caseMetal = true; o.castShadow = true; sub.add(o);
+    });
+  } else {
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.28 * big, 0.28 * big, 0.4, 24), metalMat(caseCol));
+    crown.rotation.z = Math.PI / 2; crown.userData.caseMetal = true; crown.castShadow = true; sub.add(crown);
+    for (let i = 0; i < 12; i++) { // knurling
+      const a = i / 12 * Math.PI * 2;
+      const k = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.06), metalMat(0x8a7430));
+      k.position.set(0, Math.cos(a) * 0.28 * big, Math.sin(a) * 0.28 * big); k.rotation.x = -a; sub.add(k);
+    }
   }
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 8), metalMat(0xccccdd));
-  stem.rotation.z = Math.PI / 2; stem.position.set(3.35, 0.55, 0); g.add(stem);
+  stem.rotation.z = Math.PI / 2; stem.position.x = -0.73; sub.add(stem);
+  if (wtype === 'pocket') { sub.rotation.y = Math.PI / 2; sub.position.set(0, 0.55, -4.45); }
+  else sub.position.set(wtype === 'pilot' ? 4.22 : 4.08, 0.55, 0);
+  g.add(sub);
   g.userData.partId = 'crown';
   return g;
 }
@@ -1285,23 +1965,52 @@ function createCrystal() {
 }
 function createStrap() {
   const g = new THREE.Group();
+  const caseCol = STYLE.case[design.case][1];
+  if (wtype === 'pocket') { // bow & chain
+    const bow = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.07, 10, 32), metalMat(caseCol));
+    bow.position.set(0, 0.55, -5.1); bow.rotation.x = Math.PI / 2; bow.userData.caseMetal = true; g.add(bow);
+    const pt = t => [-3.8 * Math.sin(t * Math.PI * 0.55), -5.65 - 1.5 * Math.sin(t * Math.PI) + t * 5];
+    for (let i = 0; i < 30; i++) {
+      const t = i / 29, [x, z] = pt(t), [x2, z2] = pt(Math.min(1, t + 0.02));
+      const link = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 6, 14), metalMat(caseCol));
+      link.position.set(x, 0.12, z); link.rotation.set(i % 2 ? Math.PI / 2 : 0, -Math.atan2(z2 - z, x2 - x), 0);
+      link.userData.caseMetal = true; g.add(link);
+    }
+    const [ex, ez] = pt(1);
+    const tbar = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.12), metalMat(caseCol)); tbar.position.set(ex, 0.12, ez + 0.1); tbar.userData.caseMetal = true; g.add(tbar);
+    g.userData.kind = 'pocket|';
+    g.userData.partId = 'strap';
+    return g;
+  }
   const strapOpt = STYLE.strap[design.strap];
-  const steel = strapOpt[0].includes('STEEL');
+  const steel = strapOpt[0].includes('STEEL'), rubber = strapOpt[0].includes('RUBBER');
+  const width = { trench: 1.9, dress: 1.9, diver: 2.4 }[wtype] || 2.3;
+  const len = wtype === 'pilot' ? 5.0 : 4.4;
   for (const sgn of [1, -1]) {
-    const strap = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.18, 4.4),
-      steel ? metalMat(strapOpt[1]) : new THREE.MeshStandardMaterial({ color: strapOpt[1], metalness: 0.05, roughness: 0.85 }));
-    strap.position.set(0, 0.05, sgn * 6.4); strap.rotation.x = sgn * 0.08; strap.castShadow = true; strap.userData.strapMain = true; g.add(strap);
+    const zc = sgn * (4.2 + len / 2);
+    const strap = new THREE.Mesh(new THREE.BoxGeometry(width, 0.18, len),
+      steel ? metalMat(strapOpt[1]) : new THREE.MeshStandardMaterial({ color: strapOpt[1], metalness: 0.05, roughness: rubber ? 0.6 : 0.85 }));
+    strap.position.set(0, 0.05, zc); strap.rotation.x = sgn * 0.08; strap.castShadow = true; strap.userData.strapMain = true; g.add(strap);
     if (strapOpt[2]) for (const off of [-0.65, 0.65]) {
-      const st = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.19, 4.4), new THREE.MeshStandardMaterial({ color: strapOpt[2], roughness: 0.85 }));
-      st.position.set(off, 0.06, sgn * 6.4); st.rotation.x = sgn * 0.08; st.userData.strapStripe = true; g.add(st);
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.19, len), new THREE.MeshStandardMaterial({ color: strapOpt[2], roughness: 0.85 }));
+      st.position.set(off * width / 2.3, 0.06, zc); st.rotation.x = sgn * 0.08; g.add(st);
     }
     if (steel) for (let k = 0; k < 5; k++) {
-      const gap = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 0.06), new THREE.MeshStandardMaterial({ color: 0x222228 }));
+      const gap = new THREE.Mesh(new THREE.BoxGeometry(width + 0.1, 0.2, 0.06), new THREE.MeshStandardMaterial({ color: 0x222228 }));
       gap.position.set(0, 0.05, sgn * (4.6 + k * 0.85)); gap.rotation.x = sgn * 0.08; g.add(gap);
     }
+    if (rubber) for (let k = 0; k < 7; k++) { // moulded grip ridges
+      const rd = new THREE.Mesh(new THREE.BoxGeometry(width * 0.8, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x0c0c0f, roughness: 0.7 }));
+      rd.position.set(0, 0.07, sgn * (4.7 + k * 0.55)); rd.rotation.x = sgn * 0.08; g.add(rd);
+    }
+    if (wtype === 'pilot') for (const sx of [-0.6, 0.6]) { // rivets
+      const rv = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.22, 12), metalMat(caseCol));
+      rv.position.set(sx, 0.1, sgn * 4.75); rv.userData.caseMetal = true; g.add(rv);
+    }
   }
-  const buckle = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.08, 8, 24), metalMat(STYLE.case[design.case][1]));
-  buckle.position.set(0, 0.14, -8.6); buckle.rotation.x = Math.PI / 2; buckle.scale.set(1.4, 1, 1); buckle.userData.caseMetal = true; g.add(buckle);
+  const buckle = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.08, 8, 24), metalMat(caseCol));
+  buckle.position.set(0, 0.14, -(4.2 + len + 0.4)); buckle.rotation.x = Math.PI / 2; buckle.scale.set(1.4 * width / 2.3, 1, 1); buckle.userData.caseMetal = true; g.add(buckle);
+  g.userData.kind = wtype + '|' + strapOpt[0];
   g.userData.partId = 'strap';
   return g;
 }
@@ -1310,7 +2019,8 @@ function createStrap() {
 const thumbCache = {};
 let thumbRenderer = null;
 function partThumb(id) {
-  if (thumbCache[id]) return thumbCache[id];
+  const key = [wtype, grade, finishVer, design.case, design.dial, id].join('|');
+  if (thumbCache[key]) return thumbCache[key];
   try {
     if (!thumbRenderer) {
       thumbRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -1330,10 +2040,10 @@ function partThumb(id) {
     const d = span * 1.9 + 0.3;
     cam.position.set(c.x + d * 0.55, c.y + d * 0.7, c.z + d * 0.55); cam.lookAt(c);
     thumbRenderer.render(sc, cam);
-    thumbCache[id] = thumbRenderer.domElement.toDataURL();
+    thumbCache[key] = thumbRenderer.domElement.toDataURL();
     mesh.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-  } catch (e) { thumbCache[id] = ''; }
-  return thumbCache[id];
+  } catch (e) { thumbCache[key] = ''; }
+  return thumbCache[key];
 }
 
 // ─── PART CREATION MAP ───
@@ -1351,6 +2061,10 @@ function createPartMesh(partId) {
     case 'balance': return createBalanceWheel();
     case 'dial': return createDial();
     case 'hands': return createHands();
+    case 'moon': return createMoonDisc();
+    case 'chrono': return createChronoWorks();
+    case 'pushers': return createPushers();
+    case 'bezel': return createBezel();
   }
 }
 
@@ -1375,7 +2089,7 @@ function updateHud() {
     document.getElementById('hud-time').textContent = fmtTime(elapsed);
     return;
   }
-  const stage = { wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
+  const stage = { finish: 'FINISHING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
   document.getElementById('hud-parts').textContent = placedCount + '/' + TOTAL + (stage ? ' · ' + stage : '');
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hud-miss').textContent = mistakes;
@@ -1397,13 +2111,11 @@ function showStart() {
   setInstr('');
 }
 
-function startGame(d) {
-  diffName = d; diff = DIFF[d];
-  document.getElementById('start-overlay').classList.remove('show');
+function beginBuild() {
   document.getElementById('tray').style.visibility = '';
-  document.getElementById('tray-title').textContent = diff.label + ' BENCH';
+  document.getElementById('tray-title').textContent = diff.label + ' · ' + WATCH_TYPES[wtype].short + ' · ' + GRADES[grade].label;
   document.getElementById('hint-btn').style.display = diff.shuffle ? '' : 'none';
-  design = { case: 0, dial: 0, hands: 0, strap: 0 };
+  design = Object.assign({}, WATCH_TYPES[wtype].defaults);
   document.getElementById('tray').scrollTop = 0;
   order = PARTS.map((_, i) => i);
   if (diff.shuffle) {
@@ -1463,7 +2175,7 @@ function selectPart(idx) {
     sfx.wrong();
     const card = document.querySelector(`.part-card[data-idx="${idx}"]`);
     if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
-    const why = WHY_NOT[part.id] || 'something else goes in first';
+    const why = part.why || WHY_NOT[part.id] || 'something else goes in first';
     setInstr(`Not yet — ${why}.`, 'bad');
     toast('TOO SOON', '−15 · ' + (diff.shuffle ? 'think about what it needs to sit on' : 'follow the highlighted part'), true);
     return;
@@ -1622,14 +2334,16 @@ function finishPlacement(partId) {
     setTimeout(beginWinding, 1200);
   } else {
     const nxt = PARTS[nextIndex()];
-    if (placedCount === 8) setInstr('The movement is complete! Now case it up: ' + (diff.shuffle ? 'what goes on first?' : `pick up the ${nxt.name}`), 'good');
+    if (nxt.id === 'case') setInstr('The movement is complete! Now case it up: ' + (diff.shuffle ? 'what goes on first?' : `pick up the ${nxt.name}`), 'good');
     else setInstr(diff.shuffle ? 'What goes in next?' : `Next: pick up the ${nxt.name}`);
   }
 }
 
 function animateMove(mesh, targetY, duration, done) {
   const start = performance.now(), y0 = mesh.position.y;
+  const token = (mesh.userData.moveToken || 0) + 1; mesh.userData.moveToken = token; // a newer move cancels this one
   function tick() {
+    if (mesh.userData.moveToken !== token) return;
     const t = Math.min((performance.now() - start) / duration, 1);
     const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
     mesh.position.y = y0 + (targetY - y0) * e;
@@ -1648,6 +2362,7 @@ function onMovementComplete() {
   document.getElementById('reg-sub').innerHTML = diff.showRate
     ? 'Your watch runs, but not on time. The timegrapher plots every tick: a line sloping <b>up</b> means it runs fast, <b>down</b> means slow. Move the regulator until the trace is flat, then certify.'
     : 'Master mode: no rate readout. Read the timegrapher yourself — sloping <b>up</b> = fast, <b>down</b> = slow. Flatten the trace, then certify.';
+  document.getElementById('reg-sub').innerHTML += `<br><span style="color:var(--gold)">${GRADES[grade].label} spec: ${specLabel()}</span>`;
   onRegInput();
   phase = 'regulate';
   document.getElementById('reg-overlay').classList.add('show');
@@ -1698,13 +2413,13 @@ function drawTimegrapher(time) {
   const r = Math.abs(currentRate());
   g.textAlign = 'right';
   g.fillStyle = r <= 3 ? '#7bd88f' : r <= 8 ? '#f0d878' : 'rgba(255,255,255,0.35)';
-  g.fillText(r <= 3 ? 'CHRONOMETER GRADE' : r <= 8 ? 'ALMOST THERE' : r <= 15 ? 'GETTING CLOSER' : 'TIMEGRAPHER', W - 14, 26);
+  g.fillText(r <= 3 ? 'SPOT ON' : r <= 8 ? 'ALMOST THERE' : r <= 15 ? 'GETTING CLOSER' : 'TIMEGRAPHER', W - 14, 26);
 }
 function certify() {
   if (phase !== 'regulate' || !reg) return;
   const r = Math.abs(currentRate());
   let pts, label;
-  if (r <= 3)       { pts = 300; label = 'CHRONOMETER GRADE'; }
+  if (r <= 3)       { pts = 300; label = 'SUPERBLY REGULATED'; }
   else if (r <= 8)  { pts = 200; label = 'WELL REGULATED'; }
   else if (r <= 15) { pts = 100; label = 'RUNS A LITTLE OFF'; }
   else              { pts = 0;   label = 'NEEDS REGULATING'; }
@@ -1717,12 +2432,15 @@ function certify() {
     setTimeout(jobPaid, 900);
     return;
   }
-  addScore(pts);
+  specOkFinal = specOk(currentRate());
+  specPtsFinal = specOkFinal ? GRADES[grade].bonus : 0;
+  addScore(pts + specPtsFinal);
   document.getElementById('reg-overlay').classList.remove('show');
   sfx.certify();
   regPtsFinal = pts; regLabelFinal = label; rateFinal = currentRate();
   reg = null;
-  toast(label, `+${pts} regulation`);
+  toast(specOkFinal ? (grade === 'chronometer' ? 'CHRONOMETER CERTIFIED' : 'IN SPEC') : label,
+    `+${pts} regulation` + (specOkFinal ? ` · ${GRADES[grade].label} spec met +${specPtsFinal}` : ` · outside ${GRADES[grade].label} spec (${specLabel().split(' (')[0]})`), !specOkFinal && pts === 0);
   setTimeout(beginSetTime, 900);
 }
 
@@ -1891,7 +2609,7 @@ function beginStyle() {
 function buildStyleRows() {
   const rows = document.getElementById('style-rows');
   rows.innerHTML = '';
-  for (const key of ['case', 'dial', 'hands', 'strap']) {
+  for (const key of (wtype === 'pocket' ? ['case', 'dial', 'hands'] : ['case', 'dial', 'hands', 'strap'])) {
     const row = document.createElement('div');
     row.className = 'opt-row';
     row.innerHTML = `<span class="on">${key.toUpperCase()}</span>`;
@@ -1909,27 +2627,24 @@ function buildStyleRows() {
     rows.appendChild(row);
   }
 }
-function metalMat(color) { return new THREE.MeshStandardMaterial({ color, metalness: 0.9, roughness: 0.25 }); }
 function applyDesign() {
   const dialMesh = placedMeshes['dial'];
-  if (dialMesh) dialMesh.traverse(c => { if (c.userData.isDialFace) c.material.color.setHex(STYLE.dial[design.dial][1]); });
+  if (dialMesh) { dialMesh.traverse(c => { if (c.userData.isDialFace) c.material.color.setHex(STYLE.dial[design.dial][1]); }); colorMarkers(dialMesh); }
+  redrawDial();
   const hands = placedMeshes['hands'];
-  if (hands) hands.children.forEach(c => { if (c.userData.handType === 'hour' || c.userData.handType === 'minute') c.material.color.setHex(STYLE.hands[design.hands][1]); });
-  // Case metal recolours in place; a strap of a different kind is rebuilt
+  if (hands) hands.traverse(c => { if (c.userData.handType === 'hour' || c.userData.handType === 'minute' || c.userData.handTrim) c.material.color.setHex(STYLE.hands[design.hands][1]); });
+  // A strap of a different kind is rebuilt; metal parts recolour in place
   const want = STYLE.strap[design.strap];
   const strapMesh = placedMeshes['strap'];
-  if (strapMesh) {
-    const hasStripes = strapMesh.children.some(c => c.userData.strapStripe);
-    const isSteel = strapMesh.children.some(c => c.userData.strapMain && c.material.metalness > 0.5);
-    if ((!!want[2]) !== hasStripes || want[0].includes('STEEL') !== isSteel) {
-      assemblyGroup.remove(strapMesh);
-      const fresh = createStrap(); fresh.userData.origPos = fresh.position.clone();
-      assemblyGroup.add(fresh); placedMeshes['strap'] = fresh;
-    }
+  if (strapMesh && strapMesh.userData.kind !== (wtype === 'pocket' ? 'pocket|' : wtype + '|' + want[0])) {
+    const vis = strapMesh.visible;
+    assemblyGroup.remove(strapMesh);
+    const fresh = createStrap(); fresh.userData.origPos = fresh.position.clone(); fresh.visible = vis;
+    assemblyGroup.add(fresh); placedMeshes['strap'] = fresh;
   }
-  ['case', 'crown', 'strap'].forEach(id => {
+  ['case', 'crown', 'strap', 'pushers', 'bezel'].forEach(id => {
     const m = placedMeshes[id];
-    if (m) m.children.forEach(c => {
+    if (m) m.traverse(c => {
       if (c.userData.caseMetal) c.material.color.setHex(STYLE.case[design.case][1]);
       if (c.userData.strapMain) c.material.color.setHex(want[1]);
     });
@@ -1947,15 +2662,22 @@ function finishWatch() {
 // ─── PARTS GUIDE ───
 function showGuide() {
   const list = document.getElementById('guide-list');
-  list.innerHTML = PARTS.map((p, i) => `
+  const row = (p, n, thumb, tag) => `
     <div class="gpart">
-      <img src="${partThumb(p.id)}" alt="">
+      <img src="${thumb}" alt="">
       <div>
-        <div class="gn">${i + 1}. ${p.name}<small>${p.role}</small></div>
-        <div class="gd">${p.desc}.</div>
+        <div class="gn">${n}. ${p.name}<small>${p.role}</small></div>
+        <div class="gd">${p.desc}.${tag ? ` <i style="color:var(--gold)">Found in the ${tag}.</i>` : ''}</div>
         <div class="gl">${p.lore}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  let html = withType('trench', () => PARTS.map((p, i) => row(p, i + 1, partThumb(p.id))).join(''));
+  html += '<div class="sub" style="text-align:center;margin:18px 0 4px">COMPLICATIONS &amp; SPECIAL PARTS</div>';
+  Object.values(EXTRA_PARTS).forEach(x => {
+    const tk = TYPE_ORDER.find(t => WATCH_TYPES[t].extras.includes(x.id));
+    html += withType(tk, () => row(x, '+', partThumb(x.id), WATCH_TYPES[tk].name));
+  });
+  list.innerHTML = html;
   document.getElementById('guide-overlay').classList.add('show');
 }
 
@@ -1987,6 +2709,7 @@ function highlightPart(id) {
 }
 function startLesson() {
   resetGame();
+  setWatchType('trench', 'standard'); finishTex = null;
   document.getElementById('start-overlay').classList.remove('show');
   document.getElementById('tray').style.visibility = 'hidden';
   diff = DIFF.apprentice; diffName = 'apprentice';
@@ -2046,6 +2769,8 @@ function startQuiz() {
   showQuizQ();
 }
 function showQuizQ() {
+  if (quiz.mode === 'history') return showHistoryQ();
+  document.getElementById('quiz-q').innerHTML = '';
   const q = quiz;
   if (q.i >= q.qs.length) {
     if (q.score > q.best) { q.best = q.score; try { localStorage.setItem(QUIZ_KEY, String(q.best)); } catch (e) {} }
@@ -2089,7 +2814,7 @@ function showQuizQ() {
 // Customers bring in broken watches. Each fault has a symptom you can see and hear
 // in the 3D movement, a complaint in the customer's words, and a clue under the loupe.
 const REPAIR_KEY = 'watchmaker.repair';
-const MOVEMENT_IDS = ['mainplate', 'barrel', 'geartrain', 'escape', 'pallet', 'balance'];
+const MOVEMENT_IDS = ['mainplate', 'barrel', 'geartrain', 'escape', 'pallet', 'balance', 'moon', 'chrono'];
 const CUSTOMERS = ['Grandpa Joe', 'Coach Rivera', 'Ms. Okafor', 'Dr. Lindqvist', 'Captain Mei', 'Mr. Haddad', 'Aunt Rosa',
   'Professor Kim', 'Pilot Ana', 'Chef Dubois', 'Ranger Tom', 'Ms. Novak', 'Grandma Bea', 'Officer Diaz', 'Mr. Tanaka'];
 const FAULTS = [
@@ -2141,6 +2866,18 @@ const FAULTS = [
     says: 'I dropped it on the pavement. It still ticks fine, but there\'s a dent by the crown and the crown feels stiff.',
     note: 'The case is dented at 3 o\'clock, pinching the crown tube. The movement inside survived the fall.',
     fix: 'Straighten and polish the case', why: 'It still ticks, so the movement is fine. A dent you can see by the crown is the case itself.' },
+  { part: 'bezel', types: ['diver'], anim: null, title: 'Two-way bezel',
+    says: 'My dive bezel turns both ways now, and it got bumped round on a dive. My instructor said that\'s dangerous!',
+    note: 'The bezel\'s click spring has snapped, so the ratchet lets it turn both ways. A bump could make the dive look shorter than it really was.',
+    fix: 'Fit a new bezel click spring', why: 'A dive bezel must only turn anticlockwise, so a knock can only make you surface early. Turning both ways means its ratchet is broken.' },
+  { part: 'moon', types: ['dress'], anim: null, title: 'Slipped moon disc',
+    says: 'The little moon on my watch doesn\'t match the sky at all — it\'s about two weeks out!',
+    note: 'The moon disc\'s jumper spring is weak, so the disc slipped about 15 teeth. It needs a new spring and setting to tonight\'s moon.',
+    fix: 'Fit a new jumper spring and set the moon', why: 'The watch keeps perfect time, so the movement is fine. Only the moon is wrong — the moon-phase disc itself.' },
+  { part: 'chrono', types: ['chrono'], anim: null, title: 'Worn column wheel',
+    says: 'It keeps perfect time, but when I press start, the stopwatch hand just jitters and won\'t go.',
+    note: 'The columns of the column wheel are worn down, so the start lever never drops in properly and the chronograph clutch slips.',
+    fix: 'Fit a new column wheel', why: 'The time is fine, so the main movement is healthy. A stopwatch that won\'t start points at the chronograph works.' },
 ];
 const OK_NOTES = {
   mainplate: 'Plate is clean and every ruby jewel is whole and shiny.',
@@ -2186,7 +2923,13 @@ function nextCustomer() {
   if (r.n >= r.jobs.length) { endRepairDay(); return; }
   const f = FAULTS[r.jobs[r.n]];
   Object.assign(r, { fault: f, inspected: new Set(), wrongIds: new Set(), wrong: 0, focus: null, who: CUSTOMERS[rnd(CUSTOMERS.length)], reg: null, sharp: false });
-  // Every customer's watch is a little different
+  // Every customer brings a different kind of watch
+  const kinds = f.types || TYPE_ORDER.filter(t => !(t === 'pocket' && (f.part === 'strap' || f.part === 'crown')));
+  const tk = kinds[rnd(kinds.length)];
+  setWatchType(tk, tk === 'pocket' ? GRADE_ORDER[1 + rnd(2)] : GRADE_ORDER[rnd(3)]);
+  finishTex = grade === 'standard' ? null : autoFinishTex();
+  moonOffset = f.part === 'moon' ? 14.8 : 0;
+  r.kind = WATCH_TYPES[tk];
   design = { case: rnd(STYLE.case.length), dial: rnd(STYLE.dial.length), hands: rnd(STYLE.hands.length), strap: rnd(STYLE.strap.length) };
   PARTS.forEach(p => {
     const m = createPartMesh(p.id); m.userData.origPos = m.position.clone();
@@ -2204,7 +2947,7 @@ function nextCustomer() {
   phase = 'ticket';
   elapsed = 0; timerOn = false;
   document.getElementById('tray').style.visibility = 'hidden';
-  document.getElementById('ticket-job').textContent = `REPAIR SHOP · JOB ${r.n + 1} / ${r.jobs.length}`;
+  document.getElementById('ticket-job').textContent = `JOB ${r.n + 1} / ${r.jobs.length} · ${r.kind.name.toUpperCase()} (${r.kind.year}) · ${GRADES[grade].label}`;
   document.getElementById('ticket-who').textContent = r.who.toUpperCase();
   document.getElementById('ticket-quote').textContent = '“' + f.says + '”';
   document.getElementById('ticket-tip').innerHTML = r.n === 0
@@ -2262,7 +3005,7 @@ function buildRepairUI() {
     const card = document.createElement('div');
     card.className = 'part-card' + (r.focus === p.id ? ' selected' : '') + (ruled ? ' placed' : '');
     card.dataset.pid = p.id;
-    const desc = seen ? (bad ? r.fault.note : OK_NOTES[p.id]) : ruled ? 'You serviced it — not the problem.' : p.desc;
+    const desc = seen ? (bad ? r.fault.note : (p.okNote || OK_NOTES[p.id])) : ruled ? 'You serviced it — not the problem.' : p.desc;
     card.innerHTML = `
       <img class="thumb" src="${partThumb(p.id)}" alt="">
       <div class="part-name">${p.name}</div>
@@ -2302,7 +3045,7 @@ function inspectPart(id) {
   userR = mov ? 8 : id === 'strap' ? 16 : 13;
   buildRepairUI();
   const bad = id === r.fault.part;
-  setInstr(`${part.name}: ${bad ? r.fault.note : OK_NOTES[id]}`, bad ? 'bad' : 'good');
+  setInstr(`${part.name}: ${bad ? r.fault.note : (part.okNote || OK_NOTES[id])}`, bad ? 'bad' : 'good');
 }
 
 function tryFix(id) {
@@ -2332,6 +3075,7 @@ function tryFix(id) {
     assemblyGroup.remove(old);
     const m = createPartMesh(id); m.userData.origPos = m.position.clone();
     m.position.y += 6; assemblyGroup.add(m); placedMeshes[id] = m;
+    if (id === 'moon') moonOffset = 0;
     applyDesign();
     animateMove(m, m.userData.origPos.y, 550, () => {
       sfx.snap();
@@ -2433,45 +3177,78 @@ function saveToShowcase(entry) {
   try { localStorage.setItem(SHOWCASE_KEY, JSON.stringify(list)); } catch (e) {}
 }
 // A 2D portrait of a finished watch, used in the showcase and on the results sheet
-function drawWatchThumb(cv, d, minutes) {
+function drawWatchThumb(cv, d, minutes, w = 'trench') {
   const g = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = W * 0.3;
   const hex = n => '#' + n.toString(16).padStart(6, '0');
   g.clearRect(0, 0, W, H);
-  const strap = STYLE.strap[d.strap];
-  g.fillStyle = hex(strap[1]);
-  g.fillRect(cx - R * 0.55, 0, R * 1.1, H);
-  if (strap[2]) { g.fillStyle = hex(strap[2]); g.fillRect(cx - R * 0.4, 0, R * 0.22, H); g.fillRect(cx + R * 0.18, 0, R * 0.22, H); }
-  g.fillStyle = hex(STYLE.case[d.case][1]);
-  g.beginPath(); g.arc(cx, cy, R * 1.18, 0, Math.PI * 2); g.fill();
-  g.fillRect(cx + R * 1.1, cy - R * 0.12, R * 0.22, R * 0.24); // crown
-  g.fillStyle = hex(STYLE.dial[d.dial][1]);
-  g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
-  const dark = STYLE.dial[d.dial][1] < 0x808080 * 1.2 && d.dial !== 0 && d.dial !== 4;
-  g.strokeStyle = dark ? 'rgba(255,255,255,0.75)' : 'rgba(20,20,40,0.8)'; g.lineWidth = Math.max(1.5, W / 90);
+  const caseC = hex(STYLE.case[d.case][1]);
+  if (w === 'pocket') { // chain drape and bow
+    g.strokeStyle = caseC; g.lineWidth = W / 55; g.setLineDash([W / 40, W / 90]);
+    g.beginPath(); g.moveTo(cx, cy - R * 1.6); g.quadraticCurveTo(cx - R * 1.9, cy - R * 1.5, cx - R * 1.4, H); g.stroke(); g.setLineDash([]);
+    g.lineWidth = W / 40; g.beginPath(); g.arc(cx, cy - R * 1.55, R * 0.2, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = caseC; g.fillRect(cx - R * 0.13, cy - R * 1.36, R * 0.26, R * 0.22);
+  } else {
+    const strap = STYLE.strap[d.strap] || STYLE.strap[0], sw = (w === 'trench' || w === 'dress') ? 0.95 : 1.1;
+    g.fillStyle = hex(strap[1]); g.fillRect(cx - R * sw / 2, 0, R * sw, H);
+    if (strap[2]) { g.fillStyle = hex(strap[2]); g.fillRect(cx - R * 0.36, 0, R * 0.2, H); g.fillRect(cx + R * 0.16, 0, R * 0.2, H); }
+    g.fillStyle = caseC;
+    const cw = w === 'pilot' ? 0.34 : 0.24; g.fillRect(cx + R * 1.1, cy - R * cw / 2, R * 0.26, R * cw); // crown
+    if (w === 'chrono') for (const s of [-1, 1]) { g.save(); g.translate(cx, cy); g.rotate(s * Math.PI / 6); g.fillRect(R * 1.1, -R * 0.08, R * 0.2, R * 0.16); g.restore(); }
+  }
+  g.fillStyle = caseC; g.beginPath(); g.arc(cx, cy, R * (w === 'diver' ? 1.24 : 1.18), 0, Math.PI * 2); g.fill();
+  let dr = R;
+  if (w === 'diver') {
+    g.fillStyle = '#16181f'; g.beginPath(); g.arc(cx, cy, R * 1.14, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#e8f5d0'; g.beginPath(); g.moveTo(cx - R * 0.08, cy - R * 1.12); g.lineTo(cx + R * 0.08, cy - R * 1.12); g.lineTo(cx, cy - R * 0.98); g.fill();
+    dr = R * 0.9;
+  }
+  const dcol = STYLE.dial[d.dial][1], dark = isDark(dcol), ink = dark ? 'rgba(255,255,255,0.8)' : 'rgba(20,20,40,0.85)';
+  g.fillStyle = hex(dcol); g.beginPath(); g.arc(cx, cy, dr, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = ink; g.lineWidth = Math.max(1.5, W / 90);
   for (let i = 0; i < 12; i++) {
     const a = i / 12 * Math.PI * 2, len = i % 3 === 0 ? 0.16 : 0.09;
-    g.beginPath(); g.moveTo(cx + Math.sin(a) * R * 0.88, cy - Math.cos(a) * R * 0.88); g.lineTo(cx + Math.sin(a) * R * (0.88 - len), cy - Math.cos(a) * R * (0.88 - len)); g.stroke();
+    g.beginPath(); g.moveTo(cx + Math.sin(a) * dr * 0.88, cy - Math.cos(a) * dr * 0.88); g.lineTo(cx + Math.sin(a) * dr * (0.88 - len), cy - Math.cos(a) * dr * (0.88 - len)); g.stroke();
+  }
+  const ring = (x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke(); };
+  if (w === 'trench') { g.fillStyle = '#c0392b'; g.beginPath(); g.arc(cx, cy - dr * 0.66, dr * 0.09, 0, Math.PI * 2); g.fill(); }
+  if (w === 'pilot') { g.fillStyle = ink; g.beginPath(); g.moveTo(cx - dr * 0.12, cy - dr * 0.82); g.lineTo(cx + dr * 0.12, cy - dr * 0.82); g.lineTo(cx, cy - dr * 0.6); g.fill(); }
+  if (w === 'pocket') ring(cx, cy + dr * 0.5, dr * 0.2);
+  if (w === 'chrono') { ring(cx - dr * 0.46, cy, dr * 0.18); ring(cx + dr * 0.46, cy, dr * 0.18); ring(cx, cy + dr * 0.46, dr * 0.18); }
+  if (w === 'dress') {
+    g.fillStyle = '#13235c'; g.beginPath(); g.arc(cx, cy + dr * 0.44, dr * 0.2, Math.PI, 0); g.fill();
+    drawMoon(g, cx, cy + dr * 0.36, dr * 0.07, moonAge());
   }
   const hcol = hex(STYLE.hands[d.hands][1]);
-  const hand = (ang, len, w) => { g.strokeStyle = hcol; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(ang) * R * len, cy - Math.cos(ang) * R * len); g.stroke(); };
+  const hand = (ang, len, wd) => { g.strokeStyle = hcol; g.lineWidth = wd; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(ang) * dr * len, cy - Math.cos(ang) * dr * len); g.stroke(); };
   hand((minutes % 720) / 720 * Math.PI * 2, 0.5, W / 40);
   hand((minutes % 60) / 60 * Math.PI * 2, 0.78, W / 55);
   g.fillStyle = '#d4af37'; g.beginPath(); g.arc(cx, cy, W / 45, 0, Math.PI * 2); g.fill();
+}
+function collectionHtml() {
+  const col = loadCollection();
+  const n = Object.keys(col).filter(k => WATCH_TYPES[k.split(':')[0]]).length, total = TYPE_ORDER.length * GRADE_ORDER.length - 1; // no standard pocket watch
+  return `<div class="coll"><div class="cth">COLLECTION ${n}/${total}</div>` + TYPE_ORDER.map(tk =>
+    `<div class="crow"><span>${WATCH_TYPES[tk].name}</span>${GRADE_ORDER.map(gk => {
+      const na = tk === 'pocket' && gk === 'standard';
+      return `<b class="${na ? 'na' : col[tk + ':' + gk] ? 'got' : ''}" title="${GRADES[gk].label}">${na ? '–' : GRADES[gk].label[0]}</b>`;
+    }).join('')}</div>`).join('') + '</div>';
 }
 function showShowcase() {
   const list = loadShowcase();
   const grid = document.getElementById('wgrid');
   grid.innerHTML = '';
+  document.getElementById('collection').innerHTML = collectionHtml();
   document.getElementById('showcase-empty').style.display = list.length ? 'none' : 'block';
   document.getElementById('showcase-sub').textContent = list.length ? `${list.length} WATCH${list.length === 1 ? '' : 'ES'} FINISHED · BEST ${Math.max(...list.map(e => e.s))}` : 'EVERY WATCH YOU HAVE FINISHED';
   list.forEach(e => {
     const card = document.createElement('div');
     card.className = 'wcard';
     const cv = document.createElement('canvas'); cv.width = 192; cv.height = 192;
-    drawWatchThumb(cv, e.d, e.min || 610);
+    const wt = WATCH_TYPES[e.w] ? e.w : 'trench';
+    drawWatchThumb(cv, e.d, e.min || 610, wt);
     card.appendChild(cv);
     const dt = new Date(e.t);
-    card.insertAdjacentHTML('beforeend', `<div class="ws">${e.s} PTS</div><div class="wr">${e.r}</div><div class="wd">${e.m.toUpperCase()} · ${dt.getDate()}/${dt.getMonth() + 1}/${String(dt.getFullYear()).slice(2)}</div>`);
+    card.insertAdjacentHTML('beforeend', `<div class="ws">${e.s} PTS</div><div class="wr">${e.w ? WATCH_TYPES[wt].short + ' · ' + GRADES[e.g || 'standard'].label : e.r}</div><div class="wd">${e.m.toUpperCase()} · ${dt.getDate()}/${dt.getMonth() + 1}/${String(dt.getFullYear()).slice(2)}</div>`);
     grid.appendChild(card);
   });
   document.getElementById('showcase-overlay').classList.add('show');
@@ -2489,30 +3266,44 @@ function showResults() {
   const seatPts = Object.values(grades).reduce((a, g) => a + (g.seat === 'PERFECT' ? 50 : 25), 0);
   const perfects = Object.values(grades).filter(g => g.precision === 'PERFECT' && g.seat === 'PERFECT').length;
   let rank, sub;
-  if (score >= 2150)      { rank = 'MASTER WATCHMAKER'; sub = 'A watch worthy of a museum'; }
-  else if (score >= 1550) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
-  else if (score >= 950)  { rank = 'APPRENTICE';        sub = 'It ticks and keeps time! Keep practising'; }
+  if (score >= 2450)      { rank = 'MASTER WATCHMAKER'; sub = 'A watch worthy of a museum'; }
+  else if (score >= 1800) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
+  else if (score >= 1100) { rank = 'APPRENTICE';        sub = 'It ticks and keeps time! Keep practising'; }
   else                    { rank = 'TINKERER';          sub = 'Every master started here'; }
+  const T = WATCH_TYPES[wtype], G = GRADES[grade];
   document.getElementById('rank').textContent = rank;
-  document.getElementById('rank-sub').textContent = sub + ' · ' + diff.label;
-  const penalties = placePts + seatPts + windPts + regPts + setPts + 25 + timeBonus - score; // exact: whatever the slips and hints cost
-  const rows = [
+  document.getElementById('rank-sub').textContent = `${sub} · ${diff.label}`;
+  document.getElementById('result-type').textContent = `${T.name.toUpperCase()} · ${T.year} · ${G.label} GRADE`;
+  const penalties = placePts + seatPts + finishPts + windPts + regPts + specPtsFinal + setPts + 25 + timeBonus - score; // exact: whatever the slips and hints cost
+  const rows = [];
+  if (G.finishing) rows.push([`HAND FINISHING (${finishLabel.toLowerCase()})`, `+${finishPts}`]);
+  rows.push(
     ['PLACEMENT ACCURACY', `+${placePts}`],
     ['SEATING', `+${seatPts}`],
     ['WINDING', `+${windPts}`],
     [`REGULATION (${rateFinal > 0 ? '+' : ''}${rateFinal.toFixed(0)} s/day · ${regLabel.toLowerCase()})`, `+${regPts}`],
+    [`${G.label} SPEC ${specLabel().split(' (')[0]} ${specOkFinal ? '✓ MET' : '✗ MISSED'}`, `+${specPtsFinal}`],
     ['SETTING THE TIME', `+${setPts}`],
     ['FINISHING', '+25'],
     [`TIME BONUS (${fmtTime(secs)})`, `+${timeBonus}`],
     [`SLIPS & HINTS (${mistakes} slips, ${hintsUsed} hints)`, penalties > 0 ? `−${penalties}` : '0'],
-  ];
+  );
   if (perfects === TOTAL) rows.push([`FLAWLESS — ${TOTAL} DOUBLE PERFECTS`, '★']);
   const prev = loadBest(diffName);
   const isBest = !prev || score > prev.score;
   if (isBest) { try { localStorage.setItem(BEST_KEY(diffName), JSON.stringify({ score, time: secs, rank })); } catch (e) {} }
   rows.push(['TOTAL', String(score)]);
-  saveToShowcase({ d: { ...design }, s: score, r: rank, m: diffName, t: Date.now(), min: Math.round(watchTime / 60) });
-  drawWatchThumb(document.getElementById('result-thumb'), design, watchTime / 60);
+  // The collection: one of each type at each grade
+  const col = loadCollection(), ck = wtype + ':' + grade, isNewKind = !col[ck];
+  col[ck] = Math.max(col[ck] || 0, score);
+  try { localStorage.setItem(COLLECTION_KEY, JSON.stringify(col)); } catch (e) {}
+  saveToShowcase({ d: { ...design }, s: score, r: rank, m: diffName, t: Date.now(), min: Math.round(watchTime / 60), w: wtype, g: grade });
+  drawWatchThumb(document.getElementById('result-thumb'), design, watchTime / 60, wtype);
+  let story = `<b>${T.name}, ${T.year}.</b> ${T.blurb}`;
+  if (grade === 'chronometer') story += specOkFinal ? '<br><br><b>Certified chronometer:</b> it passed the −4/+6 s/day standard that real chronometers are tested to for 15 days, in 5 positions and at 3 temperatures.' : '<br><br>It missed the chronometer standard this time — regulate it to within −4/+6 s/day to earn the certificate.';
+  if (wtype === 'dress') { const a = moonAge(); story += `<br><br>Look at the moon window: tonight's moon is a <b>${moonName(a)}</b>, ${Math.round(a)} days old.`; }
+  if (isNewKind) story += `<br><br>&#9733; New in your collection! (${Object.keys(col).length}/${TYPE_ORDER.length * GRADE_ORDER.length - 1})`;
+  document.getElementById('result-history').innerHTML = story;
   document.getElementById('score-grid').innerHTML = rows.map(([k, v], i) =>
     `<div class="${i === rows.length - 1 ? 'total' : ''}"><span class="k">${k}</span></div><div class="${i === rows.length - 1 ? 'total' : ''}"><span class="v ${i === rows.length - 1 && isBest ? 'newbest' : ''}">${v}${i === rows.length - 1 && isBest ? ' · NEW BEST' : ''}</span></div>`
   ).join('');
@@ -2620,7 +3411,8 @@ function resetGame() {
   clearHighlight();
   lesson = null;
   repair = null; movAnim = null;
-  ['ticket-overlay', 'paid-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['ticket-overlay', 'paid-overlay', 'commission-overlay', 'finish-overlay', 'history-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
+  fin = null; moonOffset = 0; finishPts = 0; specPtsFinal = 0; specOkFinal = false;
   document.getElementById('job-box').innerHTML = '';
   document.getElementById('tray-list').innerHTML = '';
   updateHud();
@@ -2646,6 +3438,7 @@ function animate() {
     if (moved) updateCamera();
   }
   if (phase === 'wind' && wind) drawCrown(dt);
+  if (phase === 'finish' && fin) drawFinish(dt);
   if (highlighted.length) { const e = 0.25 + 0.25 * Math.sin(time * 5); highlighted.forEach(({ m }) => m.material.emissive.setRGB(0.83 * e, 0.69 * e, 0.21 * e)); }
 
   // Ghost pulse
