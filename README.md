@@ -27,6 +27,10 @@ python3 -m http.server 8000
 
 Then visit http://localhost:8000.
 
+## Saves & players
+
+Everything is browser-based with no backend: each game saves to `localStorage` automatically. The home page's **SAVES & PLAYERS** panel adds **players** (several people on one device, each with their own progress in every game — switching swaps the whole save set over), **backup** (download a JSON save file, or copy a gzip-compressed `LEVI1.…` save code to paste on another device), **load** (from a code or a file, with a summary and confirmation first), and **start over**. Profiles are stored as snapshots under `levi.profile.<name>` with `levi.profiles` / `levi.activeProfile`.
+
 ## Home page
 
 The root `index.html` has Levi himself bouncing beside the title with a speech bubble, a **Continue** button for the last game played, and a **What's New** board fed by the `UPDATES` array (newest first) that flags anything added since your last visit — add a line there whenever a game changes. It renders the game grid from a `GAMES` array: category filter chips, a **Surprise me** random picker, NEW / UPDATED / LAST PLAYED ribbons, a pixel starfield with parallax and shooting stars, and a per-game readout of your best score / progress pulled from each game's own `localStorage` save (best scores, elements found, pets collected, mission stars, watchmaker rank…).

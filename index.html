@@ -262,6 +262,39 @@
     .continue:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--yellow-dk); }
     .continue:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--yellow-dk); }
 
+    /* Saves & players */
+    .hdr-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+    .hdr-btns .continue { margin-top: 0; }
+    .ghost-btn { display: inline-block; background: transparent; color: #bbb; border: 2px solid #33334d; font-family: inherit; font-weight: bold; letter-spacing: 2px; font-size: 0.85rem; padding: 8px 18px; border-radius: 3px; cursor: pointer; transition: border-color 0.12s, color 0.12s; }
+    .ghost-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+    .player-tag { font-size: 0.72rem; letter-spacing: 2px; color: var(--mint); margin-top: 10px; }
+    .modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(5,5,12,0.82); padding: 14px; }
+    .modal.show { display: flex; }
+    .modal .box { background: var(--card); border: 3px solid #33334d; border-radius: 4px; max-width: 640px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 18px 20px; }
+    .modal h3 { color: var(--yellow); letter-spacing: 3px; font-size: 1rem; margin-bottom: 4px; }
+    .modal .mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .modal .mh button { background: none; border: none; color: var(--muted); font-family: inherit; font-size: 0.9rem; cursor: pointer; }
+    .modal .sec { border-top: 1px dashed #2a2a44; padding: 12px 0; }
+    .modal .sec h4 { color: #fff; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 4px; }
+    .modal .sec p { color: #a9a9c4; font-size: 0.76rem; line-height: 1.5; margin-bottom: 8px; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mbtn { background: #22223a; color: #ddd; border: 2px solid #33334d; border-radius: 3px; font-family: inherit; font-size: 0.72rem; letter-spacing: 1px; padding: 7px 12px; cursor: pointer; }
+    .mbtn:hover { border-color: var(--yellow); color: var(--yellow); }
+    .mbtn.primary { background: var(--yellow); color: #111; border-color: var(--yellow); font-weight: bold; }
+    .mbtn.danger { border-color: #5a2a2a; color: #ff8a8a; }
+    .mbtn.danger:hover { border-color: var(--red); color: var(--red); }
+    .plist { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .pchip { display: flex; align-items: center; gap: 8px; background: #22223a; border: 2px solid #33334d; border-radius: 999px; padding: 6px 8px 6px 14px; font-size: 0.78rem; letter-spacing: 1px; color: #ddd; }
+    .pchip.active { border-color: var(--mint); color: var(--mint); }
+    .pchip button { background: none; border: none; color: #888; font-family: inherit; font-size: 0.68rem; letter-spacing: 1px; cursor: pointer; padding: 3px 6px; }
+    .pchip button:hover { color: var(--yellow); }
+    .modal textarea { width: 100%; min-height: 70px; background: #0f0f1a; color: #cfd; border: 2px solid #33334d; border-radius: 3px; font-family: inherit; font-size: 0.7rem; padding: 8px; resize: vertical; }
+    .modal input[type=text] { background: #0f0f1a; color: #fff; border: 2px solid #33334d; border-radius: 3px; font-family: inherit; font-size: 0.8rem; padding: 7px 10px; }
+    .note { font-size: 0.72rem; color: var(--mint); margin-top: 6px; min-height: 1em; }
+    .note.bad { color: var(--red); }
+    .summ { font-size: 0.72rem; color: #a9a9c4; line-height: 1.6; }
+    .summ b { color: #fff; }
+
     /* What's new */
     .news { max-width: 1040px; margin: 26px auto 0; padding: 0 30px; }
     .news-box { background: linear-gradient(135deg, #1a1a2e, #16162a); border: 3px solid #33334d; border-radius: 4px; padding: 14px 18px 12px; }
@@ -313,8 +346,44 @@
         <span style="--i:5"></span><span style="--i:6"></span><span style="--i:7"></span><span style="--i:8"></span><span style="--i:9"></span>
       </div>
       <div class="strip" id="strip"></div>
-      <a class="continue" id="continue" href="#" style="display:none"></a>
+      <div class="hdr-btns">
+        <a class="continue" id="continue" href="#" style="display:none"></a>
+        <button class="ghost-btn" id="saves-btn">&#128190; SAVES &amp; PLAYERS</button>
+      </div>
+      <div class="player-tag" id="player-tag"></div>
     </header>
+
+    <div class="modal" id="saves" role="dialog" aria-label="saves and players">
+      <div class="box">
+        <div class="mh"><h3>&#128190; SAVES &amp; PLAYERS</h3><button id="saves-close" aria-label="close">&#10005;</button></div>
+        <div class="summ" id="save-summary"></div>
+        <div class="sec">
+          <h4>PLAYERS ON THIS DEVICE</h4>
+          <p>Everyone gets their own progress in every game. Switching players swaps all the saves over.</p>
+          <div class="plist" id="plist"></div>
+          <div class="btn-row"><input type="text" id="new-player" placeholder="new player's name" maxlength="16"><button class="mbtn" id="add-player">+ ADD PLAYER</button></div>
+          <div class="note" id="player-note"></div>
+        </div>
+        <div class="sec">
+          <h4>BACK UP &middot; MOVE TO ANOTHER DEVICE</h4>
+          <p>Save this player's progress as a file, or copy a <b>save code</b> and paste it on the other device (message it to yourself).</p>
+          <div class="btn-row"><button class="mbtn primary" id="dl-save">&#11015; DOWNLOAD SAVE FILE</button><button class="mbtn" id="copy-code">&#128203; COPY SAVE CODE</button></div>
+          <div class="note" id="backup-note"></div>
+        </div>
+        <div class="sec">
+          <h4>LOAD A SAVE</h4>
+          <p>Loads into the current player and replaces their progress. Paste a save code, or pick a save file.</p>
+          <textarea id="code-in" placeholder="paste a save code here (starts with LEVI)"></textarea>
+          <div class="btn-row" style="margin-top:8px"><button class="mbtn primary" id="load-code">LOAD CODE</button><button class="mbtn" id="load-file-btn">&#128193; LOAD SAVE FILE</button><input type="file" id="load-file" accept=".json,application/json,.txt" style="display:none"></div>
+          <div class="note" id="load-note"></div>
+        </div>
+        <div class="sec">
+          <h4>START OVER</h4>
+          <p>Erase this player's progress in every game. The other players are not touched.</p>
+          <div class="btn-row"><button class="mbtn danger" id="erase">ERASE THIS PLAYER'S PROGRESS</button></div>
+        </div>
+      </div>
+    </div>
 
     <section class="news" aria-label="what's new">
       <div class="news-box" id="news"></div>
@@ -327,7 +396,7 @@
 
     <footer>
       <span id="count"></span> games and counting <span class="hearts">&#10084;</span> made for Levi<br>
-      <span style="color:#444">high scores live in this browser</span>
+      <span style="color:#444">progress lives in this browser &middot; back it up or move it in SAVES &amp; PLAYERS</span>
     </footer>
   </div>
 
@@ -431,6 +500,8 @@
 
   // ---- What's new: newest first. Add a line here whenever a game changes. ----
   const UPDATES = [
+    { id: 'u11', date: 'NOV 1', game: null, kind: 'upd', title: 'Saves & players',
+      text: 'Several players on one device, each with their own progress in every game — plus save files and save codes to back up or move everything to another tablet or computer. Find it under SAVES & PLAYERS at the top.' },
     { id: 'u10', date: 'NOV 1', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: Full Service',
       text: 'Bring a grimy old heirloom back to life: open it, strip every part into the tray, spot what\'s worn, clean it in the ultrasonic (but never the dial!), rebuild, oil and regulate — then see the before and after.' },
     { id: 'u9', date: 'NOV 1', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: the Finishing Room & the Snowflake watch',
@@ -459,18 +530,138 @@
       UPDATES.map((u, i) => {
         const g = GAMES.find(x => x.id === u.game);
         const fresh = seen && (seenIdx < 0 || i < seenIdx);
-        return `<a class="nitem${i >= 3 ? ' more' : ''}" href="${u.game}/index.html" data-game="${u.game}">
+        return `<a class="nitem${i >= 3 ? ' more' : ''}" href="${u.game ? u.game + '/index.html' : '#saves'}" data-game="${u.game || ''}">
           <span class="nd">${u.date}</span>
           <span><span class="nt"><span class="kind ${u.kind}">${u.kind === 'new' ? 'NEW GAME' : 'UPDATE'}</span>${g ? g.emoji + ' ' : ''}${u.title}${fresh ? '<span class="fresh">&#9679; NEW SINCE YOUR LAST VISIT</span>' : ''}</span>
           <span class="nx" style="display:block">${u.text}</span></span></a>`;
       }).join('');
     const more = document.getElementById('news-more');
     more.addEventListener('click', () => { const open = box.classList.toggle('open'); more.innerHTML = open ? 'SHOW LESS &#9652;' : 'SHOW ALL &#9662;'; });
-    box.querySelectorAll('.nitem').forEach(a => a.addEventListener('click', () => {
+    box.querySelectorAll('.nitem').forEach(a => a.addEventListener('click', e => {
+      if (!a.dataset.game) { e.preventDefault(); document.getElementById('saves-btn').click(); return; }
       try { localStorage.setItem(LAST_KEY, a.dataset.game); plays[a.dataset.game] = (plays[a.dataset.game] || 0) + 1; localStorage.setItem(PLAYS_KEY, JSON.stringify(plays)); } catch (e) {}
     }));
     try { localStorage.setItem(SEEN_KEY, UPDATES[0].id); } catch (e) {}
   })();
+
+  // ---- Saves & players: all progress is localStorage; profiles are snapshots of it ----
+  const PROFILES_KEY = 'levi.profiles', ACTIVE_KEY = 'levi.activeProfile', SNAP_PREFIX = 'levi.profile.';
+  const isMeta = k => k === PROFILES_KEY || k === ACTIVE_KEY || k.startsWith(SNAP_PREFIX);
+  function gameKeys() { const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!isMeta(k)) out.push(k); } } catch (e) {} return out; }
+  function snapshot() { const d = {}; gameKeys().forEach(k => { d[k] = ls(k); }); return d; }
+  function wipeGame() { gameKeys().forEach(k => { try { localStorage.removeItem(k); } catch (e) {} }); }
+  function restore(data) { Object.entries(data).forEach(([k, v]) => { if (!isMeta(k) && typeof v === 'string') { try { localStorage.setItem(k, v); } catch (e) {} } }); }
+  function profiles() { const p = lsJSON(PROFILES_KEY, null); return p && Array.isArray(p.names) && p.names.length ? p : { names: ['Levi'] }; }
+  function activeName() { const a = ls(ACTIVE_KEY); return a && profiles().names.includes(a) ? a : profiles().names[0]; }
+  function saveProfiles(p) { try { localStorage.setItem(PROFILES_KEY, JSON.stringify(p)); } catch (e) {} }
+  function summaryOf(data) {
+    // Count what a save holds, using each game's own stat reader against a temporary view
+    const saved = {}; gameKeys().forEach(k => { saved[k] = ls(k); });
+    wipeGame(); restore(data);
+    const lines = [];
+    GAMES.forEach(g => { try { const st = STATS[g.id] && STATS[g.id](); if (st) lines.push(`${g.name}: <b>${st}</b>`); } catch (e) {} });
+    wipeGame(); restore(saved);
+    return lines;
+  }
+  const b64u = { enc: bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+                 dec: str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)) };
+  async function makeCode(data) {
+    const json = JSON.stringify({ v: 1, site: 'levi.games', player: activeName(), at: new Date().toISOString(), data });
+    const raw = new TextEncoder().encode(json);
+    if (window.CompressionStream) {
+      const gz = new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip')));
+      return 'LEVI1.' + b64u.enc(new Uint8Array(await gz.arrayBuffer()));
+    }
+    return 'LEVI0.' + b64u.enc(raw);
+  }
+  async function readCode(text) {
+    text = text.trim();
+    if (text.startsWith('{')) return JSON.parse(text); // a pasted save file
+    const m = text.match(/^LEVI([01])\.([A-Za-z0-9_-]+)$/); if (!m) throw new Error('That doesn\'t look like a save code.');
+    let bytes = b64u.dec(m[2]);
+    if (m[1] === '1') { if (!window.DecompressionStream) throw new Error('This browser can\'t read compressed save codes — use a save file instead.'); bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()); }
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  const $s = id => document.getElementById(id);
+  function note(id, text, bad) { const el = $s(id); el.textContent = text; el.className = 'note' + (bad ? ' bad' : ''); }
+  function renderSaves() {
+    const p = profiles(), active = activeName();
+    $s('player-tag').innerHTML = `PLAYING AS <b>${active.toUpperCase()}</b>` + (p.names.length > 1 ? ` · ${p.names.length} PLAYERS` : '');
+    const lines = []; GAMES.forEach(g => { try { const st = STATS[g.id] && STATS[g.id](); if (st) lines.push(`${g.name}: <b>${st}</b>`); } catch (e) {} });
+    $s('save-summary').innerHTML = lines.length ? `<b>${active}</b> so far — ` + lines.join(' · ') : `<b>${active}</b> hasn't played anything yet on this device.`;
+    const list = $s('plist'); list.innerHTML = '';
+    p.names.forEach(n => {
+      const chip = document.createElement('div'); chip.className = 'pchip' + (n === active ? ' active' : '');
+      chip.innerHTML = `<span>${n === active ? '&#9654; ' : ''}${n}</span>` + (n === active ? '' : `<button data-sw="${n}">SWITCH</button>`) + (p.names.length > 1 ? `<button data-del="${n}">&#10005;</button>` : '');
+      list.appendChild(chip);
+    });
+    list.querySelectorAll('[data-sw]').forEach(b => b.addEventListener('click', () => switchPlayer(b.dataset.sw)));
+    list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deletePlayer(b.dataset.del)));
+  }
+  function switchPlayer(name) {
+    const p = profiles(), active = activeName();
+    try { localStorage.setItem(SNAP_PREFIX + active, JSON.stringify(snapshot())); } catch (e) { note('player-note', 'Not enough room to store the switch — download a save file first.', true); return; }
+    wipeGame();
+    restore(lsJSON(SNAP_PREFIX + name, {}));
+    try { localStorage.setItem(ACTIVE_KEY, name); } catch (e) {}
+    saveProfiles(p);
+    location.reload();
+  }
+  function deletePlayer(name) {
+    const p = profiles();
+    if (!confirm(`Delete ${name} and all of their progress? This can't be undone.`)) return;
+    if (name === activeName()) { wipeGame(); const next = p.names.find(n => n !== name); restore(lsJSON(SNAP_PREFIX + next, {})); try { localStorage.setItem(ACTIVE_KEY, next); } catch (e) {} }
+    try { localStorage.removeItem(SNAP_PREFIX + name); } catch (e) {}
+    p.names = p.names.filter(n => n !== name); saveProfiles(p);
+    location.reload();
+  }
+  $s('add-player').addEventListener('click', () => {
+    const name = $s('new-player').value.trim().replace(/[<>]/g, '');
+    const p = profiles();
+    if (!name) { note('player-note', 'Type a name first.', true); return; }
+    if (p.names.some(n => n.toLowerCase() === name.toLowerCase())) { note('player-note', 'There is already a player called that.', true); return; }
+    p.names.push(name); saveProfiles(p);
+    try { localStorage.setItem(SNAP_PREFIX + name, '{}'); } catch (e) {}
+    if (!ls(ACTIVE_KEY)) { try { localStorage.setItem(ACTIVE_KEY, p.names[0]); } catch (e) {} }
+    $s('new-player').value = '';
+    note('player-note', `${name} added — press SWITCH to play as them.`);
+    renderSaves();
+  });
+  $s('dl-save').addEventListener('click', () => {
+    const json = JSON.stringify({ v: 1, site: 'levi.games', player: activeName(), at: new Date().toISOString(), data: snapshot() }, null, 1);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    a.download = `levi-games-${activeName().toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    note('backup-note', 'Save file downloaded. Keep it somewhere safe, or send it to the other device.');
+  });
+  $s('copy-code').addEventListener('click', async () => {
+    try {
+      const code = await makeCode(snapshot());
+      try { await navigator.clipboard.writeText(code); note('backup-note', `Save code copied (${code.length.toLocaleString()} characters). Paste it into SAVES on the other device.`); }
+      catch (e) { $s('code-in').value = code; note('backup-note', 'Couldn\'t reach the clipboard — the code is in the box below; select and copy it.'); }
+    } catch (e) { note('backup-note', 'Could not make a save code: ' + e.message, true); }
+  });
+  async function loadSave(obj) {
+    if (!obj || !obj.data || typeof obj.data !== 'object') throw new Error('No save data in there.');
+    const lines = summaryOf(obj.data);
+    const who = obj.player ? `${obj.player}'s` : 'this', when = obj.at ? new Date(obj.at).toLocaleDateString() : '';
+    if (!confirm(`Load ${who} save${when ? ' from ' + when : ''} into ${activeName()}?\n\n${lines.length ? lines.map(l => l.replace(/<[^>]+>/g, '')).join('\n') : '(an empty save)'}\n\nThis replaces ${activeName()}'s current progress.`)) return;
+    wipeGame(); restore(obj.data);
+    location.reload();
+  }
+  $s('load-code').addEventListener('click', async () => { try { await loadSave(await readCode($s('code-in').value)); } catch (e) { note('load-note', e.message, true); } });
+  $s('load-file-btn').addEventListener('click', () => $s('load-file').click());
+  $s('load-file').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { await loadSave(await readCode(await f.text())); } catch (err) { note('load-note', err.message, true); }
+    e.target.value = '';
+  });
+  $s('erase').addEventListener('click', () => { if (confirm(`Erase ALL of ${activeName()}'s progress in every game? This can't be undone (download a save file first if you're not sure).`)) { wipeGame(); location.reload(); } });
+  $s('saves-btn').addEventListener('click', () => { renderSaves(); $s('saves').classList.add('show'); });
+  $s('saves-close').addEventListener('click', () => $s('saves').classList.remove('show'));
+  $s('saves').addEventListener('click', e => { if (e.target === $s('saves')) $s('saves').classList.remove('show'); });
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') $s('saves').classList.remove('show'); });
+  renderSaves();
 
   // ---- Continue where you left off ----
   (function cont() {
@@ -485,7 +676,7 @@
   // ---- Levi's speech bubble ----
   (function bubble() {
     const el = document.getElementById('bubble');
-    const newest = GAMES.find(x => x.id === UPDATES[0].game);
+    const newest = GAMES.find(x => x.id === (UPDATES.find(u => u.game) || {}).game);
     const lines = ['Hi! Pick a game!', newest ? `Try ${newest.name}!` : 'Ready?', 'Press start!', `${GAMES.length} games!`, 'Beat my high score!'];
     let i = 0;
     setInterval(() => {
