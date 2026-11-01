@@ -307,6 +307,29 @@ canvas { display: block; }
 .gcard .gn { font-size: 13px; letter-spacing: 3px; color: var(--gold); }
 .gcard .gj { font-size: 9px; letter-spacing: 1px; color: #7bd88f; margin: 3px 0; }
 .gcard .gd { font-size: 11px; color: #999; line-height: 1.45; }
+/* Orders, guild, workshop */
+#orders { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ocard { text-align: left; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 9px 11px; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.2s; }
+.ocard:hover { border-color: rgba(123,216,143,0.5); }
+.ocard.sel { border-color: #7bd88f; background: rgba(123,216,143,0.1); }
+.ocard .on { font-size: 11px; letter-spacing: 2px; color: #7bd88f; }
+.ocard .ox { font-size: 11px; color: #bbb; line-height: 1.45; margin-top: 4px; font-style: italic; }
+.ocard .op { font-size: 9px; letter-spacing: 1px; color: var(--gold); margin-top: 5px; }
+#guild-overlay { z-index: 320; } /* opens on top of the results sheet */
+.cert { border: 2px double var(--gold); border-radius: 8px; padding: 14px 16px; margin: 6px 0 10px; background: rgba(212,175,55,0.05); }
+.cert .cr { font-size: 10px; letter-spacing: 3px; color: #999; }
+.cert .ct { font-size: 24px; letter-spacing: 8px; color: var(--gold); font-weight: 200; margin: 6px 0; }
+.repbar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin: 8px auto 0; max-width: 320px; overflow: hidden; }
+.repbar i { display: block; height: 100%; background: linear-gradient(90deg, #8ab4ff, var(--gold)); }
+.stats { font-size: 11px; letter-spacing: 1px; color: #999; line-height: 1.8; }
+.stats b { color: #ddd; font-weight: 500; }
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; text-align: left; }
+.tool { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 12px; background: rgba(255,255,255,0.03); }
+.tool .tn { font-size: 13px; color: #ddd; font-weight: 600; }
+.tool .tc { font-size: 11px; color: #999; margin: 3px 0; }
+.tool .tnx { font-size: 10px; color: #7bd88f; letter-spacing: 1px; margin-bottom: 6px; }
+.tool .btn { padding: 5px 12px; font-size: 10px; }
+.tool .btn:disabled { opacity: 0.35; cursor: default; }
 /* Hand finishing */
 #finish-overlay { background: rgba(0,0,0,0.45); }
 #finish-box { background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 12px; padding: 16px 22px 14px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.6); max-width: 94vw; }
@@ -390,9 +413,10 @@ canvas { display: block; }
   <div class="sheet">
     <h2>WATCHMAKER</h2>
     <div class="sub">BUILD REAL WATCHES FROM 130 YEARS OF HISTORY</div>
+    <div class="sub" id="start-rank" style="color:#8ab4ff;margin-top:-10px"></div>
     <div class="steps">
       <b>0.</b> Choose a watch from history and a grade of craftsmanship<br>
-      <b>1.</b> Hand-finish the plate, build the movement, then case it &mdash; every part in its proper order<br>
+      <b>1.</b> Hand-finish the plate, build and <b>oil</b> the movement, then case it &mdash; every part in its proper order<br>
       <b>2.</b> Tap each part's glowing slot &mdash; closer to the bullseye, more points<br>
       <b>3.</b> Seat it: stop the needle in the gold zone<br>
       <b>4.</b> Wind the mainspring to bring it to life &mdash; don't overwind!<br>
@@ -426,6 +450,7 @@ canvas { display: block; }
       <button id="guide-btn" class="btn">&#128214; PARTS GUIDE</button>
       <button id="quiz-btn" class="btn">&#10067; NAME THAT PART</button>
       <button id="history-btn" class="btn">&#128220; WATCH HISTORY</button>
+      <button id="guild-btn" class="btn">&#127942; GUILD &amp; WORKSHOP</button>
       <button id="showcase-btn" class="btn">&#9201; SHOWCASE</button>
     </div>
   </div>
@@ -435,12 +460,38 @@ canvas { display: block; }
 <div id="commission-overlay" class="overlay">
   <div class="sheet">
     <h2>COMMISSION</h2>
-    <div class="sub">WHICH WATCH WILL YOU MAKE?</div>
+    <div class="sub">CUSTOMER ORDERS</div>
+    <div id="orders"></div>
+    <div class="sub" style="margin:14px 0 8px">WHICH WATCH WILL YOU MAKE?</div>
     <div class="tgrid" id="type-grid"></div>
     <div class="sub" style="margin:14px 0 8px">CRAFTSMANSHIP</div>
     <div id="grade-row"></div>
     <div class="lessonbox" id="commission-note"></div>
     <div class="row"><button id="commission-go" class="btn gold">BEGIN THE BUILD &#9654;</button><button id="commission-back" class="btn">BACK</button></div>
+  </div>
+</div>
+
+<!-- Oiling -->
+<div id="oil-overlay" class="overlay">
+  <div id="finish-box">
+    <div class="lbl">OIL THE JEWELS</div>
+    <div class="sub" id="oil-sub"></div>
+    <canvas id="oil-cv" width="440" height="440" style="width:360px;height:360px;max-width:80vw;max-height:80vw;display:block;margin:0 auto;touch-action:none;cursor:crosshair;border-radius:50%"></canvas>
+    <div id="oil-hint" style="font-size:10px;color:#888;letter-spacing:2px;margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- The Guild -->
+<div id="guild-overlay" class="overlay">
+  <div class="sheet" style="max-width:min(640px,94vw);max-height:92vh;overflow-y:auto">
+    <h2>THE GUILD</h2>
+    <div class="sub">OF WATCHMAKERS</div>
+    <div class="cert"><div class="cr">THIS CERTIFIES THAT LEVI IS A</div><div class="ct" id="guild-rank"></div><div class="cr" id="guild-rep"></div></div>
+    <div class="stats" id="guild-stats"></div>
+    <div class="sub" style="margin:14px 0 6px">THE WORKSHOP &middot; SPEND YOUR EARNINGS ON BETTER TOOLS</div>
+    <div class="tools" id="tool-shop"></div>
+    <p style="font-size:11px;color:#777;margin-top:10px">Earn money and reputation by finishing watches (more for customer orders), repairing in the shop, and acing the quizzes.</p>
+    <div class="row"><button id="guild-close" class="btn gold">BACK</button></div>
   </div>
 </div>
 
@@ -515,8 +566,8 @@ canvas { display: block; }
 <!-- Winding mini-game -->
 <div id="wind-overlay" class="overlay">
   <div id="wind-box">
-    <div class="lbl">WIND THE MAINSPRING</div>
-    <div class="sub">The movement is complete but has no power. <b>Hold</b> anywhere (or hold SPACE) to wind &mdash; drag in circles to wind faster. <b>Let go in the gold band.</b> Past the end, the spring slips!</div>
+    <div class="lbl" id="wind-title">WIND THE MAINSPRING</div>
+    <div class="sub" id="wind-sub">The movement is complete but has no power. <b>Hold</b> anywhere (or hold SPACE) to wind &mdash; drag in circles to wind faster. <b>Let go in the gold band.</b> Past the end, the spring slips!</div>
     <canvas id="crown" width="720" height="340"></canvas>
     <div class="hint" id="wind-hint">FULL = GOLD BAND</div>
   </div>
@@ -613,6 +664,7 @@ canvas { display: block; }
     <div class="row">
       <button id="again-btn" class="btn gold">BUILD ANOTHER</button>
       <button id="admire-btn" class="btn">ADMIRE IT</button>
+      <button id="result-guild" class="btn">&#127942; GUILD</button>
     </div>
   </div>
 </div>
@@ -631,8 +683,14 @@ const BASE_PARTS = [
     lore:'Left alone, the gear train would spin down in seconds. The escape wheel\'s hooked teeth are caught and released one at a time, letting power "escape" in tiny, equal steps.' },
   { id:'pallet', name:'Pallet Fork', role:'ESCAPEMENT', desc:'T-shaped lever with ruby jewels that locks and unlocks the escapement', color:0xaaaacc,
     lore:'Its two ruby pallets rock in and out of the escape wheel teeth. Every rock is one "tick" — and each tick gives the balance wheel a tiny push to keep it swinging.' },
+  { id:'bridges', name:'Bridges', role:'STRUCTURE', desc:'Plates that bolt over the wheels and hold their upper pivots in jewels', color:0x8e8eb0,
+    lore:'The mainplate holds the bottom of each wheel; the bridges hold the top. The barrel bridge covers the barrel, the train bridge covers the going train. On fine watches the bridges carry the Côtes de Genève stripes.' },
+  { id:'ratchet', name:'Ratchet Wheel & Click', role:'POWER', desc:'The wheel that winds the mainspring, and the pawl that stops it unwinding', color:0xd8d2b8,
+    lore:'The crown turns the ratchet wheel, which winds the mainspring. The click drops between its teeth so the spring can\'t spin straight back — that tick-tick-tick you hear when winding is the click.' },
   { id:'balance', name:'Balance Wheel', role:'TIMEKEEPER', desc:'The beating heart — oscillates 8 times per second with its hairspring', color:0xddddee,
     lore:'Like a pendulum, the balance and its spiral hairspring swing back and forth at a steady rhythm: 28,800 times an hour. The regulator shortens or lengthens the hairspring to speed it up or slow it down.' },
+  { id:'cock', name:'Balance Cock', role:'STRUCTURE', desc:'The bridge that holds the balance, with its shock jewel and the regulator', color:0x8e8eb0,
+    lore:'A "cock" is a bridge fixed at one end only. Its spring-mounted jewel (the shock setting) lets the balance pivot bounce instead of snapping when the watch is dropped — invented in 1933 as the Incabloc.' },
   { id:'dial', name:'Dial', role:'DISPLAY', desc:'The watch face with hour markers and minute track', color:0xf5f0e8,
     lore:'Dials are often brass, plated and painted or enamelled. The applied markers and the printed minute track are made and placed by hand on fine watches.' },
   { id:'hands', name:'Hands', role:'DISPLAY', desc:'Hour, minute, and second hands to display the time', color:0x222244,
@@ -653,8 +711,11 @@ const WHY_NOT = {
   geartrain: 'the gears need the barrel to drive them',
   escape: 'the escape wheel is the last wheel of the gear train',
   pallet: 'the pallet fork has nothing to lock without the escape wheel',
-  balance: 'the balance needs the pallet fork to push it',
-  dial: 'the dial covers the movement — finish the movement first',
+  bridges: 'the bridges go over the wheels, so the wheels must be in first',
+  ratchet: 'the ratchet wheel sits on top of the barrel bridge',
+  balance: 'the balance needs the pallet fork to push it, and the bridges to be on',
+  cock: 'the balance cock holds the balance down — the balance goes in first',
+  dial: 'the dial covers the movement — finish and oil the movement first',
   hands: 'the hands need a dial to point at',
   case: 'the case goes on once the movement, dial and hands are finished',
   crown: 'the crown and stem go in through the case',
@@ -680,7 +741,7 @@ const STYLE = {
 const MUTE_KEY = 'watchmaker.muted';
 
 // ─── WATCH TYPES (each one a moment in watch history) ───
-const TYPE_ORDER = ['pocket', 'trench', 'pilot', 'dress', 'diver', 'chrono'];
+const TYPE_ORDER = ['pocket', 'trench', 'pilot', 'auto', 'dress', 'diver', 'chrono'];
 const WATCH_TYPES = {
   pocket: { name: 'Railroad Pocket Watch', short: 'POCKET', year: 1893, era: 'THE AGE OF STEAM', extras: [], minGrade: 'fine',
     blurb: 'After a deadly train crash blamed on a watch that had stopped, American railroads made strict rules for their watches: at least 17 jewels, an open face with bold numbers, the crown at 12, set by a hidden lever, and accurate to 30 seconds a week.',
@@ -699,6 +760,10 @@ const WATCH_TYPES = {
     blurb: 'Navigators flew with huge observation watches: a black dial with big white numbers, a triangle at 12 to find "up" in the dark, and an onion crown big enough to turn in thick gloves.',
     look: 'Black dial, triangle at 12, onion crown, long riveted strap.',
     defaults: { case: 0, dial: 1, hands: 2, strap: 1 } },
+  auto: { name: 'Self-winding Watch', short: 'AUTOMATIC', year: 1931, era: 'THE PERPETUAL', extras: ['rotor'],
+    blurb: 'John Harwood, a watch repairer from Bolton, patented a wristwatch that wound itself in 1923. In 1931 the "Perpetual" rotor arrived: a half-moon weight that swings freely all the way round as your arm moves, winding the spring a little with every step.',
+    look: 'A rotor you can see swinging through an open-heart window in the dial, dauphine hands, and a slipping mainspring that can never be overwound.',
+    defaults: { case: 0, dial: 2, hands: 2, strap: 2 } },
   dress: { name: 'Moon-phase Dress Watch', short: 'DRESS', year: 1941, era: 'THE GOLDEN AGE', extras: ['moon'],
     blurb: 'A slim gold watch for special occasions, with a complication: a moon-phase. Its disc has 59 teeth and two moons and is pushed on one tooth every night, so it follows the real Moon\'s 29½-day cycle.',
     look: 'Thin gold case with a stepped bezel, applied gold batons, dauphine hands, and a moon window that shows tonight\'s real moon.',
@@ -713,11 +778,15 @@ const WATCH_TYPES = {
     defaults: { case: 0, dial: 1, hands: 2, strap: 4 } },
 };
 const EXTRA_PARTS = {
-  moon: { id: 'moon', name: 'Moon-phase Disc', role: 'COMPLICATION', after: 'balance', color: 0x1f3f8f,
+  rotor: { id: 'rotor', name: 'Rotor', role: 'SELF-WINDING', after: 'cock', color: 0xb8bcc8,
+    desc: 'A half-moon weight that swings as you move and winds the mainspring for you',
+    lore: 'Its heavy rim (often tungsten or gold) makes it swing with every movement of your arm. A reversing gear turns both directions into winding, and a slipping bridle on the mainspring stops it ever being overwound.',
+    why: 'the rotor goes on top of the finished movement, over the balance cock', okNote: 'The rotor spins freely on its bearing with the faintest whirr.' },
+  moon: { id: 'moon', name: 'Moon-phase Disc', role: 'COMPLICATION', after: 'cock', color: 0x1f3f8f,
     desc: 'A starry disc with two moons that moves on one tooth every night',
     lore: 'It has 59 teeth — two moons × 29½ days. Each night a finger on the gear train nudges it one tooth. Look at the dial when it\'s done: it shows tonight\'s real Moon!',
     why: 'the moon disc sits on the finished movement, under the dial', okNote: 'The 59-tooth moon disc is clean and clicks on one tooth a night.' },
-  chrono: { id: 'chrono', name: 'Chronograph Works', role: 'COMPLICATION', after: 'balance', color: 0x99aacc,
+  chrono: { id: 'chrono', name: 'Chronograph Works', role: 'COMPLICATION', after: 'cock', color: 0x99aacc,
     desc: 'Column wheel, chronograph wheel and levers — a stopwatch inside the watch',
     lore: 'The castle-shaped column wheel is the brain: each push turns it one step, and its columns lift or drop the levers that start, stop and reset. A heart-shaped cam snaps the hand back to zero.',
     why: 'the stopwatch works are built on top of the running movement', okNote: 'The column wheel turns crisply and every lever drops cleanly between its columns.' },
@@ -739,8 +808,8 @@ const GRADES = {
   chronometer: { label: 'CHRONOMETER', jewels: 21, lo: -4, hi: 6, bonus: 220, finishing: true, specLabel: '−4 to +6 s/day (official chronometer test)',
     desc: '21 jewels in gold settings, a screw balance, hand finishing — and it must pass the official chronometer standard: −4 to +6 seconds a day.' },
 };
-const SLOT_EXTRA = { moon: [0, 0.78, 1.3], chrono: [0.7, 0.66, 0.7], pushers: [3.95, 0.55, 0], bezel: [0, 1.3, 0] };
-const SIZE_EXTRA = { moon: [0.9, 0.06, 0.9], chrono: [1.5, 0.12, 1.5], pushers: [0.35, 0.3, 2.4], bezel: [3.95, 0.12, 3.95] };
+const SLOT_EXTRA = { moon: [0, 0.84, 1.6], chrono: [0.7, 0.66, 0.7], pushers: [3.95, 0.55, 0], bezel: [0, 1.3, 0], rotor: [0, 0.89, 0] };
+const SIZE_EXTRA = { moon: [0.9, 0.06, 0.9], chrono: [1.5, 0.12, 1.5], pushers: [0.35, 0.3, 2.4], bezel: [3.95, 0.12, 3.95], rotor: [2.3, 0.06, 2.3] };
 
 let wtype = 'trench', grade = 'standard';
 let finishTex = null, finishVer = 0, finishPts = 0, finishLabel = '', specPtsFinal = 0, specOkFinal = false;
@@ -851,6 +920,14 @@ function drawDialPrint(cv) {
     g.restore();
     g.strokeStyle = '#d4af37'; g.lineWidth = 3; g.beginPath(); g.arc(mx, my, mr, Math.PI, 0); g.stroke();
     gradeY = C - R * 0.22;
+  } else if (wtype === 'auto') {
+    for (let i = 0; i < 60; i++) line(i / 60 * Math.PI * 2, 0.97, i % 5 ? 0.94 : 0.9, i % 5 ? 1.5 : 3, i % 5 ? soft : ink);
+    text('AUTOMATIC', C, C + R * 0.11, '12px sans-serif', soft);
+    // the open heart: a window onto the rotor
+    const wx = C, wy = C + R * 0.45, wr = R * 0.27;
+    g.save(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.arc(wx, wy, wr, 0, Math.PI * 2); g.fill(); g.restore();
+    g.strokeStyle = '#d4af37'; g.lineWidth = 4; g.beginPath(); g.arc(wx, wy, wr, 0, Math.PI * 2); g.stroke();
+    gradeY = C - R * 0.22;
   } else if (wtype === 'chrono') {
     // tachymeter: speed = 3600 ÷ seconds
     g.strokeStyle = soft; g.lineWidth = 2; g.beginPath(); g.arc(C, C, R * 0.86, 0, Math.PI * 2); g.stroke();
@@ -880,16 +957,16 @@ function createMoonDisc() {
   const g = new THREE.Group();
   const navy = new THREE.MeshStandardMaterial({ color: 0x13235c, metalness: 0.5, roughness: 0.35 });
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.05, 48), navy);
-  disc.position.set(0, 0.78, 1.3); g.add(disc);
+  disc.position.set(0, 0.84, 1.6); g.add(disc);
   const teeth = createGearMesh(0.78, 0.92, 59, 0.06, 0.04, 0x2a3a7a, 0.6); // 59 teeth: two moons x 29.5 days
-  teeth.rotation.x = -Math.PI / 2; teeth.position.set(0, 0.76, 1.3); g.add(teeth);
+  teeth.rotation.x = -Math.PI / 2; teeth.position.set(0, 0.82, 1.6); g.add(teeth);
   for (const sx of [-0.48, 0.48]) {
     const moon = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.06, 32), new THREE.MeshStandardMaterial({ color: 0xf2d36b, metalness: 0.9, roughness: 0.25, emissive: 0x332200 }));
-    moon.position.set(sx, 0.8, 1.3); g.add(moon);
+    moon.position.set(sx, 0.86, 1.6); g.add(moon);
   }
   for (let i = 0; i < 9; i++) {
     const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshBasicMaterial({ color: 0xffe9a0 }));
-    s.position.set(Math.cos(i * 2.3) * 0.6, 0.81, 1.3 + Math.sin(i * 2.3) * 0.55); g.add(s);
+    s.position.set(Math.cos(i * 2.3) * 0.6, 0.87, 1.6 + Math.sin(i * 2.3) * 0.55); g.add(s);
   }
   g.userData.partId = 'moon';
   return g;
@@ -1087,6 +1164,7 @@ function startGame(d) {
   sfx.select();
 }
 function renderCommission() {
+  renderOrders();
   const col = loadCollection();
   const gridEl = document.getElementById('type-grid'); gridEl.innerHTML = '';
   TYPE_ORDER.forEach(tk => {
@@ -1111,17 +1189,367 @@ function renderCommission() {
     row.appendChild(b);
   });
   const T = WATCH_TYPES[pick.type];
-  document.getElementById('commission-note').innerHTML = `<b>${T.name}, ${T.year}.</b> ${T.blurb}<br><br><b>What makes it one:</b> ${T.look}`;
+  const o = pick.order && career.orders.find(x => x.id === pick.order);
+  document.getElementById('commission-note').innerHTML = (o ? `<b style="color:#7bd88f">ORDER FOR ${o.who.toUpperCase()}:</b> ${orderText(o)}. Pays $${o.pay}, +$${o.bonus} if it matches${o.wish.dial !== undefined || o.wish.case !== undefined ? ' (pick the right colours when you case it up)' : ''}.<br><br>` : '') +
+    `<b>${T.name}, ${T.year}.</b> ${T.blurb}<br><br><b>What makes it one:</b> ${T.look}`;
 }
 function beginCommission() {
   document.getElementById('commission-overlay').classList.remove('show');
   resetGame();
   setWatchType(pick.type, pick.grade);
-  finishTex = null; finishPts = 0; finishLabel = '';
+  activeOrder = pick.order ? career.orders.find(x => x.id === pick.order) || null : null;
+  finishTex = null; finishPts = 0; finishLabel = ''; oilDone = false; oilPts = 0;
   diffName = pendingDiff; diff = DIFF[pendingDiff];
   score = 0; startTime = performance.now(); elapsed = 0; timerOn = true;
   if (GRADES[grade].finishing) beginFinishing(beginBuild); else beginBuild();
 }
+
+// ─── NEW MOVEMENT PARTS: bridges, ratchet & click, balance cock, rotor ───
+function plateMat() {
+  return GRADES[grade].finishing && finishTex
+    ? new THREE.MeshStandardMaterial({ map: finishTex, metalness: 0.75, roughness: 0.28 })
+    : new THREE.MeshStandardMaterial({ color: 0x8e8eb0, metalness: 0.7, roughness: 0.4 });
+}
+function rubyJewel(x, y, z, r = 0.08) {
+  const j = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.05, 12), new THREE.MeshStandardMaterial({ color: 0xff3366, metalness: 0.5, roughness: 0.2, transparent: true, opacity: 0.85 }));
+  j.position.set(x, y, z); return j;
+}
+function bluedScrew(x, y, z) {
+  const g = new THREE.Group();
+  const s = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.05, 16), new THREE.MeshStandardMaterial({ color: 0x1d2c9a, metalness: 0.85, roughness: 0.2 }));
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.02, 0.03), new THREE.MeshStandardMaterial({ color: 0x0a0f30 }));
+  slot.position.y = 0.03; g.add(s); g.add(slot); g.position.set(x, y, z); g.rotation.y = x * 2 + z;
+  return g;
+}
+function createBridges() {
+  const g = new THREE.Group(), y = 0.78;
+  // Barrel bridge: a round plate over the barrel, holding the arbor's upper pivot
+  const bb = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.08, 48), plateMat());
+  bb.position.set(-1.2, y, 0.8); bb.castShadow = true; g.add(bb);
+  g.add(rubyJewel(-1.2, y + 0.05, 0.8));
+  g.add(bluedScrew(-2.1, y + 0.05, 1.4)); g.add(bluedScrew(-0.3, y + 0.05, 1.5));
+  // Train bridge: a kidney-shaped plate over the escape wheel and pallet fork pivots
+  const mat = plateMat();
+  const e1 = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.08, 40), mat); e1.position.set(1.8, y, -0.5); g.add(e1);
+  const e2 = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.08, 40), mat); e2.position.set(1.8, y, -1.3); g.add(e2);
+  const mid = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.8), mat); mid.position.set(1.8, y, -0.9); g.add(mid);
+  g.add(rubyJewel(1.8, y + 0.05, -0.5)); g.add(rubyJewel(1.8, y + 0.05, -1.3, 0.06));
+  g.add(bluedScrew(2.35, y + 0.05, -0.2)); g.add(bluedScrew(1.25, y + 0.05, -1.65));
+  g.userData.partId = 'bridges';
+  return g;
+}
+function createRatchet() {
+  const g = new THREE.Group();
+  // The ratchet wheel sits on the barrel arbor, above the barrel bridge; it turns when you wind
+  const wheel = createGearMesh(0.1, 0.72, 48, 0.05, 0.04, 0xd8d2b8, 0.85);
+  wheel.rotation.x = -Math.PI / 2; wheel.position.set(-1.2, 0.82, 0.8); wheel.userData.gearId = 'ratchet'; g.add(wheel);
+  const sq = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.22), new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.9, roughness: 0.15 }));
+  sq.position.set(-1.2, 0.86, 0.8); g.add(sq);
+  g.add(bluedScrew(-1.2, 0.88, 0.8));
+  // The click: a little steel pawl that drops between the teeth so the spring can't unwind
+  const steel = new THREE.MeshStandardMaterial({ color: 0xc8ccd8, metalness: 0.9, roughness: 0.2 });
+  const click = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.12), steel);
+  click.position.set(-0.45, 0.83, 1.35); click.rotation.y = -0.55; g.add(click);
+  const tip = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.14), steel); tip.position.set(-0.62, 0.83, 1.2); tip.rotation.y = -0.55; g.add(tip);
+  const spring = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.025, 0.035), new THREE.MeshStandardMaterial({ color: 0x4477bb, metalness: 0.7 }));
+  spring.position.set(-0.1, 0.83, 1.6); spring.rotation.y = -0.2; g.add(spring);
+  g.add(bluedScrew(-0.3, 0.84, 1.5));
+  g.userData.partId = 'ratchet';
+  return g;
+}
+function createCock() {
+  const g = new THREE.Group(), y = 0.76, cx = -1.5, cz = -1.0;
+  const mat = plateMat();
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.5), mat); arm.position.set(-2.35, y, cz); arm.castShadow = true; g.add(arm);
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 40), mat); head.position.set(cx, y, cz); g.add(head);
+  g.add(bluedScrew(-3.0, y + 0.04, cz));
+  // Shock setting: a gold ring and a little spring holding the upper balance jewel
+  const setting = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.045, 8, 24), new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 }));
+  setting.rotation.x = Math.PI / 2; setting.position.set(cx, y + 0.04, cz); g.add(setting);
+  g.add(rubyJewel(cx, y + 0.05, cz, 0.07));
+  const lyre = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.012, 6, 20, Math.PI * 1.5), new THREE.MeshStandardMaterial({ color: 0xeeeeff, metalness: 0.9 }));
+  lyre.rotation.x = Math.PI / 2; lyre.position.set(cx, y + 0.08, cz); g.add(lyre);
+  // Regulator: the lever that shortens or lengthens the hairspring
+  const reg = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.06), new THREE.MeshStandardMaterial({ color: 0xccccdd, metalness: 0.9, roughness: 0.2 }));
+  reg.position.set(cx - 0.2, y + 0.06, cz + 0.25); reg.rotation.y = 0.6; reg.userData.isRegulator = true; g.add(reg);
+  const tip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.12), new THREE.MeshStandardMaterial({ color: 0x1d2c9a, metalness: 0.85 }));
+  tip.position.set(cx - 0.42, y + 0.06, cz + 0.4); g.add(tip);
+  g.userData.partId = 'cock';
+  return g;
+}
+function createRotor() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CircleGeometry(2.25, 48, 0, Math.PI), GRADES[grade].finishing && finishTex
+    ? new THREE.MeshStandardMaterial({ map: finishTex, metalness: 0.8, roughness: 0.25, side: THREE.DoubleSide })
+    : new THREE.MeshStandardMaterial({ color: 0xb8bcc8, metalness: 0.85, roughness: 0.3, side: THREE.DoubleSide }));
+  body.rotation.x = -Math.PI / 2; body.position.y = 0.885; g.add(body);
+  // Heavy rim: the weight that makes it swing (real ones use tungsten or gold)
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.12, 10, 48, Math.PI), metalMat(grade === 'chronometer' ? 0xd4af37 : 0x9aa0ac));
+  rim.rotation.x = -Math.PI / 2; rim.position.y = 0.9; rim.castShadow = true; g.add(rim);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 24), metalMat(0xccccdd)); hub.position.y = 0.9; g.add(hub);
+  for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; g.add(bluedScrew(Math.cos(a) * 0.2, 0.94, Math.sin(a) * 0.2)); }
+  g.userData.partId = 'rotor';
+  return g;
+}
+
+// ─── OILING: a drop on every jewel, not one more ───
+let oil = null, oilPts = 0, oilDone = false;
+const OIL_JEWELS = { get length() { return 5; }, map(f) { return JEWEL_POS.slice(0, 5).map(f); }, forEach(f) { JEWEL_POS.slice(0, 5).forEach(f); } }; // JEWEL_POS is declared further down
+const oilJewel = i => JEWEL_POS[i];
+function oilBand() { const w = 0.14 + careerLv('oiler') * 0.045; return [0.68 - w, 0.68 + w]; }
+function beginOiling() {
+  phase = 'oil';
+  oil = { fill: OIL_JEWELS.map(() => 0), state: OIL_JEWELS.map(() => 0), cur: -1, held: false, done: false }; // state: 0 dry, 1 oiled, 2 perfect, 3 flooded
+  document.getElementById('oil-sub').innerHTML = `A watch runs dry without oil, but too much oil creeps away and gums the works. <b>Hold</b> on each ruby jewel to let a drop out; <b>let go in the gold band</b>. Keep holding and it floods.${careerLv('oiler') ? ` <span style="color:#7bd88f">Your ${TOOLS.oiler.lv[careerLv('oiler')][0]} gives a wider band.</span>` : ''}`;
+  document.getElementById('oil-overlay').classList.add('show');
+  document.getElementById('tray').style.visibility = 'hidden';
+  updateHud();
+  setInstr('');
+}
+function oilPos(e) { const cv = document.getElementById('oil-cv'), r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 440, y: (e.clientY - r.top) / r.height * 440 }; }
+function oilXY(i) { const [x, z] = oilJewel(i); return [220 + x / 3.5 * 185, 220 + z / 3.5 * 185]; }
+function oilDown(e) {
+  if (!oil || oil.done) return;
+  e.preventDefault();
+  const p = oilPos(e);
+  let best = -1, bd = 1e9;
+  OIL_JEWELS.forEach((_, i) => { const [x, y] = oilXY(i); const d = Math.hypot(p.x - x, p.y - y); if (d < 42 && d < bd) { bd = d; best = i; } });
+  if (best < 0 || oil.state[best]) { if (best >= 0) sfx.hover(); return; }
+  oil.cur = best; oil.held = true;
+  e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
+}
+function oilKey(on) {
+  if (!oil || oil.done) return;
+  if (on) { if (oil.held) return; const i = oil.state.findIndex(s => !s); if (i < 0) return; oil.cur = i; oil.held = true; }
+  else oilUp();
+}
+function oilUp() {
+  if (!oil || !oil.held) return;
+  oil.held = false;
+  const i = oil.cur, f = oil.fill[i], [lo, hi] = oilBand();
+  if (f < lo) { document.getElementById('oil-hint').textContent = 'NOT ENOUGH YET — HOLD A LITTLE LONGER'; sfx.hover(); return; }
+  oilSettle(i, f > hi ? 3 : (Math.abs(f - 0.68) < (hi - lo) * 0.22 ? 2 : 1));
+}
+function oilSettle(i, st) {
+  oil.state[i] = st;
+  if (st === 3) { mistakes++; addScore(-10); sfx.miss(); toast('FLOODED', '−10 · too much oil creeps and gums the works', true); }
+  else { const pts = st === 2 ? 30 : 15; oilPts += pts; addScore(pts); if (st === 2) sfx.perfect(); else sfx.good(); toast(st === 2 ? 'PERFECT DROP' : 'OILED', `+${pts}`); }
+  // The drop appears on the jewel in 3D
+  const mp = placedMeshes['mainplate'];
+  if (mp) { const [x, z] = oilJewel(i); const d = new THREE.Mesh(new THREE.SphereGeometry(st === 3 ? 0.16 : 0.1, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffd36b, transparent: true, opacity: 0.55, roughness: 0.1 })); d.position.set(x, 0.22, z); d.scale.y = 0.5; mp.add(d); }
+  if (oil.state.every(s => s)) {
+    oil.done = true;
+    const perfect = oil.state.filter(s => s === 2).length, flooded = oil.state.filter(s => s === 3).length;
+    setTimeout(() => {
+      document.getElementById('oil-overlay').classList.remove('show'); oil = null; oilDone = true;
+      document.getElementById('tray').style.visibility = '';
+      phase = 'build'; buildUI();
+      setInstr(flooded ? 'Oiled — a bit heavy-handed. Now the dial' : perfect === 5 ? 'Five perfect drops! Now the dial' : 'Oiled. Now the dial', flooded ? 'bad' : 'good');
+    }, 800);
+  }
+}
+function drawOil(dt) {
+  if (!oil) return;
+  if (oil.held) { oil.fill[oil.cur] += dt * 0.55; if (oil.fill[oil.cur] >= 1) { oil.held = false; oilSettle(oil.cur, 3); } }
+  const cv = document.getElementById('oil-cv'), g = cv.getContext('2d');
+  g.clearRect(0, 0, 440, 440);
+  const pg = g.createRadialGradient(170, 170, 20, 220, 220, 200);
+  pg.addColorStop(0, '#9a9ec0'); pg.addColorStop(1, '#5c6080');
+  g.fillStyle = pg; g.beginPath(); g.arc(220, 220, 200, 0, Math.PI * 2); g.fill();
+  const [lo, hi] = oilBand();
+  OIL_JEWELS.forEach((_, i) => {
+    const [x, y] = oilXY(i), st = oil.state[i], f = oil.fill[i];
+    // band ring + fill ring
+    g.lineWidth = 7; g.strokeStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.arc(x, y, 30, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = 'rgba(212,175,55,0.5)'; g.beginPath(); g.arc(x, y, 30, -Math.PI / 2 + lo * Math.PI * 2, -Math.PI / 2 + hi * Math.PI * 2); g.stroke();
+    g.strokeStyle = st === 3 ? '#e0705a' : '#ffd36b'; g.beginPath(); g.arc(x, y, 30, -Math.PI / 2, -Math.PI / 2 + Math.min(1, f) * Math.PI * 2); g.stroke();
+    // the oil drop
+    if (f > 0) { g.fillStyle = `rgba(255,211,107,${st === 3 ? 0.7 : 0.5})`; g.beginPath(); g.arc(x, y, 6 + f * 20, 0, Math.PI * 2); g.fill(); }
+    // the jewel
+    g.fillStyle = '#d4af37'; g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#ff3366'; g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.arc(x - 3, y - 3, 3, 0, Math.PI * 2); g.fill();
+    if (st) { g.fillStyle = st === 3 ? '#e0705a' : st === 2 ? '#7bd88f' : '#ddd'; g.font = 'bold 12px system-ui'; g.textAlign = 'center'; g.fillText(st === 3 ? 'FLOODED' : st === 2 ? 'PERFECT' : 'OK', x, y + 48); }
+  });
+  // the oiler follows your finger
+  if (oil.held) { const [x, y] = oilXY(oil.cur); g.strokeStyle = '#eee'; g.lineWidth = 3; g.beginPath(); g.moveTo(x + 6, y - 6); g.lineTo(x + 60, y - 90); g.stroke(); g.fillStyle = '#c0392b'; g.fillRect(x + 54, y - 130, 12, 44); }
+  const left = oil.state.filter(s => !s).length;
+  document.getElementById('oil-hint').textContent = oil.done ? 'DONE' : `${left} JEWEL${left === 1 ? '' : 'S'} TO OIL · HOLD, THEN LET GO IN THE GOLD BAND`;
+}
+
+// ─── CAREER: the Guild, the workshop and customer orders ───
+const CAREER_KEY = 'watchmaker.career';
+const RANKS = [[0, 'TRAINEE'], [400, 'CRAFTSMAN'], [1200, 'MASTER CRAFTSMAN'], [3000, 'GUILD MASTER'], [6000, 'LIVING LEGEND']];
+const TOOLS = {
+  loupe:    { name: 'Loupe',       icon: '&#128269;', lv: [['Eyeglass', 0], ['10× loupe', 150], ['Stereo microscope', 500]],  desc: l => l ? `seating zone ${l * 15}% wider` : 'standard seating zone' },
+  tweezers: { name: 'Tweezers',    icon: '&#129530;', lv: [['Steel tweezers', 0], ['Brass tweezers', 180], ['Titanium tweezers', 600]], desc: l => l ? `bullseye ${l * 20}% bigger` : 'standard bullseye' },
+  oiler:    { name: 'Oiler',       icon: '&#128167;', lv: [['Plain oiler', 0], ['Fine oiler', 120], ['Automatic oiler', 400]], desc: l => l ? `oil band ${l * 30}% wider` : 'standard oil band' },
+  lamp:     { name: 'Bench lamp',  icon: '&#128161;', lv: [['Candle', 0], ['Desk lamp', 100], ['Daylight lamp', 350]],   desc: l => l ? `hints cost ${25 - l * 8} instead of 25` : 'hints cost 25 points' },
+};
+let career = loadCareer(), activeOrder = null;
+function loadCareer() {
+  try { return Object.assign({ rep: 0, money: 0, tools: { loupe: 0, tweezers: 0, oiler: 0, lamp: 0 }, orders: [], built: 0, repaired: 0, earned: 0, fulfilled: 0 }, JSON.parse(localStorage.getItem(CAREER_KEY) || '{}')); }
+  catch (e) { return { rep: 0, money: 0, tools: { loupe: 0, tweezers: 0, oiler: 0, lamp: 0 }, orders: [], built: 0, repaired: 0, earned: 0, fulfilled: 0 }; }
+}
+function saveCareer() { try { localStorage.setItem(CAREER_KEY, JSON.stringify(career)); } catch (e) {} }
+function careerLv(k) { return (career.tools && career.tools[k]) || 0; }
+function rankOf(rep) { let r = RANKS[0]; RANKS.forEach(x => { if (rep >= x[0]) r = x; }); return r; }
+function nextRank(rep) { return RANKS.find(x => x[0] > rep) || null; }
+function earn(money, rep, why) {
+  career.money += money; career.earned += money; career.rep += rep;
+  const before = rankOf(career.rep - rep)[1], after = rankOf(career.rep)[1];
+  saveCareer();
+  if (before !== after) setTimeout(() => toast('PROMOTED', `the Guild names you ${after}`), 1400);
+  return `Paid <b>$${money}</b> · <b>+${rep}</b> reputation${why ? ' ' + why : ''} · you are a <b>${after}</b>`;
+}
+function hintCost() { return 25 - careerLv('lamp') * 8; }
+
+// Customer orders
+const ORDER_NAMES = ['Captain Mei', 'Dr. Lindqvist', 'Ms. Okafor', 'Grandpa Joe', 'Pilot Ana', 'Chef Dubois', 'Ranger Tom', 'Professor Kim', 'Officer Diaz', 'Mr. Tanaka', 'Aunt Rosa', 'Coach Rivera'];
+const ORDER_WHY = {
+  pocket: ['I\'ve just been made a train conductor', 'for my grandfather\'s waistcoat'], trench: ['for a museum display about my great-grandmother', 'I collect old military watches'],
+  pilot: ['I fly cargo planes at night', 'for my first solo flight'], dress: ['for my wedding day', 'I want to see the moon on my wrist'],
+  diver: ['I\'m training to be a rescue diver', 'for a trip to the Great Barrier Reef'], chrono: ['I time rockets at the launch pad', 'I\'m a racing-car mechanic'],
+  auto: ['I always forget to wind my watch', 'for my first day as a surgeon'],
+};
+function makeOrder() {
+  const tk = TYPE_ORDER[Math.floor(Math.random() * TYPE_ORDER.length)];
+  const gk = tk === 'pocket' ? GRADE_ORDER[1 + Math.floor(Math.random() * 2)] : GRADE_ORDER[Math.floor(Math.random() * 3)];
+  const wish = {};
+  if (Math.random() < 0.7) wish.dial = Math.floor(Math.random() * STYLE.dial.length);
+  if (Math.random() < 0.5) wish.case = Math.floor(Math.random() * STYLE.case.length);
+  const base = { standard: 90, fine: 170, chronometer: 300 }[gk] + (WATCH_TYPES[tk].extras.length * 40);
+  return { id: Math.random().toString(36).slice(2, 8), who: ORDER_NAMES[Math.floor(Math.random() * ORDER_NAMES.length)], type: tk, grade: gk, wish,
+    why: ORDER_WHY[tk][Math.floor(Math.random() * 2)], pay: base + Math.floor(Math.random() * 40), bonus: 40 + Object.keys(wish).length * 30 };
+}
+function ensureOrders() { career.orders = career.orders || []; while (career.orders.length < 3) career.orders.push(makeOrder()); saveCareer(); }
+function orderText(o) {
+  const w = [];
+  if (o.wish.dial !== undefined) w.push(`${STYLE.dial[o.wish.dial][0].toLowerCase()} dial`);
+  if (o.wish.case !== undefined) w.push(`${STYLE.case[o.wish.case][0].toLowerCase()} case`);
+  return `${WATCH_TYPES[o.type].name}, ${GRADES[o.grade].label.toLowerCase()} grade${w.length ? ', with a ' + w.join(' and a ') : ''}`;
+}
+function renderOrders() {
+  ensureOrders();
+  const box = document.getElementById('orders'); box.innerHTML = '';
+  const free = document.createElement('div');
+  free.className = 'ocard' + (!pick.order ? ' sel' : '');
+  free.innerHTML = '<div class="on">FREE BUILD</div><div class="ox">Make any watch you like, just for the showcase.</div>';
+  free.addEventListener('click', () => { pick.order = null; sfx.select(); renderCommission(); });
+  box.appendChild(free);
+  career.orders.forEach(o => {
+    const el = document.createElement('div');
+    el.className = 'ocard' + (pick.order === o.id ? ' sel' : '');
+    el.innerHTML = `<div class="on">${o.who.toUpperCase()}</div><div class="ox">“${orderText(o)} — ${o.why}.”</div><div class="op">PAYS $${o.pay} · +$${o.bonus} IF IT MATCHES</div>`;
+    el.addEventListener('click', () => { pick.order = o.id; pick.type = o.type; pick.grade = o.grade; sfx.select(); renderCommission(); });
+    box.appendChild(el);
+  });
+}
+function buildPay() {
+  // What a finished watch earns: the grade sets the base, the quality of your work scales it
+  const base = { standard: 60, fine: 120, chronometer: 220 }[grade] + WATCH_TYPES[wtype].extras.length * 30;
+  const q = Math.max(0.35, Math.min(1, score / 2600));
+  return Math.round(base * q);
+}
+function settleBuild() {
+  // Called from the results screen. Returns HTML for the payout line.
+  let money = buildPay(), rep = Math.round(score / 8), note = '';
+  career.built++;
+  if (activeOrder) {
+    const o = activeOrder;
+    const typeOk = o.type === wtype && o.grade === grade;
+    if (typeOk) {
+      const wishOk = (o.wish.dial === undefined || design.dial === o.wish.dial) && (o.wish.case === undefined || design.case === o.wish.case);
+      money += o.pay + (wishOk ? o.bonus : 0); rep += 60 + (wishOk ? 30 : 0); career.fulfilled++;
+      note = `<br><b style="color:#7bd88f">${o.who} is delighted${wishOk ? ' — exactly what they asked for!' : ', though not quite the look they wanted.'}</b> Order fee $${o.pay}${wishOk ? ` + $${o.bonus} match bonus` : ''}.`;
+      career.orders = career.orders.filter(x => x.id !== o.id);
+    } else note = `<br><span style="color:#e0705a">${o.who} wanted a ${orderText(o)} — this isn't it, so the order stays open.</span>`;
+    activeOrder = null;
+  }
+  const html = earn(money, rep, '') + note;
+  ensureOrders();
+  return html;
+}
+
+// The Guild hall & workshop
+function showGuild() {
+  const r = rankOf(career.rep), nx = nextRank(career.rep);
+  document.getElementById('guild-rank').textContent = r[1];
+  document.getElementById('guild-rep').innerHTML = nx
+    ? `${career.rep} REPUTATION · ${nx[0] - career.rep} MORE TO BECOME <b>${nx[1]}</b><div class="repbar"><i style="width:${Math.round((career.rep - r[0]) / (nx[0] - r[0]) * 100)}%"></i></div>`
+    : `${career.rep} REPUTATION · THE HIGHEST RANK THERE IS`;
+  const coll = Object.keys(loadCollection()).length, rp = loadRepair();
+  document.getElementById('guild-stats').innerHTML = `WALLET <b>$${career.money}</b> · EARNED <b>$${career.earned}</b> · BUILT <b>${career.built}</b> · ORDERS FILLED <b>${career.fulfilled}</b> · REPAIRED <b>${rp.fixed || 0}</b> · COLLECTION <b>${coll}/${TYPE_ORDER.length * GRADE_ORDER.length - 1}</b>`;
+  const shop = document.getElementById('tool-shop'); shop.innerHTML = '';
+  Object.entries(TOOLS).forEach(([k, t]) => {
+    const l = careerLv(k), cur = t.lv[l], next = t.lv[l + 1];
+    const el = document.createElement('div'); el.className = 'tool';
+    el.innerHTML = `<div class="tn">${t.icon} ${t.name}</div><div class="tc">${cur[0]} — ${t.desc(l)}</div>` +
+      (next ? `<div class="tnx">NEXT: ${next[0]} — ${t.desc(l + 1)}</div><button class="btn ${career.money >= next[1] ? 'gold' : ''}" ${career.money >= next[1] ? '' : 'disabled'}>BUY $${next[1]}</button>` : '<div class="tnx">&#10003; THE BEST THERE IS</div>');
+    const b = el.querySelector('button');
+    if (b) b.addEventListener('click', () => { if (career.money < next[1]) return; career.money -= next[1]; career.tools[k] = l + 1; saveCareer(); sfx.certify(); showGuild(); });
+    shop.appendChild(el);
+  });
+  document.getElementById('guild-overlay').classList.add('show');
+}
+function startBanner() {
+  const r = rankOf(career.rep);
+  document.getElementById('start-rank').innerHTML = `GUILD RANK <b>${r[1]}</b> · ${career.rep} REP · $${career.money}`;
+}
+
+// ─── AUTOMATIC WINDING: swing the watch and the rotor does the work ───
+function autoWindMove(e) {
+  if (!wind || !wind.auto || phase !== 'wind') return;
+  if (wind.lastX !== null) {
+    const d = Math.hypot(e.clientX - wind.lastX, e.clientY - wind.lastY);
+    wind.reserve += d * 0.05; wind.angle += d * 0.02; wind.swing = 1;
+  }
+  wind.lastX = e.clientX; wind.lastY = e.clientY;
+  if (wind.reserve >= 100) autoWound();
+}
+function autoShake() { if (!wind || !wind.auto) return; wind.reserve += 7; wind.angle += 2.5; wind.swing = 1; if (wind.reserve >= 100) autoWound(); }
+function autoWound() {
+  if (!wind || wind.finished) return;
+  wind.finished = true;
+  const secs = (performance.now() - wind.t0) / 1000;
+  windPts = secs < 7 ? 100 : 70;
+  addScore(windPts);
+  toast(secs < 7 ? 'FULLY WOUND' : 'WOUND', `+${windPts} · the slipping bridle means it can never overwind`);
+  sfx.perfect();
+  setTimeout(() => { document.getElementById('wind-overlay').classList.remove('show'); wind = null; movementAlive(); }, 700);
+}
+function drawAutoWind(dt) {
+  const cv = document.getElementById('crown'), g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  wind.swing = Math.max(0, (wind.swing || 0) - dt * 2);
+  // The rotor: a half disc that swings as the watch moves
+  const cx = W * 0.28, cy = H * 0.5, R = 95;
+  g.save(); g.translate(cx, cy); g.rotate(wind.angle);
+  g.fillStyle = '#9aa0ac'; g.beginPath(); g.arc(0, 0, R, 0, Math.PI); g.closePath(); g.fill();
+  g.strokeStyle = '#d4af37'; g.lineWidth = 16; g.beginPath(); g.arc(0, 0, R - 10, 0.1, Math.PI - 0.1); g.stroke();
+  g.fillStyle = '#ccccdd'; g.beginPath(); g.arc(0, 0, 18, 0, Math.PI * 2); g.fill();
+  g.restore();
+  g.fillStyle = 'rgba(255,255,255,0.4)'; g.font = '16px system-ui, sans-serif'; g.textAlign = 'center';
+  g.fillText(wind.swing > 0.3 ? 'THE ROTOR SPINS…' : 'SWING THE WATCH', cx, cy + R + 34);
+  const L = W * 0.52, Rr = W - 40, y = H * 0.5, h = 46;
+  g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(L, y - h/2, Rr - L, h);
+  const px = v => L + Math.min(v, 100) / 100 * (Rr - L);
+  g.fillStyle = 'rgba(212,175,55,0.9)'; g.fillRect(px(96), y - h/2, px(100) - px(96), h);
+  const grad = g.createLinearGradient(L, 0, px(wind.reserve), 0); grad.addColorStop(0, '#4a6fd4'); grad.addColorStop(1, '#8ab4ff');
+  g.fillStyle = grad; g.fillRect(L, y - h/2 + 10, px(wind.reserve) - L, h - 20);
+  g.fillStyle = 'rgba(255,255,255,0.4)'; g.font = '14px system-ui, sans-serif'; g.textAlign = 'left';
+  g.fillText('EMPTY', L, y - h/2 - 10); g.textAlign = 'right'; g.fillText('FULL', Rr, y - h/2 - 10);
+  g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = '300 34px system-ui, sans-serif';
+  g.fillText(Math.round(Math.min(wind.reserve, 100)) + '%', (L + Rr) / 2, y + h/2 + 68);
+  g.fillStyle = '#8ab4ff'; g.font = '12px system-ui, sans-serif';
+  g.fillText('NO OVERWINDING: the mainspring has a slipping bridle', (L + Rr) / 2, y + h/2 + 92);
+  const rotor = placedMeshes['rotor'];
+  if (rotor) rotor.rotation.y = -wind.angle;
+  const ratchet = placedMeshes['ratchet'];
+  if (ratchet) ratchet.traverse(c => { if (c.userData.gearId === 'ratchet') c.rotation.z = wind.angle * 0.3; });
+}
+
 
 // ─── WATCH HISTORY ───
 const HISTORY = [
@@ -1135,7 +1563,7 @@ const HISTORY = [
   { y: '1893', n: 1893, t: 'Railroad standards', x: 'After a deadly 1891 crash at Kipton, Ohio was blamed on an engineer\'s watch that had stopped, US railroads made strict rules: 17+ jewels, open face, lever-set, and within 30 seconds a week.', type: 'pocket' },
   { y: '1904', n: 1904, t: 'A watch for a flyer', x: 'Louis Cartier designed a wristwatch for the aviator Alberto Santos-Dumont, who couldn\'t take his hands off the controls to fish out a pocket watch.' },
   { y: '1917', n: 1917, t: 'Trench watches', x: 'World War I soldiers needed both hands free, so watches moved to the wrist, with wire lugs, a red 12 and glowing radium numbers (later found to be dangerous). Men\'s wristwatches were here to stay.', type: 'trench' },
-  { y: '1923', n: 1923, t: 'The self-winding wristwatch', x: 'John Harwood, a watch repairer from Bolton, England, patented a wristwatch that wound itself with a swinging weight as you moved your arm.' },
+  { y: '1923', n: 1923, t: 'The self-winding wristwatch', x: 'John Harwood, a watch repairer from Bolton, England, patented a wristwatch that wound itself with a swinging weight as you moved your arm. In 1931 the full-circle "Perpetual" rotor made it practical.', type: 'auto' },
   { y: '1926', n: 1926, t: 'The waterproof Oyster', x: 'Rolex patented the Oyster, a screw-down sealed case. In 1927 Mercedes Gleitze wore one while swimming the English Channel.' },
   { y: '1940', n: 1940, t: 'Pilot\'s watches', x: 'Navigators\' "B-Uhr" observation watches were 55 mm wide, with an onion crown you could turn in gloves and a triangle at 12 to read in the dark.', type: 'pilot' },
   { y: '1941', n: 1941, t: 'Complications', x: 'Fine watchmakers added "complications" — anything beyond the time: calendars, moon phases, chimes. Patek Philippe\'s reference 1518 of 1941 put a perpetual calendar, moon phase and chronograph in one wristwatch.', type: 'dress' },
@@ -1180,6 +1608,7 @@ function showHistoryQ() {
   const qEl = document.getElementById('quiz-q');
   if (q.i >= q.qs.length) {
     if (q.score > q.best) { q.best = q.score; try { localStorage.setItem(HIST_QUIZ_KEY, String(q.best)); } catch (e) {} }
+    earn(0, q.score * 3);
     document.getElementById('quiz-progress').textContent = 'HISTORY QUIZ · FINISHED';
     document.getElementById('quiz-score').textContent = `BEST ${q.best}/${q.qs.length}`;
     qEl.innerHTML = '';
@@ -1377,6 +1806,11 @@ function init() {
   document.getElementById('history-btn').addEventListener('click', showHistory);
   document.getElementById('history-close').addEventListener('click', () => document.getElementById('history-overlay').classList.remove('show'));
   document.getElementById('history-quiz').addEventListener('click', startHistoryQuiz);
+  document.getElementById('guild-btn').addEventListener('click', showGuild);
+  document.getElementById('guild-close').addEventListener('click', () => document.getElementById('guild-overlay').classList.remove('show'));
+  document.getElementById('result-guild').addEventListener('click', showGuild);
+  const ocv = document.getElementById('oil-cv');
+  ocv.addEventListener('pointerdown', oilDown); ocv.addEventListener('pointerup', oilUp); ocv.addEventListener('pointercancel', oilUp);
   const fcv = document.getElementById('finish-cv');
   fcv.addEventListener('pointerdown', finDown); fcv.addEventListener('pointermove', finMove);
   fcv.addEventListener('pointerup', finUp); fcv.addEventListener('pointercancel', finUp);
@@ -1400,7 +1834,7 @@ function init() {
   // Winding: hold anywhere on the overlay, circle to wind faster, release to stop
   const wo = document.getElementById('wind-overlay');
   wo.addEventListener('pointerdown', e => { e.preventDefault(); windHold(true, e); });
-  wo.addEventListener('pointermove', e => { if (wind && wind.held) windCircle(e); });
+  wo.addEventListener('pointermove', e => { if (wind && wind.auto) autoWindMove(e); else if (wind && wind.held) windCircle(e); });
   window.addEventListener('pointerup', () => { if (wind && wind.held) windHold(false); });
   window.addEventListener('pointercancel', () => { if (wind && wind.held) windHold(false); });
   // Time setting: drag the crown strip, tap the nudge buttons, or use arrow keys
@@ -1421,6 +1855,8 @@ function init() {
   document.getElementById('caseup-btn').addEventListener('click', finishWatch);
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && phase === 'seat') { e.preventDefault(); stopNeedle(); }
+    if (e.code === 'Space' && phase === 'oil') { e.preventDefault(); if (!e.repeat) oilKey(true); }
+    if (e.code === 'Space' && phase === 'wind' && wind && wind.auto) { e.preventDefault(); autoShake(); return; }
     if (e.code === 'Space' && phase === 'wind') { e.preventDefault(); if (!e.repeat) windHold(true); }
     if (e.code === 'Enter' && phase === 'regulate') certify();
     if (e.code === 'Enter' && phase === 'settime') pushCrownIn();
@@ -1432,7 +1868,7 @@ function init() {
     if (phase === 'lesson' && e.code === 'ArrowLeft') lessonNext(-1);
     if (phase === 'settime' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); nudgeTime((e.code === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 5 : 1)); }
   });
-  window.addEventListener('keyup', e => { if (e.code === 'Space' && wind && wind.held && wind.byKey) windHold(false); });
+  window.addEventListener('keyup', e => { if (e.code === 'Space' && wind && wind.held && wind.byKey) windHold(false); if (e.code === 'Space' && phase === 'oil') oilKey(false); });
 
   showStart();
   animate();
@@ -1750,7 +2186,7 @@ function createBalanceWheel() {
   return group;
 }
 
-const MARKER_STYLE = { dress: 'baton', chrono: 'baton', diver: 'dot', trench: 'stud', pocket: 'stud', pilot: 'stud' };
+const MARKER_STYLE = { dress: 'baton', chrono: 'baton', diver: 'dot', trench: 'stud', pocket: 'stud', pilot: 'stud', auto: 'baton' };
 function colorMarkers(group) {
   const dark = isDark(STYLE.dial[design.dial][1]);
   for (let i = 1; i <= 12; i++) {
@@ -1768,6 +2204,7 @@ function createDial() {
   dial.userData.isDialFace = true;
   dial.position.y = 0.9;
   dial.castShadow = true;
+  if (wtype === 'auto') dial.visible = false; // open-heart: the print carries a window to the rotor
   group.add(dial);
   // Hour markers are children 1..12 (index 4 = 3 o'clock): applied batons, lume dots or small studs
   const st = MARKER_STYLE[wtype];
@@ -1787,7 +2224,7 @@ function createDial() {
   const cv = document.createElement('canvas'); cv.width = cv.height = 512;
   drawDialPrint(cv);
   const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 4;
-  const print = new THREE.Mesh(new THREE.CircleGeometry(3.2, 96), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.1, roughness: 0.6 }));
+  const print = new THREE.Mesh(new THREE.CircleGeometry(3.2, 96), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.1, roughness: 0.6, transparent: wtype === 'auto', alphaTest: wtype === 'auto' ? 0.5 : 0 }));
   print.rotation.x = -Math.PI / 2; print.position.y = 0.942;
   print.userData.dialPrint = { cv, tex };
   group.add(print);
@@ -1796,7 +2233,7 @@ function createDial() {
   return group;
 }
 
-const HAND_STYLE = { trench: ['sword', 'sword'], pocket: ['breguet', 'breguet'], pilot: ['sword', 'sword'], dress: ['dauphine', 'dauphine'], diver: ['arrow', 'sword'], chrono: ['stick', 'stick'] };
+const HAND_STYLE = { trench: ['sword', 'sword'], pocket: ['breguet', 'breguet'], pilot: ['sword', 'sword'], dress: ['dauphine', 'dauphine'], diver: ['arrow', 'sword'], chrono: ['stick', 'stick'], auto: ['dauphine', 'dauphine'] };
 const LUME = { trench: true, pilot: true, diver: true, chrono: true };
 function handShape(style, w, len) {
   const s = new THREE.Shape();
@@ -1858,18 +2295,20 @@ function createHands() {
 const SLOT_POS = {
   mainplate: [0, 0, 0], barrel: [-1.2, 0.35, 0.8], geartrain: [0, 0, 0], escape: [1.8, 0.5, -0.5],
   pallet: [1.8, 0.5, -1.3], balance: [-1.5, 0.6, -1.0], dial: [0, 0.9, 0], hands: [0, 1.1, 0],
+  bridges: [0.3, 0.78, -0.05], ratchet: [-1.2, 0.84, 0.8], cock: [-2.3, 0.78, -1.0],
   case: [0, 0.4, 0], crown: [4.05, 0.55, 0], crystal: [0, 1.3, 0], strap: [0, 0.05, 6.4],
 };
 const SLOT_SIZE = {
   mainplate: [3.5, 0.2, 3.5], barrel: [1.0, 0.5, 1.0], geartrain: [1.5, 0.3, 1.5], escape: [0.6, 0.15, 0.6],
   pallet: [0.5, 0.15, 0.8], balance: [0.9, 0.15, 0.9], dial: [3.2, 0.1, 3.2], hands: [0.5, 0.1, 2.5],
+  bridges: [1.9, 0.05, 1.5], ratchet: [0.75, 0.03, 0.75], cock: [0.95, 0.04, 0.5],
   case: [3.9, 0.8, 3.9], crown: [0.35, 0.3, 0.35], crystal: [3.35, 0.08, 3.35], strap: [1.2, 0.12, 2.2],
 };
 function createGhosts() {
   PARTS.forEach(part => {
     const s = slotSize(part.id), p = slotPos(part.id);
     let geo;
-    if (['mainplate','barrel','dial','balance','escape','case','crystal','moon','bezel'].includes(part.id)) {
+    if (['mainplate','barrel','dial','balance','escape','case','crystal','moon','bezel','ratchet','rotor'].includes(part.id)) {
       geo = new THREE.CylinderGeometry(s[0], s[0], s[1], 32);
     } else {
       geo = new THREE.BoxGeometry(s[0]*2, s[1]*2, s[2]*2);
@@ -2065,6 +2504,10 @@ function createPartMesh(partId) {
     case 'chrono': return createChronoWorks();
     case 'pushers': return createPushers();
     case 'bezel': return createBezel();
+    case 'bridges': return createBridges();
+    case 'ratchet': return createRatchet();
+    case 'cock': return createCock();
+    case 'rotor': return createRotor();
   }
 }
 
@@ -2089,7 +2532,7 @@ function updateHud() {
     document.getElementById('hud-time').textContent = fmtTime(elapsed);
     return;
   }
-  const stage = { finish: 'FINISHING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
+  const stage = { finish: 'FINISHING', oil: 'OILING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
   document.getElementById('hud-parts').textContent = placedCount + '/' + TOTAL + (stage ? ' · ' + stage : '');
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hud-miss').textContent = mistakes;
@@ -2106,6 +2549,7 @@ function showStart() {
   });
   const rp = loadRepair();
   document.getElementById('best-repair').textContent = rp.fixed ? `BEST DAY $${rp.best} · ${rp.fixed} WATCHES REPAIRED` : 'THE SHOP IS OPEN';
+  startBanner();
   document.getElementById('start-overlay').classList.add('show');
   document.getElementById('tray').style.visibility = 'hidden';
   setInstr('');
@@ -2195,11 +2639,11 @@ function useHint() {
   if (phase !== 'build' || !diff.shuffle) return;
   const nxt = nextIndex();
   if (nxt < 0) return;
-  hintsUsed++; addScore(-25);
+  hintsUsed++; addScore(-hintCost());
   sfx.hint();
   const card = document.querySelector(`.part-card[data-idx="${nxt}"]`);
   if (card) { card.classList.add('hinted'); card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); setTimeout(() => card.classList.remove('hinted'), 2500); }
-  setInstr(`Hint: the ${PARTS[nxt].name} goes in next (−25)`);
+  setInstr(`Hint: the ${PARTS[nxt].name} goes in next (−${hintCost()})`);
 }
 
 // ─── PLACEMENT (precision) ───
@@ -2226,8 +2670,9 @@ function placeAtScreen(clientX, clientY) {
   const c = ghost.position;
   const d = Math.hypot(hp.x - c.x, hp.z - c.z) / ghost.userData.radius; // 0 = bullseye, 1 = edge
   let grade, pts;
-  if (d < 0.3)      { grade = 'PERFECT'; pts = 100; sfx.perfect(); }
-  else if (d < 0.65) { grade = 'GOOD';    pts = 70;  sfx.good(); }
+  const tw = careerLv('tweezers');
+  if (d < 0.3 * (1 + tw * 0.2))       { grade = 'PERFECT'; pts = 100; sfx.perfect(); }
+  else if (d < 0.65 * (1 + tw * 0.12)) { grade = 'GOOD';    pts = 70;  sfx.good(); }
   else               { grade = 'OK';      pts = 40;  sfx.ok(); }
   grades[part.id] = { precision: grade, seat: null };
   addScore(pts);
@@ -2253,7 +2698,7 @@ function beginSeating(part) {
   seat = {
     partId: part.id, mesh, pos: 0, dir: 1,
     speed: diff.needleSpeed * (1 + Math.min(n, 7) * 0.07),
-    zoneW: Math.max(0.06, diff.zone - Math.min(n, 8) * diff.zoneShrink),
+    zoneW: Math.max(0.06, diff.zone - Math.min(n, 8) * diff.zoneShrink) * (1 + careerLv('loupe') * 0.15),
     zoneC: 0.25 + Math.random() * 0.5,
     tries: 0,
   };
@@ -2334,6 +2779,7 @@ function finishPlacement(partId) {
     setTimeout(beginWinding, 1200);
   } else {
     const nxt = PARTS[nextIndex()];
+    if (nxt.id === 'dial' && !oilDone && !repair) { phase = 'oil'; setInstr('The movement is built — now oil the jewels', 'good'); setTimeout(beginOiling, 900); return; }
     if (nxt.id === 'case') setInstr('The movement is complete! Now case it up: ' + (diff.shuffle ? 'what goes on first?' : `pick up the ${nxt.name}`), 'good');
     else setInstr(diff.shuffle ? 'What goes in next?' : `Next: pick up the ${nxt.name}`);
   }
@@ -2447,14 +2893,18 @@ function certify() {
 // ─── WINDING MINI-GAME ───
 function beginWinding() {
   phase = 'wind';
-  wind = { reserve: 0, held: false, angle: 0, lastAng: null, byKey: false, slips: 0 };
-  document.getElementById('wind-hint').textContent = 'FULL = GOLD BAND';
+  wind = { reserve: 0, held: false, angle: 0, lastAng: null, byKey: false, slips: 0, auto: wtype === 'auto', lastX: null, lastY: null, t0: performance.now(), finished: false };
+  document.getElementById('wind-title').textContent = wind.auto ? 'SWING THE WATCH' : 'WIND THE MAINSPRING';
+  document.getElementById('wind-sub').innerHTML = wind.auto
+    ? 'No crown winding needed: this watch winds <b>itself</b>. <b>Move the pointer</b> around (or tap SPACE) to swing the watch on your wrist — the rotor spins and winds the mainspring. You can\'t overwind an automatic.'
+    : 'The movement is complete but has no power. <b>Hold</b> anywhere (or hold SPACE) to wind &mdash; drag in circles to wind faster. <b>Let go in the gold band.</b> Past the end, the spring slips!';
+  document.getElementById('wind-hint').textContent = wind.auto ? 'KEEP IT MOVING UNTIL FULL' : 'FULL = GOLD BAND';
   document.getElementById('wind-overlay').classList.add('show');
   updateHud();
   setInstr('');
 }
 function windHold(on, e) {
-  if (phase !== 'wind' || !wind) return;
+  if (phase !== 'wind' || !wind || wind.auto) return;
   const wo = document.getElementById('wind-overlay');
   if (on) {
     wind.held = true; wind.byKey = !e; wind.lastAng = null;
@@ -2529,9 +2979,11 @@ function drawCrown(dt) {
   g.textAlign = 'center'; g.fillStyle = '#f0d878'; g.fillText('FULL', (px(85) + px(100)) / 2, y + h/2 + 22);
   g.fillStyle = '#fff'; g.font = '300 34px system-ui, sans-serif';
   g.fillText(Math.round(Math.min(wind.reserve, 118)) + '%', (L + Rr) / 2, y + h/2 + 68);
-  // Spin the barrel in 3D as you wind
+  // Spin the barrel and the ratchet wheel in 3D as you wind
   const barrel = placedMeshes['barrel'];
   if (barrel) barrel.rotation.y = wind.angle * 0.5;
+  const ratchet = placedMeshes['ratchet'];
+  if (ratchet) ratchet.traverse(c => { if (c.userData.gearId === 'ratchet') c.rotation.z = wind.angle * 0.5; });
 }
 function movementAlive() {
   isComplete = true;
@@ -2689,7 +3141,10 @@ const LESSON = [
   { id: 'geartrain', title: 'THE GEAR TRAIN', text: 'Each wheel drives a smaller pinion on the next, so each one spins faster than the last. The big wheel turns about once in six hours; the smallest once a minute.' },
   { id: 'escape', title: 'THE ESCAPE WHEEL', text: 'Without a brake the train would spin down in seconds. The escape wheel\'s hooked teeth are the brake — they can only move one tooth at a time.' },
   { id: 'pallet', title: 'THE PALLET FORK', text: 'The pallet fork rocks back and forth, catching and releasing one tooth per swing. That is the tick-tock you hear: energy escaping in tiny, perfectly equal packets.' },
+  { id: 'bridges', title: 'THE BRIDGES', text: 'Every wheel has a pivot at each end. The mainplate holds the bottom ones; these bridges, screwed on top, hold the top ones in ruby jewels. Nothing turns true until the bridges are on.' },
+  { id: 'ratchet', title: 'RATCHET & CLICK', text: 'Winding the crown turns this ratchet wheel, which tightens the mainspring. The little click drops between its teeth so the spring can\'t spin back — that\'s the tick-tick-tick you hear when you wind.' },
   { id: 'balance', title: 'THE BALANCE WHEEL', text: 'The timekeeper. Balance and hairspring swing like a pendulum, 8 beats every second, and the pallet fork follows their rhythm — while each tick gives the balance a tiny push to keep it going.' },
+  { id: 'cock', title: 'THE BALANCE COCK', text: 'The balance hangs from this bridge. Its jewel sits on a tiny spring (the shock setting) so a drop bounces the pivot instead of snapping it, and the regulator lever here adjusts the rate.' },
   { id: 'hands', title: 'THE HANDS', text: 'Back at the gear train, the once-a-minute wheel carries the second hand, and a small gear set turns the minute and hour hands at 1/60 and 1/720 of that speed.' },
   { id: 'crown', title: 'THE CROWN', text: 'Turn the crown to wind the mainspring. Pull it out and the stem switches to the hands instead, so you can set the time.' },
   { id: 'case', title: 'CASE, CRYSTAL & STRAP', text: 'The case and sapphire crystal keep out dust, water and knocks; the strap attaches at the lugs. Now the movement can live on a wrist for decades.' },
@@ -2737,7 +3192,7 @@ function showLessonStep() {
   document.getElementById('lesson-prev').style.visibility = lesson.step === 0 ? 'hidden' : '';
   document.getElementById('lesson-next').innerHTML = lesson.step === LESSON.length - 1 ? 'BUILD ONE &#9654;' : 'NEXT &#9654;';
   // Movement steps lift off the dial, hands and case so you can see inside
-  const movement = ['mainplate','barrel','geartrain','escape','pallet','balance'];
+  const movement = MOVEMENT_IDS;
   const expose = movement.includes(st.id);
   PARTS.forEach(p => { const m = placedMeshes[p.id]; if (m) m.visible = !expose || movement.includes(p.id); });
   if (st.id) highlightPart(st.id); else { clearHighlight(); frameSlot(null); }
@@ -2774,6 +3229,7 @@ function showQuizQ() {
   const q = quiz;
   if (q.i >= q.qs.length) {
     if (q.score > q.best) { q.best = q.score; try { localStorage.setItem(QUIZ_KEY, String(q.best)); } catch (e) {} }
+    earn(0, q.score * 3);
     document.getElementById('quiz-progress').textContent = 'FINISHED';
     document.getElementById('quiz-score').textContent = `BEST ${q.best}/${q.qs.length}`;
     document.getElementById('quiz-img').style.display = 'none';
@@ -2814,7 +3270,7 @@ function showQuizQ() {
 // Customers bring in broken watches. Each fault has a symptom you can see and hear
 // in the 3D movement, a complaint in the customer's words, and a clue under the loupe.
 const REPAIR_KEY = 'watchmaker.repair';
-const MOVEMENT_IDS = ['mainplate', 'barrel', 'geartrain', 'escape', 'pallet', 'balance', 'moon', 'chrono'];
+const MOVEMENT_IDS = ['mainplate', 'barrel', 'geartrain', 'escape', 'pallet', 'bridges', 'ratchet', 'balance', 'cock', 'moon', 'chrono', 'rotor'];
 const CUSTOMERS = ['Grandpa Joe', 'Coach Rivera', 'Ms. Okafor', 'Dr. Lindqvist', 'Captain Mei', 'Mr. Haddad', 'Aunt Rosa',
   'Professor Kim', 'Pilot Ana', 'Chef Dubois', 'Ranger Tom', 'Ms. Novak', 'Grandma Bea', 'Officer Diaz', 'Mr. Tanaka'];
 const FAULTS = [
@@ -2866,6 +3322,18 @@ const FAULTS = [
     says: 'I dropped it on the pavement. It still ticks fine, but there\'s a dent by the crown and the crown feels stiff.',
     note: 'The case is dented at 3 o\'clock, pinching the crown tube. The movement inside survived the fall.',
     fix: 'Straighten and polish the case', why: 'It still ticks, so the movement is fine. A dent you can see by the crown is the case itself.' },
+  { part: 'ratchet', anim: 'stopped', title: 'Broken click spring',
+    says: 'When I wind it the crown just whizzes straight back the other way, and the watch never starts.',
+    note: 'The click spring has snapped, so the click no longer drops between the ratchet teeth. The mainspring unwinds the instant you let go.',
+    fix: 'Fit a new click spring', why: 'A crown that spins back by itself means nothing is holding the ratchet wheel: the click. (A snapped mainspring, by contrast, winds forever and never gets tight.)' },
+  { part: 'cock', anim: 'fast', title: 'Bent regulator',
+    says: 'It gains ten minutes a day! I pushed the little lever all the way to "slow" and it still gains.',
+    note: 'The regulator arm on the balance cock is bent and pinching the hairspring short, so the balance swings too fast no matter where the lever is set.',
+    fix: 'Straighten the regulator', why: 'If moving the regulator doesn\'t help, the regulator itself is the problem — and it lives on the balance cock. (A magnetised hairspring usually follows a magnet story.)', reg: [20, 45] },
+  { part: 'rotor', types: ['auto'], anim: null, title: 'Seized rotor bearing',
+    says: 'I wear it all day, every day, but it stops every night. I have to wind it by hand like an old watch!',
+    note: 'The rotor\'s ball bearing has seized. It no longer swings, so the watch only runs on what you wind by hand.',
+    fix: 'Fit a new rotor bearing', why: 'It runs fine when wound by hand, so the movement is healthy. A self-winder that won\'t wind itself points straight at the rotor.' },
   { part: 'bezel', types: ['diver'], anim: null, title: 'Two-way bezel',
     says: 'My dive bezel turns both ways now, and it got bumped round on a dive. My instructor said that\'s dangerous!',
     note: 'The bezel\'s click spring has snapped, so the ratchet lets it turn both ways. A bump could make the dive look shorter than it really was.',
@@ -2886,6 +3354,9 @@ const OK_NOTES = {
   escape: 'Every escape tooth is sharp and undamaged.',
   pallet: 'Both ruby pallet stones are straight and tight.',
   balance: 'The balance swings freely; the hairspring coils are evenly spaced.',
+  bridges: 'Both bridges are screwed down tight and every upper jewel is whole.',
+  ratchet: 'The click drops crisply between the ratchet teeth; the crown holds.',
+  cock: 'The shock jewel sits square in its setting and the regulator moves freely.',
   dial: 'Dial is clean and all 12 markers are firmly fixed.',
   hands: 'Hands are tight on their posts and don\'t touch each other.',
   case: 'Case is straight with no dents; the gaskets look good.',
@@ -2938,7 +3409,7 @@ function nextCustomer() {
   placedCount = TOTAL; isComplete = true;
   applyDesign();
   applyFaultLook(f);
-  movAnim = f.anim;
+  movAnim = f.part === 'rotor' ? 'rotorStuck' : f.anim;
   const now = new Date();
   watchTime = f.anim === 'stopped' ? rnd(43200) : (now.getHours() % 12) * 3600 + now.getMinutes() * 60 + now.getSeconds();
   handSpeed = 1;
@@ -3046,6 +3517,8 @@ function inspectPart(id) {
   buildRepairUI();
   const bad = id === r.fault.part;
   setInstr(`${part.name}: ${bad ? r.fault.note : (part.okNote || OK_NOTES[id])}`, bad ? 'bad' : 'good');
+  // Under the rotor you can't see the movement: lift it off while you look
+  const rotor = placedMeshes['rotor']; if (rotor) rotor.visible = !MOVEMENT_IDS.includes(id) || id === 'rotor';
 }
 
 function tryFix(id) {
@@ -3114,6 +3587,7 @@ function jobPaid() {
   const total = Math.max(10, rows.reduce((a, x) => a + x[1], 0));
   const stars = r.wrong === 0 && extra <= 1 ? 3 : r.wrong <= 1 ? 2 : 1;
   score += total;
+  career.repaired++; earn(total, stars * 12);
   r.results.push({ part: f.part, title: f.title, total, stars, who: r.who });
   // Hand it back keeping the right time
   const now = new Date();
@@ -3214,6 +3688,7 @@ function drawWatchThumb(cv, d, minutes, w = 'trench') {
   if (w === 'pilot') { g.fillStyle = ink; g.beginPath(); g.moveTo(cx - dr * 0.12, cy - dr * 0.82); g.lineTo(cx + dr * 0.12, cy - dr * 0.82); g.lineTo(cx, cy - dr * 0.6); g.fill(); }
   if (w === 'pocket') ring(cx, cy + dr * 0.5, dr * 0.2);
   if (w === 'chrono') { ring(cx - dr * 0.46, cy, dr * 0.18); ring(cx + dr * 0.46, cy, dr * 0.18); ring(cx, cy + dr * 0.46, dr * 0.18); }
+  if (w === 'auto') { g.fillStyle = '#6c7080'; g.beginPath(); g.arc(cx, cy + dr * 0.45, dr * 0.25, 0, Math.PI * 2); g.fill(); g.fillStyle = '#9aa0ac'; g.beginPath(); g.arc(cx, cy + dr * 0.45, dr * 0.25, Math.PI * 0.2, Math.PI * 1.2); g.fill(); }
   if (w === 'dress') {
     g.fillStyle = '#13235c'; g.beginPath(); g.arc(cx, cy + dr * 0.44, dr * 0.2, Math.PI, 0); g.fill();
     drawMoon(g, cx, cy + dr * 0.36, dr * 0.07, moonAge());
@@ -3260,26 +3735,27 @@ function showResults() {
   updateHud();
   const regPts = regPtsFinal, regLabel = regLabelFinal;
   const secs = Math.round(elapsed);
-  const timeBonus = Math.max(0, 300 - Math.max(0, secs - 150) * 2);
+  const timeBonus = Math.max(0, 300 - Math.max(0, secs - 200) * 2);
   addScore(timeBonus);
   const placePts = Object.values(grades).reduce((a, g) => a + ({ PERFECT: 100, GOOD: 70, OK: 40 }[g.precision] || 0), 0);
   const seatPts = Object.values(grades).reduce((a, g) => a + (g.seat === 'PERFECT' ? 50 : 25), 0);
   const perfects = Object.values(grades).filter(g => g.precision === 'PERFECT' && g.seat === 'PERFECT').length;
   let rank, sub;
-  if (score >= 2450)      { rank = 'MASTER WATCHMAKER'; sub = 'A watch worthy of a museum'; }
-  else if (score >= 1800) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
-  else if (score >= 1100) { rank = 'APPRENTICE';        sub = 'It ticks and keeps time! Keep practising'; }
+  if (score >= 2800)      { rank = 'MASTER WATCHMAKER'; sub = 'A watch worthy of a museum'; }
+  else if (score >= 2050) { rank = 'JOURNEYMAN';        sub = 'Steady hands — nearly a master'; }
+  else if (score >= 1250) { rank = 'APPRENTICE';        sub = 'It ticks and keeps time! Keep practising'; }
   else                    { rank = 'TINKERER';          sub = 'Every master started here'; }
   const T = WATCH_TYPES[wtype], G = GRADES[grade];
   document.getElementById('rank').textContent = rank;
   document.getElementById('rank-sub').textContent = `${sub} · ${diff.label}`;
   document.getElementById('result-type').textContent = `${T.name.toUpperCase()} · ${T.year} · ${G.label} GRADE`;
-  const penalties = placePts + seatPts + finishPts + windPts + regPts + specPtsFinal + setPts + 25 + timeBonus - score; // exact: whatever the slips and hints cost
+  const penalties = placePts + seatPts + oilPts + finishPts + windPts + regPts + specPtsFinal + setPts + 25 + timeBonus - score; // exact: whatever the slips and hints cost
   const rows = [];
   if (G.finishing) rows.push([`HAND FINISHING (${finishLabel.toLowerCase()})`, `+${finishPts}`]);
   rows.push(
     ['PLACEMENT ACCURACY', `+${placePts}`],
     ['SEATING', `+${seatPts}`],
+    ['OILING', `+${oilPts}`],
     ['WINDING', `+${windPts}`],
     [`REGULATION (${rateFinal > 0 ? '+' : ''}${rateFinal.toFixed(0)} s/day · ${regLabel.toLowerCase()})`, `+${regPts}`],
     [`${G.label} SPEC ${specLabel().split(' (')[0]} ${specOkFinal ? '✓ MET' : '✗ MISSED'}`, `+${specPtsFinal}`],
@@ -3303,6 +3779,7 @@ function showResults() {
   if (grade === 'chronometer') story += specOkFinal ? '<br><br><b>Certified chronometer:</b> it passed the −4/+6 s/day standard that real chronometers are tested to for 15 days, in 5 positions and at 3 temperatures.' : '<br><br>It missed the chronometer standard this time — regulate it to within −4/+6 s/day to earn the certificate.';
   if (wtype === 'dress') { const a = moonAge(); story += `<br><br>Look at the moon window: tonight's moon is a <b>${moonName(a)}</b>, ${Math.round(a)} days old.`; }
   if (isNewKind) story += `<br><br>&#9733; New in your collection! (${Object.keys(col).length}/${TYPE_ORDER.length * GRADE_ORDER.length - 1})`;
+  story += '<br><br>' + settleBuild();
   document.getElementById('result-history').innerHTML = story;
   document.getElementById('score-grid').innerHTML = rows.map(([k, v], i) =>
     `<div class="${i === rows.length - 1 ? 'total' : ''}"><span class="k">${k}</span></div><div class="${i === rows.length - 1 ? 'total' : ''}"><span class="v ${i === rows.length - 1 && isBest ? 'newbest' : ''}">${v}${i === rows.length - 1 && isBest ? ' · NEW BEST' : ''}</span></div>`
@@ -3412,7 +3889,8 @@ function resetGame() {
   lesson = null;
   repair = null; movAnim = null;
   ['ticket-overlay', 'paid-overlay', 'commission-overlay', 'finish-overlay', 'history-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
-  fin = null; moonOffset = 0; finishPts = 0; specPtsFinal = 0; specOkFinal = false;
+  fin = null; moonOffset = 0; finishPts = 0; specPtsFinal = 0; specOkFinal = false; oil = null; oilPts = 0; oilDone = false;
+  ['oil-overlay', 'guild-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
   document.getElementById('job-box').innerHTML = '';
   document.getElementById('tray-list').innerHTML = '';
   updateHud();
@@ -3437,7 +3915,8 @@ function animate() {
     if (Math.abs(wantR - cameraR) > 0.01) { cameraR += (wantR - cameraR) * k; moved = true; }
     if (moved) updateCamera();
   }
-  if (phase === 'wind' && wind) drawCrown(dt);
+  if (phase === 'wind' && wind) { if (wind.auto) drawAutoWind(dt); else drawCrown(dt); }
+  if (phase === 'oil' && oil) drawOil(dt);
   if (phase === 'finish' && fin) drawFinish(dt);
   if (highlighted.length) { const e = 0.25 + 0.25 * Math.sin(time * 5); highlighted.forEach(({ m }) => m.material.emissive.setRGB(0.83 * e, 0.69 * e, 0.21 * e)); }
 
@@ -3485,6 +3964,8 @@ function animate() {
     });
     const barrelMesh = placedMeshes['barrel'];
     if (barrelMesh) barrelMesh.rotation.y = beatT * 0.1;
+    const rotorMesh = placedMeshes['rotor'];
+    if (rotorMesh && phase !== 'wind' && movAnim !== 'rotorStuck') rotorMesh.rotation.y = Math.sin(time * 0.9) * 1.4 + Math.sin(time * 0.37) * 0.9 + time * 0.15;
     // Hands show watchTime (seconds since 12:00). They spin about the dial axis —
     // the hand shapes lie flat after rotation.x, so the spin is rotation.z, clockwise.
     watchTime = (watchTime + dt * handSpeed * rateMul) % 43200;
