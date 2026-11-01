@@ -307,6 +307,33 @@ canvas { display: block; }
 .gcard .gn { font-size: 13px; letter-spacing: 3px; color: var(--gold); }
 .gcard .gj { font-size: 9px; letter-spacing: 1px; color: #7bd88f; margin: 3px 0; }
 .gcard .gd { font-size: 11px; color: #999; line-height: 1.45; }
+/* Full service */
+#svc-ticket { background: rgba(0,0,0,0.2); backdrop-filter: none; justify-content: flex-end; padding-bottom: 36px; } /* the grimy watch stays in full view */
+#svc-ticket .sheet { max-width: min(560px, 94vw); }
+@media (max-width: 720px) { #svc-ticket { padding-bottom: 12px; } }
+.service-card { border-color: rgba(123,216,143,0.3); background: rgba(123,216,143,0.05); }
+.service-card:hover { border-color: rgba(123,216,143,0.7); background: rgba(123,216,143,0.12); }
+.service-card .dn { color: #7bd88f; }
+.spart { display: grid; grid-template-columns: 56px 1fr; gap: 0 12px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06); align-items: start; }
+.spart img { width: 56px; height: 56px; border-radius: 8px; background: radial-gradient(circle at 40% 35%, rgba(212,175,55,0.18), rgba(0,0,0,0.35)); filter: sepia(0.5) brightness(0.8); }
+.spart.worn img { outline: 2px solid rgba(224,112,90,0.6); }
+.spart .sn { font-size: 13px; color: #ddd; font-weight: 600; }
+.spart .sd { font-size: 11px; color: #999; line-height: 1.5; margin-top: 2px; }
+.spart.worn .sd b { color: #ff8a70; }
+.spart .rep { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 1px; color: var(--gold); margin-top: 5px; cursor: pointer; border: 1px solid rgba(212,175,55,0.35); border-radius: 3px; padding: 3px 8px; }
+.spart .rep.dim { color: #555; border-color: rgba(255,255,255,0.08); cursor: default; }
+.spart .rep input { accent-color: var(--gold); }
+#baskets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: left; margin: 6px 0 10px; }
+.basket { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 10px; background: rgba(255,255,255,0.03); }
+.basket .bn { font-size: 12px; color: #ddd; font-weight: 600; }
+.basket .bp { font-size: 10px; color: #888; line-height: 1.4; margin: 3px 0 6px; min-height: 28px; }
+.basket .bt { display: flex; gap: 4px; }
+.basket .btn { padding: 4px 6px; font-size: 9px; letter-spacing: 1px; flex: 1; }
+.ba { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0; }
+.ba canvas { width: 130px; height: 130px; display: block; border-radius: 10px; background: rgba(255,255,255,0.03); }
+.ba .bl { font-size: 10px; letter-spacing: 3px; color: #888; text-align: center; margin-top: 4px; }
+.ba .arrow { font-size: 28px; color: var(--gold); }
+@media (max-width: 720px) { #baskets { grid-template-columns: 1fr; } }
 /* Orders, guild, workshop */
 #orders { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .ocard { text-align: left; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 9px 11px; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.2s; }
@@ -439,6 +466,11 @@ canvas { display: block; }
         <div class="dd"><b>No labels.</b> Identify every part by its shape alone and build in order. Fast needle, no rate readout.</div>
         <div class="db" id="best-master"></div>
       </div>
+      <div class="diff repair-card service-card" id="service-btn">
+        <div class="dn">&#129524; FULL SERVICE</div>
+        <div class="dd">A tired old heirloom comes in. Open it, strip every part into the tray, decide what's worn, clean it all in the ultrasonic (not the dial!), then rebuild, oil, wind and regulate it &mdash; and hand back a watch that looks new.</div>
+        <div class="db" id="best-service"></div>
+      </div>
       <div class="diff repair-card" id="repair-btn">
         <div class="dn">&#128295; REPAIR SHOP</div>
         <div class="dd">Customers bring in broken watches. Watch and listen to each one, read the complaint, inspect parts with your loupe, fix what's broken, then test it on the timegrapher. Five jobs a day &mdash; fewer looks, bigger pay.</div>
@@ -468,6 +500,53 @@ canvas { display: block; }
     <div id="grade-row"></div>
     <div class="lessonbox" id="commission-note"></div>
     <div class="row"><button id="commission-go" class="btn gold">BEGIN THE BUILD &#9654;</button><button id="commission-back" class="btn">BACK</button></div>
+  </div>
+</div>
+
+<!-- Full service -->
+<div id="svc-ticket" class="overlay">
+  <div class="sheet">
+    <div class="sub" id="svc-job">FULL SERVICE</div>
+    <h2 id="svc-who">CUSTOMER</h2>
+    <div class="quote" id="svc-quote"></div>
+    <p style="font-size:12px;color:#888">A full service: open it, strip it down, inspect every part, clean, rebuild, oil, regulate. Look at it on the bench &mdash; it can barely swing its balance.</p>
+    <div class="row"><button id="svc-take" class="btn gold">TAKE IT TO THE BENCH</button></div>
+  </div>
+</div>
+<div id="svc-open" class="overlay">
+  <div id="finish-box">
+    <div class="lbl">OPEN THE CASE</div>
+    <div class="sub">Fit the case wrench into the notches and <b>unscrew the bezel ring</b>: three full turns anticlockwise. Feel the threads let go.</div>
+    <canvas id="svc-open-cv" width="400" height="400" style="width:320px;height:320px;max-width:80vw;max-height:80vw;display:block;margin:0 auto;touch-action:none;cursor:grab"></canvas>
+  </div>
+</div>
+<div id="svc-inspect" class="overlay">
+  <div class="sheet" style="max-width:min(680px,94vw);max-height:92vh;overflow-y:auto;text-align:left">
+    <h2 style="text-align:center">INSPECT THE TRAY</h2>
+    <div class="sub" style="text-align:center">EVERY PART UNDER THE LOUPE &middot; WHAT'S WORN, WHAT JUST NEEDS A CLEAN?</div>
+    <div id="svc-parts"></div>
+    <div class="sub" id="svc-parts-total" style="text-align:center;margin-top:10px"></div>
+    <div class="row" style="justify-content:center"><button id="svc-inspect-done" class="btn gold">TO THE CLEANING MACHINE &#9654;</button></div>
+  </div>
+</div>
+<div id="svc-clean" class="overlay">
+  <div id="finish-box" style="max-width:min(620px,96vw)">
+    <div class="lbl">THE CLEANING MACHINE</div>
+    <div class="sub">The ultrasonic bath shakes dirt and dried oil out of every corner with sound waves. But it strips <b>paint and lume</b> too &mdash; so decide what goes in the machine and what gets a soft brush by hand.</div>
+    <div id="clean-choose"><div id="baskets"></div><div class="row"><button id="clean-start" class="btn gold">LOAD THE BASKETS &#9654;</button></div></div>
+    <canvas id="clean-cv" width="560" height="380" style="width:min(560px,90vw);height:auto;display:block;margin:6px auto 0;touch-action:none;cursor:pointer"></canvas>
+    <div id="clean-hint" style="font-size:10px;color:#888;letter-spacing:2px;margin-top:8px">CHOOSE A BASKET FOR EACH GROUP</div>
+  </div>
+</div>
+<div id="svc-report" class="overlay">
+  <div class="sheet" style="max-width:min(640px,94vw);max-height:92vh;overflow-y:auto">
+    <h2>BACK TO LIFE</h2>
+    <div class="sub" id="svc-said"></div>
+    <div class="ba"><div><canvas id="svc-before" width="220" height="220"></canvas><div class="bl">BEFORE</div></div><div class="arrow">&#10140;</div><div><canvas id="svc-after" width="220" height="220"></canvas><div class="bl">AFTER</div></div></div>
+    <div class="stars" id="svc-stars"></div>
+    <div class="score-grid" id="svc-rows" style="grid-template-columns: auto 1fr; max-width: 480px"></div>
+    <div class="lessonbox" id="svc-pay"></div>
+    <div class="row"><button id="svc-again" class="btn gold">NEXT CUSTOMER</button><button id="svc-admire" class="btn">ADMIRE IT</button><button id="svc-menu" class="btn">MENU</button></div>
   </div>
 </div>
 
@@ -1520,7 +1599,7 @@ function showGuild() {
     ? `${career.rep} REPUTATION · ${nx[0] - career.rep} MORE TO BECOME <b>${nx[1]}</b><div class="repbar"><i style="width:${Math.round((career.rep - r[0]) / (nx[0] - r[0]) * 100)}%"></i></div>`
     : `${career.rep} REPUTATION · THE HIGHEST RANK THERE IS`;
   const coll = Object.keys(loadCollection()).length, rp = loadRepair();
-  document.getElementById('guild-stats').innerHTML = `WALLET <b>$${career.money}</b> · EARNED <b>$${career.earned}</b> · BUILT <b>${career.built}</b> · ORDERS FILLED <b>${career.fulfilled}</b> · REPAIRED <b>${rp.fixed || 0}</b> · COLLECTION <b>${coll}/${TYPE_ORDER.length * GRADE_ORDER.length - 1}</b>`;
+  document.getElementById('guild-stats').innerHTML = `WALLET <b>$${career.money}</b> · EARNED <b>$${career.earned}</b> · BUILT <b>${career.built}</b> · ORDERS FILLED <b>${career.fulfilled}</b> · REPAIRED <b>${rp.fixed || 0}</b> · SERVICED <b>${career.services || 0}</b> · COLLECTION <b>${coll}/${TYPE_ORDER.length * GRADE_ORDER.length - 1}</b>`;
   const shop = document.getElementById('tool-shop'); shop.innerHTML = '';
   Object.entries(TOOLS).forEach(([k, t]) => {
     const l = careerLv(k), cur = t.lv[l], next = t.lv[l + 1];
@@ -2011,6 +2090,400 @@ function finishSwatch(k) {
   return cv.toDataURL();
 }
 
+// ─── FULL SERVICE: a tired heirloom comes in; a gleaming watch goes out ───
+let service = null;
+const SVC_STORIES = [
+  ['It was my grandfather\'s. It stopped the week he retired and nobody has dared touch it since.', 'Grandfather\'s watch'],
+  ['I found it in a drawer at my aunt\'s house. It smells of old pipe tobacco and it only runs if you shake it.', 'The drawer find'],
+  ['My mum wore this every day for thirty years. It\'s losing ten minutes a day now, and the glass is all scratched.', 'Mum\'s everyday watch'],
+  ['A flea-market rescue! The man said it hasn\'t been opened since the 1970s. I believe him.', 'The flea-market rescue'],
+  ['It was a wedding present. It still goes, sort of, but it sounds tired — can you make it young again?', 'The wedding present'],
+  ['My teacher is retiring and this was her father\'s. I\'d like to give it back to her working perfectly.', 'The retirement gift'],
+];
+const WEAR = { // parts that can be worn out, and how you tell
+  barrel: ['Mainspring has taken a set', 'The spring has lost its spring: wound tight it only runs about 20 hours instead of 40.', 48],
+  crystal: ['Scratched crystal', 'Deep scratches you can feel with a fingernail — polishing won\'t take them out.', 30],
+  crown: ['Perished crown gasket', 'The rubber seal has gone hard and cracked; moisture gets in around the stem.', 18],
+  geartrain: ['Worn third-wheel pivot', 'Under the loupe the pivot is scored and tapered; it will never run true again.', 55],
+  balance: ['Kinked hairspring', 'Someone has been in here before: the outer coil is bent and touches its neighbour.', 70],
+  strap: ['Cracked strap', 'Dry, cracked leather that will snap at the buckle any day now.', 22],
+  cock: ['Cracked shock jewel', 'The upper balance jewel has a hairline crack running right through it.', 40],
+  pallet: ['Chipped pallet stone', 'One ruby stone has a chip on its impulse face; the tick is uneven.', 45],
+  rotor: ['Worn rotor bearing', 'The rotor wobbles on its post and scrapes the caseback as it swings.', 42],
+  bezel: ['Worn bezel click', 'The bezel turns with no clicks at all; the spring is worn away.', 25],
+};
+const SVC_WRONG = {
+  strap: 'the strap is in the way — it comes off first',
+  crystal: 'the crystal is still on — you can\'t reach the hands through glass',
+  crown: 'pull the stem before the movement can come out of the case',
+  case: 'the movement has to come out of the case first',
+  hands: 'the dial is held by the hands — lift the hands first',
+  dial: 'the dial covers the movement — it has to come off before anything underneath',
+};
+function svcHex(n) { return '#' + n.toString(16).padStart(6, '0'); }
+
+// Grime: tarnish, dust, dried oil and scratches, laid over clean parts (and remembered so cleaning can undo it)
+function applyGrime() {
+  Object.entries(placedMeshes).forEach(([id, m]) => m.traverse(c => {
+    if (!c.isMesh || !c.material || c.userData.grimed) return;
+    const mat = c.material;
+    c.userData.grimed = true;
+    if (mat.color) {
+      c.userData.cleanColor = mat.color.getHex();
+      const col = mat.color.clone().lerp(new THREE.Color(0x4a3a24), 0.5);
+      mat.color.copy(col);
+    }
+    if (mat.roughness !== undefined) { c.userData.cleanRough = mat.roughness; mat.roughness = Math.min(1, mat.roughness + 0.45); }
+    if (mat.metalness !== undefined) { c.userData.cleanMetal = mat.metalness; mat.metalness *= 0.7; }
+    if (c.userData.dialPrint) { c.userData.dialPrint.stained = true; drawDialPrint(c.userData.dialPrint.cv); drawStains(c.userData.dialPrint.cv); c.userData.dialPrint.tex.needsUpdate = true; }
+  }));
+  // Dried, blackened oil on the jewels
+  const mp = placedMeshes['mainplate'];
+  if (mp) JEWEL_POS.slice(0, GRADES[grade].jewels).forEach(([x, z]) => {
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), new THREE.MeshStandardMaterial({ color: 0x2a1c0a, roughness: 0.9 }));
+    d.position.set(x, 0.21, z); d.scale.y = 0.45; d.userData.grimeBlob = true; mp.add(d);
+  });
+  // Scratches on the crystal
+  const cr = placedMeshes['crystal'];
+  if (cr) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 512; const g = cv.getContext('2d');
+    g.strokeStyle = 'rgba(255,255,255,0.7)';
+    for (let i = 0; i < 26; i++) { g.lineWidth = 0.5 + Math.random() * 1.5; g.beginPath(); const x = Math.random() * 512, y = Math.random() * 512, a = Math.random() * Math.PI, l = 40 + Math.random() * 160; g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+    const tex = new THREE.CanvasTexture(cv);
+    const sc = new THREE.Mesh(new THREE.CircleGeometry(3.3, 64), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.55, depthWrite: false }));
+    sc.rotation.x = -Math.PI / 2; sc.position.y = 1.34; sc.userData.grimeBlob = true; cr.add(sc);
+    cr.children[0].material.opacity = 0.42;
+  }
+}
+function drawStains(cv) {
+  const g = cv.getContext('2d'), S = cv.width, C = S / 2, R = S / 2, rnd = mulberry32(service ? service.seed : 3);
+  g.save(); g.beginPath(); g.arc(C, C, R, 0, Math.PI * 2); g.clip();
+  for (let i = 0; i < 7; i++) { // tea-coloured blotches where damp got in
+    const x = C + (rnd() - 0.5) * R * 1.6, y = C + (rnd() - 0.5) * R * 1.6, r = 20 + rnd() * 60;
+    const gr = g.createRadialGradient(x, y, r * 0.2, x, y, r); gr.addColorStop(0, 'rgba(120,80,30,0.28)'); gr.addColorStop(0.8, 'rgba(120,80,30,0.12)'); gr.addColorStop(1, 'rgba(120,80,30,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = 'rgba(40,30,20,0.5)';
+  for (let i = 0; i < 160; i++) { g.fillRect(C + (rnd() - 0.5) * R * 1.9, C + (rnd() - 0.5) * R * 1.9, 1 + rnd() * 2, 1 + rnd() * 2); } // dust
+  g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(0, 0, S, S); // a general fade
+  g.restore();
+}
+function thumbGrime(cv) { // the "before" portrait
+  const g = cv.getContext('2d'), W = cv.width, rnd = mulberry32(service ? service.seed : 3);
+  g.fillStyle = 'rgba(80,60,30,0.28)'; g.fillRect(0, 0, W, W);
+  for (let i = 0; i < 5; i++) { const x = rnd() * W, y = rnd() * W, r = W * (0.05 + rnd() * 0.12); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(100,70,30,0.45)'); gr.addColorStop(1, 'rgba(100,70,30,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+  g.strokeStyle = 'rgba(255,255,255,0.6)'; for (let i = 0; i < 12; i++) { g.lineWidth = 0.5 + rnd(); g.beginPath(); const x = rnd() * W, y = rnd() * W, a = rnd() * 6.3, l = W * (0.1 + rnd() * 0.3); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+}
+
+function startService() {
+  resetGame();
+  document.getElementById('start-overlay').classList.remove('show');
+  const tk = TYPE_ORDER[Math.floor(Math.random() * TYPE_ORDER.length)];
+  setWatchType(tk, tk === 'pocket' ? GRADE_ORDER[1 + rnd(2)] : GRADE_ORDER[rnd(3)]);
+  finishTex = grade === 'standard' ? null : autoFinishTex(); perlageTex = null; screwHex = 0x1d2c9a; anglageQ = grade === 'chronometer' ? 1 : 0; zaratsuQ = 1;
+  diff = DIFF.apprentice; diffName = 'service';
+  const story = SVC_STORIES[rnd(SVC_STORIES.length)];
+  const age = 25 + rnd(45);
+  design = { case: rnd(STYLE.case.length), dial: rnd(STYLE.dial.length), hands: rnd(STYLE.hands.length), strap: rnd(STYLE.strap.length) };
+  // Two or three worn parts, chosen from the ones this watch actually has
+  const candidates = Object.keys(WEAR).filter(id => PARTS.some(p => p.id === id)).sort(() => Math.random() - 0.5);
+  const worn = candidates.slice(0, 2 + rnd(2));
+  service = { seed: (Math.random() * 1e9) | 0, who: CUSTOMERS[rnd(CUSTOMERS.length)], story: story[0], title: story[1], age, kind: WATCH_TYPES[tk],
+    worn, replace: new Set(), removed: [], wrongStrips: 0, clean: 0, dialRuined: false, baskets: { movement: 'us', casework: 'us', dialhands: 'us' }, t0: 0, fee: 0, score: {} };
+  PARTS.forEach(p => { const m = createPartMesh(p.id); m.userData.origPos = m.position.clone(); assemblyGroup.add(m); placedMeshes[p.id] = m; p.placed = true; });
+  placedCount = TOTAL; isComplete = true;
+  applyDesign();
+  applyGrime();
+  movAnim = 'weak'; // dried oil: the balance barely swings
+  const now = new Date();
+  watchTime = rnd(43200); handSpeed = 1;
+  userR = 8.5; cameraPhi = 0.55; cameraTheta = Math.PI / 2 + 0.4; frameSlot({ x: 0, y: 0.9, z: -0.6 });
+  phase = 'sticket';
+  document.getElementById('tray').style.visibility = 'hidden';
+  document.getElementById('svc-job').textContent = `FULL SERVICE · ${service.kind.name.toUpperCase()} · ABOUT ${age} YEARS OLD · ${GRADES[grade].label}`;
+  document.getElementById('svc-who').textContent = service.who.toUpperCase();
+  document.getElementById('svc-quote').textContent = '“' + service.story + '”';
+  document.getElementById('svc-ticket').classList.add('show');
+  updateHud();
+  setInstr('');
+}
+
+// 1. Open the case: unscrew the bezel ring, three full turns anticlockwise
+let svcOpen = null;
+function beginSvcOpen() {
+  document.getElementById('svc-ticket').classList.remove('show');
+  frameSlot(null); userR = 11;
+  phase = 'svcopen';
+  svcOpen = { turns: 0, lastAng: null, angle: 0, done: false, t: 0 };
+  document.getElementById('svc-open').classList.add('show');
+  service.t0 = performance.now();
+  setInstr('');
+}
+function svcOpenMove(e) {
+  if (!svcOpen || svcOpen.done) return;
+  const cv = document.getElementById('svc-open-cv').getBoundingClientRect();
+  const cx = cv.left + cv.width / 2, cy = cv.top + cv.height / 2;
+  const a = Math.atan2(e.clientY - cy, e.clientX - cx);
+  if (svcOpen.lastAng !== null) {
+    let d = a - svcOpen.lastAng; if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2;
+    if (d < 0) { svcOpen.turns += -d / (Math.PI * 2); svcOpen.angle += d; if (Math.floor(svcOpen.turns * 12) !== Math.floor((svcOpen.turns + d / (Math.PI * 2)) * 12)) beep(700 + svcOpen.turns * 120, 0.03, 'square', 0.02); }
+  }
+  svcOpen.lastAng = a;
+  const cr = placedMeshes['crystal']; if (cr) cr.position.y = Math.min(3, svcOpen.turns / 3) * 0.25;
+  if (svcOpen.turns >= 3) svcOpened();
+}
+function svcOpened() {
+  svcOpen.done = true;
+  sfx.snap(); setTimeout(() => beep(1400, 0.08, 'triangle', 0.05), 120);
+  camShake = 0.15;
+  const cr = placedMeshes['crystal'];
+  if (cr) { animateMove(cr, cr.position.y + 5, 600, () => { assemblyGroup.remove(cr); delete placedMeshes['crystal']; PARTS.find(p => p.id === 'crystal').placed = false; service.removed.push('crystal'); }); }
+  toast('OPEN', 'the crystal lifts off — look at the state of it');
+  setTimeout(() => { document.getElementById('svc-open').classList.remove('show'); svcOpen = null; beginStrip(); }, 1100);
+}
+function drawSvcOpen(dt) {
+  if (!svcOpen) return;
+  svcOpen.t += dt;
+  const cv = document.getElementById('svc-open-cv'), g = cv.getContext('2d'), S = cv.width, C = S / 2;
+  g.clearRect(0, 0, S, S);
+  const caseCol = svcHex(STYLE.case[design.case][1]);
+  // the bezel ring, with the wrench's notches, turning as you drag
+  g.save(); g.translate(C, C); g.rotate(svcOpen.angle);
+  g.fillStyle = caseCol; g.beginPath(); g.arc(0, 0, 150, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.arc(0, 0, 118, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(0,0,0,0.5)'; for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; g.fillRect(Math.cos(a) * 134 - 6, Math.sin(a) * 134 - 6, 12, 12); }
+  g.fillStyle = 'rgba(255,255,255,0.3)'; g.beginPath(); g.arc(-40, -50, 46, 0, Math.PI * 2); g.fill();
+  g.restore();
+  // grime on the glass
+  g.fillStyle = 'rgba(90,70,40,0.35)'; g.beginPath(); g.arc(C, C, 118, 0, Math.PI * 2); g.fill();
+  // the case wrench
+  g.strokeStyle = '#8a8f9a'; g.lineWidth = 10; g.beginPath(); g.moveTo(C, C - 134); g.lineTo(C, C + 134); g.stroke();
+  g.fillStyle = '#5a5f6a'; g.fillRect(C - 70, C - 18, 140, 36);
+  g.fillStyle = 'rgba(255,255,255,0.5)'; g.font = '14px system-ui, sans-serif'; g.textAlign = 'center';
+  g.fillText(`${svcOpen.turns.toFixed(1)} / 3 TURNS`, C, S - 30);
+  g.fillText('DRAG IN CIRCLES, ANTICLOCKWISE', C, 36);
+}
+
+// 2. Strip it: every part off, in reverse order, into the tray
+function beginStrip() {
+  phase = 'svcstrip';
+  document.getElementById('tray').style.visibility = '';
+  document.getElementById('tray-title').textContent = 'STRIP · INTO THE TRAY';
+  document.getElementById('hint-btn').style.display = 'none';
+  document.getElementById('job-box').innerHTML = `“${service.story}”<div class="jh">TAKE EVERY PART OFF, LAST ON FIRST OFF</div>`;
+  buildStripUI();
+  setInstr('Tap the part that comes off next — on the bench or on the watch. Last on, first off.');
+}
+function stripNext() { for (let i = PARTS.length - 1; i >= 0; i--) if (PARTS[i].placed) return PARTS[i]; return null; }
+function buildStripUI() {
+  const list = document.getElementById('tray-list'); list.innerHTML = '';
+  const nxt = stripNext();
+  PARTS.slice().reverse().forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'part-card' + (!p.placed ? ' placed' : p === nxt ? ' next' : '');
+    card.dataset.pid = p.id;
+    card.innerHTML = `<img class="thumb" src="${partThumb(p.id)}" alt=""><div class="part-name">${p.name}</div><div class="part-desc">${p.placed ? p.desc : 'In the tray' + (service.worn.includes(p.id) ? ' · <span style="color:#ff8a70">looks worn</span>' : '')}</div><div class="part-status">${p.placed ? (p === nxt ? 'NEXT — TAP TO REMOVE' : 'STILL ON') : '&#10003; IN THE TRAY'}</div>`;
+    if (p.placed) card.addEventListener('click', () => stripPart(p.id));
+    list.appendChild(card);
+  });
+  const focus = list.querySelector('.part-card.next'); if (focus && focus.scrollIntoView) focus.scrollIntoView({ block: 'nearest' });
+  document.getElementById('hud-parts').textContent = `${service.removed.length}/${TOTAL} OFF`;
+}
+function stripPart(id) {
+  if (phase !== 'svcstrip') return;
+  const p = PARTS.find(x => x.id === id), nxt = stripNext();
+  if (!p || !p.placed) return;
+  if (p !== nxt) {
+    service.wrongStrips++; mistakes++; sfx.wrong();
+    const card = document.querySelector(`.part-card[data-pid="${id}"]`); if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
+    setInstr(`Not yet — ${SVC_WRONG[nxt.id] || `the ${nxt.name.toLowerCase()} comes off before the ${p.name.toLowerCase()}`}.`, 'bad');
+    toast('STUCK', `the ${nxt.name} is still in the way`, true);
+    return;
+  }
+  const m = placedMeshes[id];
+  p.placed = false; service.removed.push(id);
+  beep(1800 - service.removed.length * 60, 0.05, 'triangle', 0.04); setTimeout(() => beep(2400, 0.04, 'sine', 0.03), 70);
+  if (m) animateMove(m, m.position.y + 6, 450, () => { assemblyGroup.remove(m); delete placedMeshes[id]; });
+  if (id === 'crown') toast('STEM OUT', 'press the setting lever and the crown slides free');
+  else if (id === 'hands') toast('HANDS OFF', 'two hand levers, a gentle squeeze, and they lift');
+  else if (id === 'dial') toast('DIAL OFF', 'now you can see the movement — dried oil everywhere');
+  buildStripUI();
+  const left = TOTAL - service.removed.length;
+  if (left === 0) { setInstr('Every part is in the tray. Now: what\'s worn, and what just needs a clean?', 'good'); setTimeout(beginInspectSvc, 900); }
+  else setInstr(`${left} to go — next: ${stripNext().name}`);
+}
+
+// 3. Inspect the tray: decide what gets replaced
+function beginInspectSvc() {
+  phase = 'svcinspect';
+  document.getElementById('tray').style.visibility = 'hidden';
+  const box = document.getElementById('svc-parts'); box.innerHTML = '';
+  PARTS.forEach(p => {
+    const worn = service.worn.includes(p.id), w = WEAR[p.id];
+    const el = document.createElement('div'); el.className = 'spart' + (worn ? ' worn' : '');
+    el.innerHTML = `<img src="${partThumb(p.id)}" alt=""><div><div class="sn">${p.name}</div><div class="sd">${worn ? `<b>${w[0]}.</b> ${w[1]}` : ['Dirty but sound.', 'Grimy, no wear to speak of.', 'Caked in old oil, otherwise fine.', 'Tarnished; will clean up nicely.'][p.id.length % 4]}</div>` +
+      (w ? `<label class="rep"><input type="checkbox" data-pid="${p.id}"> REPLACE · $${w[2]}</label>` : '<div class="rep dim">no spare needed</div>') + '</div>';
+    box.appendChild(el);
+  });
+  box.querySelectorAll('input').forEach(i => i.addEventListener('change', () => { if (i.checked) service.replace.add(i.dataset.pid); else service.replace.delete(i.dataset.pid); sfx.select(); svcInspectTotal(); }));
+  svcInspectTotal();
+  document.getElementById('svc-inspect').classList.add('show');
+}
+function svcInspectTotal() {
+  const cost = [...service.replace].reduce((a, id) => a + WEAR[id][2], 0);
+  document.getElementById('svc-parts-total').innerHTML = `SPARES: <b>$${cost}</b> on the customer's bill &middot; replace what's worn, leave what's sound`;
+}
+function endInspectSvc() {
+  document.getElementById('svc-inspect').classList.remove('show');
+  beginCleanSvc();
+}
+
+// 4. The cleaning machine
+let cleanG = null;
+function beginCleanSvc() {
+  phase = 'svcclean';
+  cleanG = { running: false, grime: 1, t: 0, stage: 'choose', bubbles: [], flakes: [], dry: 0, done: false, hum: 0 };
+  renderBaskets();
+  document.getElementById('svc-clean').classList.add('show');
+  setInstr('');
+}
+function renderBaskets() {
+  const b = service.baskets;
+  const row = (k, name, parts) => `<div class="basket"><div class="bn">${name}</div><div class="bp">${parts}</div><div class="bt"><button class="btn ${b[k] === 'us' ? 'gold' : ''}" data-k="${k}" data-v="us">ULTRASONIC</button><button class="btn ${b[k] === 'hand' ? 'gold' : ''}" data-k="${k}" data-v="hand">BY HAND</button></div></div>`;
+  document.getElementById('baskets').innerHTML =
+    row('movement', 'Movement parts', 'plates, bridges, wheels, screws, balance') +
+    row('casework', 'Case & metalwork', 'case, crown, bezel, bracelet') +
+    row('dialhands', 'Dial & hands', 'the painted dial, the hands, the lume');
+  document.querySelectorAll('#baskets button').forEach(btn => btn.addEventListener('click', () => { service.baskets[btn.dataset.k] = btn.dataset.v; sfx.select(); renderBaskets(); }));
+}
+function startCleanRun() {
+  if (!cleanG || cleanG.stage !== 'choose') return;
+  cleanG.stage = 'run';
+  document.getElementById('clean-choose').style.display = 'none';
+  document.getElementById('clean-hint').textContent = 'HOLD TO RUN THE MACHINE';
+}
+function cleanHold(on) { if (cleanG && cleanG.stage === 'run') cleanG.running = on; }
+function drawClean(dt) {
+  if (!cleanG) return;
+  dt = Math.min(dt, 0.05);
+  const cv = document.getElementById('clean-cv'), g = cv.getContext('2d'), W = cv.width, H = cv.height;
+  g.clearRect(0, 0, W, H);
+  if (cleanG.stage === 'run' && cleanG.running && !cleanG.done) {
+    cleanG.grime = Math.max(0, cleanG.grime - dt / 7);
+    cleanG.hum += dt;
+    if (Math.floor(cleanG.hum * 9) !== Math.floor((cleanG.hum - dt) * 9)) noise(0.12, 0.03, 600 + Math.random() * 400);
+    for (let i = 0; i < 6; i++) cleanG.bubbles.push({ x: 60 + Math.random() * (W - 120), y: H - 60, vy: -(40 + Math.random() * 80), r: 2 + Math.random() * 4, life: 1 });
+    for (let i = 0; i < 3; i++) cleanG.flakes.push({ x: 120 + Math.random() * (W - 240), y: 150 + Math.random() * 120, vx: (Math.random() - 0.5) * 60, vy: 20 + Math.random() * 40, life: 1.2 });
+    if (cleanG.grime <= 0) { cleanG.running = false; cleanG.stage = 'dry'; cleanG.t = 0; document.getElementById('clean-hint').textContent = 'RINSE & DRY…'; }
+  }
+  if (cleanG.stage === 'dry') { cleanG.t += dt; cleanG.dry = Math.min(1, cleanG.t / 2.2); if (cleanG.t > 2.6) finishClean(); }
+  // the tank
+  g.fillStyle = '#2b2f3a'; g.fillRect(30, 90, W - 60, H - 130);
+  g.fillStyle = `rgba(90,150,210,${cleanG.stage === 'dry' ? 0.25 * (1 - cleanG.dry) : 0.35})`; g.fillRect(40, 110, W - 80, H - 160);
+  // baskets of parts, shaking while it runs
+  const shake = cleanG.running ? (Math.random() - 0.5) * 4 : 0;
+  const ids = PARTS.map(p => p.id), per = Math.ceil(ids.length / 3);
+  [0, 1, 2].forEach(k => {
+    const bx = 70 + k * ((W - 140) / 3), by = 150;
+    g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 2; g.strokeRect(bx + shake, by + shake, (W - 140) / 3 - 20, 150);
+    ids.slice(k * per, (k + 1) * per).forEach((id, i) => {
+      const img = thumbImg(id); const x = bx + 12 + (i % 3) * 52 + shake, y = by + 10 + Math.floor(i / 3) * 52 + shake;
+      if (img && img.complete) g.drawImage(img, x, y, 44, 44);
+      g.fillStyle = `rgba(70,50,25,${0.55 * cleanG.grime})`; g.fillRect(x, y, 44, 44);
+    });
+  });
+  // bubbles & flakes
+  cleanG.bubbles = cleanG.bubbles.filter(b => { b.y += b.vy * dt; b.life -= dt; g.strokeStyle = `rgba(200,230,255,${b.life})`; g.beginPath(); g.arc(b.x, b.y, b.r, 0, Math.PI * 2); g.stroke(); return b.life > 0 && b.y > 110; });
+  cleanG.flakes = cleanG.flakes.filter(f => { f.x += f.vx * dt; f.y += f.vy * dt; f.life -= dt; g.fillStyle = `rgba(60,40,20,${Math.min(1, f.life)})`; g.fillRect(f.x, f.y, 3, 3); return f.life > 0; });
+  if (cleanG.stage === 'dry') for (let i = 0; i < 12; i++) { g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(60 + Math.random() * (W - 120), 120 + Math.random() * 200, 2, 8); }
+  // grime meter
+  g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(40, 40, W - 80, 20);
+  g.fillStyle = cleanG.grime > 0.3 ? '#8a6a3a' : '#7bd88f'; g.fillRect(40, 40, (W - 80) * (1 - cleanG.grime), 20);
+  g.fillStyle = 'rgba(255,255,255,0.6)'; g.font = '13px system-ui, sans-serif'; g.textAlign = 'left'; g.fillText(`CLEAN ${Math.round((1 - cleanG.grime) * 100)}%`, 40, 32);
+  if (cleanG.stage === 'dry') { g.textAlign = 'center'; g.fillStyle = '#8ab4ff'; g.font = '16px system-ui, sans-serif'; g.fillText(cleanG.dry < 1 ? 'RINSING IN CLEAN SOLUTION, THEN WARM AIR…' : 'DRY', W / 2, H - 16); }
+}
+const thumbImgs = {};
+function thumbImg(id) { if (!thumbImgs[id]) { const im = new Image(); im.src = partThumb(id); thumbImgs[id] = im; } return thumbImgs[id]; }
+function finishClean() {
+  if (!cleanG || cleanG.done) return;
+  cleanG.done = true;
+  const b = service.baskets;
+  service.dialRuined = b.dialhands === 'us';
+  service.clean = (b.movement === 'us' ? 1 : 0.6) * 0.6 + (b.casework === 'us' ? 1 : 0.7) * 0.25 + (service.dialRuined ? 0 : 1) * 0.15;
+  const notes = [];
+  if (service.dialRuined) notes.push('the ultrasonic lifted the paint and lume off the dial — never put a dial in the machine!');
+  if (b.movement === 'hand') notes.push('a brush can\'t reach inside the pivots: the movement is only half clean');
+  if (b.casework === 'hand') notes.push('the case would have come up brighter in the machine');
+  if (!notes.length) notes.push('every part sparkles — and the dial was wisely kept out');
+  sfx.certify(); createParticles();
+  toast(notes.length === 1 && !service.dialRuined && b.movement === 'us' ? 'SPOTLESS' : 'CLEANED', notes[0], service.dialRuined);
+  service.cleanNote = notes.join(' · ');
+  setTimeout(() => { document.getElementById('svc-clean').classList.remove('show'); cleanG = null; beginRebuild(); }, 1400);
+}
+
+// 5. Rebuild — the ordinary build, with clean parts and the spares you chose
+function beginRebuild() {
+  Object.values(placedMeshes).forEach(m => assemblyGroup.remove(m)); placedMeshes = {};
+  PARTS.forEach(p => p.placed = false);
+  placedCount = 0; grades = {}; oilDone = false; oilPts = 0; score = 0; mistakes = 0; hintsUsed = 0;
+  startTime = performance.now(); elapsed = 0; timerOn = true;
+  document.getElementById('tray').style.visibility = '';
+  document.getElementById('tray-title').textContent = 'REBUILD · CLEAN PARTS';
+  document.getElementById('hint-btn').style.display = 'none';
+  document.getElementById('job-box').innerHTML = `<div class="jh">SPARES FITTED: ${service.replace.size ? [...service.replace].map(id => PARTS.find(p => p.id === id).name).join(', ') : 'none'}</div>`;
+  order = PARTS.map((_, i) => i);
+  phase = 'build';
+  buildUI(); updateHud();
+  setInstr('Clean parts, fresh spares. Build it back up — every part in its proper order.');
+  sfx.select();
+}
+// Called from the time-setting step instead of "case it up"
+function svcReport() {
+  phase = 'done';
+  timerOn = false;
+  const r = service;
+  const secs = Math.round((performance.now() - r.t0) / 1000);
+  // Marks out of the job
+  const placePts = Object.values(grades).reduce((a, g) => a + ({ PERFECT: 100, GOOD: 70, OK: 40 }[g.precision] || 0), 0);
+  const seatPts = Object.values(grades).reduce((a, g) => a + (g.seat === 'PERFECT' ? 50 : 25), 0);
+  const buildQ = Math.min(1, (placePts + seatPts + oilPts) / (TOTAL * 150 + 150));
+  const rightSpares = r.worn.filter(id => r.replace.has(id)).length, missed = r.worn.filter(id => !r.replace.has(id)), wasted = [...r.replace].filter(id => !r.worn.includes(id));
+  const spareQ = Math.max(0, (rightSpares - wasted.length * 0.5) / r.worn.length);
+  const timingQ = Math.max(0, 1 - Math.abs(rateFinal) / 20);
+  const base = { standard: 180, fine: 260, chronometer: 380 }[grade] + r.age * 2;
+  let pay = Math.round(base * (0.45 + 0.25 * r.clean + 0.2 * buildQ + 0.1 * timingQ));
+  pay += [...r.replace].reduce((a, id) => a + Math.round(WEAR[id][2] * 0.4), 0); // margin on spares
+  pay -= missed.length * 40 + r.wrongStrips * 10 + (r.dialRuined ? 120 : 0);
+  pay = Math.max(40, pay);
+  const stars = (r.clean > 0.95 ? 1 : 0) + (spareQ >= 1 ? 1 : 0) + (buildQ > 0.75 && !r.dialRuined ? 1 : 0);
+  const rep = 90 + stars * 40 + Math.round(buildQ * 40);
+  career.services = (career.services || 0) + 1;
+  const payLine = earn(pay, rep, '');
+  // Portraits: before and after
+  const bcv = document.getElementById('svc-before'), acv = document.getElementById('svc-after');
+  drawWatchThumb(bcv, design, Math.round(watchTime / 60), wtype); thumbGrime(bcv);
+  drawWatchThumb(acv, design, Math.round(watchTime / 60), wtype);
+  if (r.dialRuined) { const g = acv.getContext('2d'); g.fillStyle = 'rgba(240,235,220,0.55)'; g.beginPath(); g.arc(acv.width / 2, acv.height / 2, acv.width * 0.3, 0, Math.PI * 2); g.fill(); }
+  const said = stars === 3 ? 'It hasn\'t run like this since it was new. I can\'t stop looking at it.' : stars === 2 ? 'Look at it shine! Thank you so much.' : missed.length ? 'It\'s lovely and clean… but it stopped again on the way home.' : 'Thank you. It works again, at least.';
+  document.getElementById('svc-stars').innerHTML = '&#9733;'.repeat(stars) + '<span style="opacity:.25">' + '&#9733;'.repeat(3 - stars) + '</span>';
+  document.getElementById('svc-said').textContent = `${r.who.toUpperCase()}: “${said.toUpperCase()}”`;
+  const rows = [
+    ['CLEANING', `${Math.round(r.clean * 100)}% · ${r.cleanNote}`],
+    ['SPARES', `${rightSpares}/${r.worn.length} worn parts replaced` + (wasted.length ? ` · ${wasted.length} replaced for nothing` : '') + (missed.length ? ` · still worn: ${missed.map(id => WEAR[id][0].toLowerCase()).join(', ')}` : '')],
+    ['STRIP-DOWN', r.wrongStrips ? `${r.wrongStrips} wrong order` : 'perfect order'],
+    ['REBUILD', `${Math.round(buildQ * 100)}% · ${placePts + seatPts} placement & seating, ${oilPts} oiling`],
+    ['TIMING', `${rateFinal > 0 ? '+' : ''}${rateFinal.toFixed(wtype === 'spring' ? 1 : 0)} s/day · ${regLabelFinal.toLowerCase()}`],
+    ['TIME ON THE BENCH', fmtTime(secs)],
+  ];
+  document.getElementById('svc-rows').innerHTML = rows.map(([k, v]) => `<div><span class="k">${k}</span></div><div><span class="v" style="text-align:left">${v}</span></div>`).join('') +
+    `<div class="total"><span class="k">THE BILL</span></div><div class="total"><span class="v">$${pay}</span></div>`;
+  document.getElementById('svc-pay').innerHTML = payLine + (missed.length ? `<br><span style="color:#e0705a">A worn ${WEAR[missed[0]][0].toLowerCase()} was left in — it will be back.</span>` : '');
+  createParticles(); sfx.fanfare();
+  setInstr('Drag to admire · RESTART for the next customer');
+  setTimeout(() => document.getElementById('svc-report').classList.add('show'), 700);
+  saveCareer();
+}
+
 // ─── WATCH HISTORY ───
 const HISTORY = [
   { y: 'c. 1510', n: 1510, t: 'Clocks you can carry', x: 'Peter Henlein, a locksmith in Nuremberg, is often credited with the first small spring-driven clocks you could carry. They had just an hour hand and could be off by an hour a day.', part: 'barrel' },
@@ -2275,6 +2748,21 @@ function init() {
   document.querySelectorAll('.diff[data-diff]').forEach(el => el.addEventListener('click', () => startGame(el.dataset.diff)));
   document.getElementById('hint-btn').addEventListener('click', useHint);
   document.getElementById('repair-btn').addEventListener('click', startRepairDay);
+  document.getElementById('service-btn').addEventListener('click', startService);
+  document.getElementById('svc-take').addEventListener('click', beginSvcOpen);
+  const socv = document.getElementById('svc-open-cv');
+  socv.addEventListener('pointerdown', e => { e.preventDefault(); if (svcOpen) svcOpen.lastAng = null; socv.setPointerCapture && socv.setPointerCapture(e.pointerId); socv.dataset.down = '1'; });
+  socv.addEventListener('pointermove', e => { if (socv.dataset.down === '1') svcOpenMove(e); });
+  const soUp = () => { socv.dataset.down = '0'; if (svcOpen) svcOpen.lastAng = null; };
+  socv.addEventListener('pointerup', soUp); socv.addEventListener('pointercancel', soUp);
+  document.getElementById('svc-inspect-done').addEventListener('click', endInspectSvc);
+  document.getElementById('clean-start').addEventListener('click', startCleanRun);
+  const ccv = document.getElementById('clean-cv');
+  ccv.addEventListener('pointerdown', e => { e.preventDefault(); cleanHold(true); ccv.setPointerCapture && ccv.setPointerCapture(e.pointerId); });
+  ccv.addEventListener('pointerup', () => cleanHold(false)); ccv.addEventListener('pointercancel', () => cleanHold(false));
+  document.getElementById('svc-again').addEventListener('click', startService);
+  document.getElementById('svc-admire').addEventListener('click', () => document.getElementById('svc-report').classList.remove('show'));
+  document.getElementById('svc-menu').addEventListener('click', () => { resetGame(); showStart(); });
   document.getElementById('commission-go').addEventListener('click', beginCommission);
   document.getElementById('commission-back').addEventListener('click', () => { document.getElementById('commission-overlay').classList.remove('show'); showStart(); });
   document.getElementById('history-btn').addEventListener('click', showHistory);
@@ -2338,13 +2826,16 @@ function init() {
     if (e.code === 'Enter' && phase === 'settime') pushCrownIn();
     if (e.code === 'Enter' && phase === 'style') finishWatch();
     if (e.code === 'Enter' && phase === 'ticket') beginInspect();
+    if (e.code === 'Enter' && phase === 'sticket') beginSvcOpen();
+    if (e.code === 'Enter' && phase === 'svcinspect') endInspectSvc();
+    if (e.code === 'Space' && phase === 'svcclean' && cleanG) { e.preventDefault(); if (cleanG.stage === 'choose') startCleanRun(); else if (!e.repeat) cleanHold(true); }
     if (e.code === 'Enter' && document.getElementById('commission-overlay').classList.contains('show')) beginCommission();
     if (e.code === 'Enter' && phase === 'paid') { const b = document.querySelector('#paid-row .btn.gold'); if (b) b.click(); }
     if (phase === 'lesson' && (e.code === 'ArrowRight' || e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); lessonNext(1); }
     if (phase === 'lesson' && e.code === 'ArrowLeft') lessonNext(-1);
     if (phase === 'settime' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); nudgeTime((e.code === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 5 : 1)); }
   });
-  window.addEventListener('keyup', e => { if (e.code === 'Space' && wind && wind.held && wind.byKey) windHold(false); if (e.code === 'Space' && phase === 'oil') oilKey(false); if (zar && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) zarKey(0); });
+  window.addEventListener('keyup', e => { if (e.code === 'Space' && wind && wind.held && wind.byKey) windHold(false); if (e.code === 'Space' && phase === 'oil') oilKey(false); if (zar && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) zarKey(0); if (e.code === 'Space' && cleanG) cleanHold(false); });
 
   showStart();
   animate();
@@ -3028,7 +3519,7 @@ function updateHud() {
     document.getElementById('hud-time').textContent = fmtTime(elapsed);
     return;
   }
-  const stage = { finish: 'FINISHING', oil: 'OILING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
+  const stage = { finish: 'FINISHING', oil: 'OILING', sticket: 'SERVICE', svcopen: 'OPENING', svcstrip: 'STRIP', svcinspect: 'INSPECT', svcclean: 'CLEANING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
   document.getElementById('hud-parts').textContent = placedCount + '/' + TOTAL + (stage ? ' · ' + stage : '');
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hud-miss').textContent = mistakes;
@@ -3045,6 +3536,7 @@ function showStart() {
   });
   const rp = loadRepair();
   document.getElementById('best-repair').textContent = rp.fixed ? `BEST DAY $${rp.best} · ${rp.fixed} WATCHES REPAIRED` : 'THE SHOP IS OPEN';
+  document.getElementById('best-service').textContent = career.services ? `${career.services} WATCH${career.services === 1 ? '' : 'ES'} BROUGHT BACK TO LIFE` : 'THE BENCH IS READY';
   startBanner();
   document.getElementById('start-overlay').classList.add('show');
   document.getElementById('tray').style.visibility = 'hidden';
@@ -3183,6 +3675,7 @@ function beginSeating(part) {
   phase = 'seat';
   selectedPart = null;
   const mesh = createPartMesh(part.id);
+  if (service && service.worn.includes(part.id) && !service.replace.has(part.id)) mesh.traverse(c => { if (c.isMesh && c.material && c.material.color) { c.material.color.lerp(new THREE.Color(0x4a3a24), 0.3); if (c.material.roughness !== undefined) c.material.roughness = Math.min(1, c.material.roughness + 0.3); } });
   mesh.userData.partId = part.id;
   mesh.userData.origPos = mesh.position.clone();
   mesh.position.y += 6;
@@ -3548,7 +4041,7 @@ function pushCrownIn() {
   document.getElementById('time-overlay').classList.remove('show');
   tset = null;
   timerOn = false;
-  setTimeout(beginStyle, 900);
+  setTimeout(service ? svcReport : beginStyle, 900);
 }
 
 // ─── CASE & STYLE ───
@@ -4013,7 +4506,7 @@ function repairPickAt(x, y) {
   if (!hits.length) return;
   let obj = hits[0].object;
   while (obj.parent && !obj.userData.partId) obj = obj.parent;
-  if (obj.userData.partId) inspectPart(obj.userData.partId);
+  if (obj.userData.partId) { if (phase === 'svcstrip') stripPart(obj.userData.partId); else inspectPart(obj.userData.partId); }
 }
 
 function inspectPart(id) {
@@ -4347,7 +4840,7 @@ function onMouseMove(e) {
 }
 function onMouseUp() { mouseDown = false; }
 function onWheel(e) { userR = Math.max(5, Math.min(25, userR + e.deltaY * 0.01)); if (selectedPart === null) { cameraR = userR; updateCamera(); } }
-function onCanvasClick(e) { if (dragDist > 8) return; if (phase === 'repair') { repairPickAt(e.clientX, e.clientY); return; } placeAtScreen(e.clientX, e.clientY); }
+function onCanvasClick(e) { if (dragDist > 8) return; if (phase === 'repair' || phase === 'svcstrip') { repairPickAt(e.clientX, e.clientY); return; } placeAtScreen(e.clientX, e.clientY); }
 
 // ─── TOUCH: one finger orbits, two fingers pinch-zoom, tap places parts ───
 let touchState = null;
@@ -4376,7 +4869,7 @@ function onTouchMove(e) {
 }
 function onTouchEnd(e) {
   e.preventDefault();
-  if (touchState && touchState.kind === 'orbit' && !touchState.moved) { if (phase === 'repair') repairPickAt(touchState.sx, touchState.sy); else placeAtScreen(touchState.sx, touchState.sy); }
+  if (touchState && touchState.kind === 'orbit' && !touchState.moved) { if (phase === 'repair' || phase === 'svcstrip') repairPickAt(touchState.sx, touchState.sy); else placeAtScreen(touchState.sx, touchState.sy); }
   touchState = null;
 }
 function onResize() {
@@ -4404,6 +4897,8 @@ function resetGame() {
   lesson = null;
   repair = null; movAnim = null;
   ['ticket-overlay', 'paid-overlay', 'commission-overlay', 'finish-overlay', 'history-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
+  service = null; svcOpen = null; cleanG = null;
+  ['svc-ticket', 'svc-open', 'svc-inspect', 'svc-clean', 'svc-report'].forEach(id => document.getElementById(id).classList.remove('show'));
   fin = null; perl = null; blu = null; ang = null; zar = null; moonOffset = 0; finishPts = 0; specPtsFinal = 0; specOkFinal = false; oil = null; oilPts = 0; oilDone = false;
   ['oil-overlay', 'guild-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
   document.getElementById('job-box').innerHTML = '';
@@ -4432,6 +4927,8 @@ function animate() {
   }
   if (phase === 'wind' && wind) { if (wind.auto) drawAutoWind(dt); else drawCrown(dt); }
   if (phase === 'oil' && oil) drawOil(dt);
+  if (phase === 'svcopen' && svcOpen) drawSvcOpen(dt);
+  if (phase === 'svcclean' && cleanG) drawClean(dt);
   if (phase === 'finish') drawFinishStep(dt);
   if (highlighted.length) { const e = 0.25 + 0.25 * Math.sin(time * 5); highlighted.forEach(({ m }) => m.material.emissive.setRGB(0.83 * e, 0.69 * e, 0.21 * e)); }
 
