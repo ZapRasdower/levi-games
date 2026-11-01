@@ -248,13 +248,52 @@
     }
     footer .hearts { color: var(--red); }
 
+    /* Levi says hi */
+    .hero { display: flex; align-items: flex-end; justify-content: center; gap: 22px; flex-wrap: wrap; }
+    .player { position: relative; width: 70px; height: 130px; flex: none; }
+    .player img { height: 130px; display: block; margin: 0 auto; animation: hop 2.6s ease-in-out infinite; transform-origin: 50% 100%; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6)); }
+    .player .shadow { position: absolute; left: 50%; bottom: -6px; width: 54px; height: 8px; margin-left: -27px; border-radius: 50%; background: rgba(0,0,0,0.5); animation: shadow 2.6s ease-in-out infinite; }
+    @keyframes hop { 0%, 60%, 100% { transform: translateY(0) scaleY(1); } 66% { transform: translateY(0) scaleY(0.94); } 78% { transform: translateY(-16px) scaleY(1.03); } 90% { transform: translateY(0) scaleY(0.97); } }
+    @keyframes shadow { 0%, 60%, 100% { transform: scale(1); opacity: 1; } 78% { transform: scale(0.7); opacity: 0.5; } }
+    .bubble { position: absolute; left: 58px; top: -6px; background: #fff; color: #111; font-size: 0.7rem; letter-spacing: 1px; padding: 6px 10px; border-radius: 10px; white-space: nowrap; font-weight: bold; box-shadow: 3px 3px 0 var(--yellow-dk); transition: opacity 0.3s; }
+    .bubble::before { content: ''; position: absolute; left: -7px; bottom: 6px; border: 7px solid transparent; border-right-color: #fff; border-left: 0; }
+    .bubble.fade { opacity: 0; }
+    .continue { display: inline-block; margin-top: 18px; background: var(--yellow); color: #111; text-decoration: none; font-weight: bold; letter-spacing: 2px; font-size: 0.85rem; padding: 10px 20px; border-radius: 3px; box-shadow: 4px 4px 0 var(--yellow-dk); transition: transform 0.12s, box-shadow 0.12s; }
+    .continue:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--yellow-dk); }
+    .continue:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--yellow-dk); }
+
+    /* What's new */
+    .news { max-width: 1040px; margin: 26px auto 0; padding: 0 30px; }
+    .news-box { background: linear-gradient(135deg, #1a1a2e, #16162a); border: 3px solid #33334d; border-radius: 4px; padding: 14px 18px 12px; }
+    .news-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .news-head h3 { color: var(--yellow); font-size: 0.9rem; letter-spacing: 3px; }
+    .news-head button { background: none; border: none; color: var(--muted); font-family: inherit; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; }
+    .news-head button:hover { color: var(--yellow); }
+    .nitem { display: grid; grid-template-columns: 62px 1fr; gap: 12px; padding: 8px 0; border-top: 1px dashed #2a2a44; text-decoration: none; color: inherit; align-items: start; }
+    .nitem:first-of-type { border-top: none; }
+    .nitem:hover .nt { color: var(--yellow); }
+    .nd { font-size: 0.68rem; color: var(--muted); letter-spacing: 1px; padding-top: 2px; }
+    .nt { font-size: 0.85rem; color: #fff; letter-spacing: 1px; transition: color 0.12s; }
+    .nt .kind { font-size: 0.6rem; padding: 1px 6px; border-radius: 2px; margin-right: 6px; letter-spacing: 1px; vertical-align: 1px; }
+    .nt .kind.new { background: var(--red); color: #111; }
+    .nt .kind.upd { background: var(--mint); color: #111; }
+    .nt .fresh { color: var(--yellow); font-size: 0.6rem; letter-spacing: 1px; margin-left: 6px; white-space: nowrap; animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: 0.45; } }
+    .nx { font-size: 0.78rem; color: #a9a9c4; line-height: 1.5; margin-top: 2px; }
+    .nitem.more { display: none; }
+    .news-box.open .nitem.more { display: grid; }
+
     @media (max-width: 600px) {
       header { padding-top: 44px; }
+      .player, .player img { height: 92px; } .player { width: 50px; }
+      .bubble { left: 40px; top: -14px; font-size: 0.62rem; }
+      .news { padding: 0 16px; }
+      .nitem { grid-template-columns: 1fr; gap: 2px; }
       .games-grid { padding: 16px 16px 40px; gap: 18px; }
       .game-card .thumbnail { height: 130px; font-size: 3.4rem; }
     }
     @media (prefers-reduced-motion: reduce) {
-      header h1, header h1 .pad, .pixel-divider span, .tagline .caret { animation: none; }
+      header h1, header h1 .pad, .pixel-divider span, .tagline .caret, .player img, .player .shadow, .nt .fresh { animation: none; }
       .game-card { animation-duration: 0.01s; animation-delay: 0s; }
     }
   </style>
@@ -264,14 +303,22 @@
 
   <div class="page">
     <header>
-      <h1><span class="pad">&#127918;</span> Levi's Games</h1>
+      <div class="hero">
+        <div class="player" aria-hidden="true"><img src="pixel-jump/levi.png" alt=""><span class="shadow"></span><span class="bubble" id="bubble">Hi! Pick a game!</span></div>
+        <h1><span class="pad">&#127918;</span> Levi's Games</h1>
+      </div>
       <p class="tagline" id="tagline">pick a game and press start <span class="caret">&#9646;</span></p>
       <div class="pixel-divider">
         <span style="--i:0"></span><span style="--i:1"></span><span style="--i:2"></span><span style="--i:3"></span><span style="--i:4"></span>
         <span style="--i:5"></span><span style="--i:6"></span><span style="--i:7"></span><span style="--i:8"></span><span style="--i:9"></span>
       </div>
       <div class="strip" id="strip"></div>
+      <a class="continue" id="continue" href="#" style="display:none"></a>
     </header>
+
+    <section class="news" aria-label="what's new">
+      <div class="news-box" id="news"></div>
+    </section>
 
     <nav class="filters" id="filters" aria-label="filter games"></nav>
 
@@ -294,11 +341,11 @@
       desc: 'Hop Levi across roads, rivers & railways. 10 levels — the last two are LEGENDARY.' },
     { id: 'snake',          name: 'Levi Snake',     emoji: '&#128013;', tag: 'ARCADE',         cat: 'arcade',  tint: '#7bd88f44',
       desc: "Eat, grow, and don't bite yourself. Watch for bonus snacks!" },
-    { id: 'atom-builder',   name: 'Atom Builder',   emoji: '&#9883;',   tag: 'SCIENCE',        cat: 'science', tint: '#6bd1ff44',
+    { id: 'atom-builder',   name: 'Atom Builder',   emoji: '&#9883;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#6bd1ff44',
       desc: 'Build atoms in 3D, discover all 20 elements & zoom in to see quarks!' },
-    { id: 'solar-system',   name: 'Solar System',   emoji: '&#128640;', tag: 'SCIENCE',        cat: 'science', tint: '#ffb04744', updated: true,
+    { id: 'solar-system',   name: 'Solar System',   emoji: '&#128640;', tag: 'SCIENCE',        cat: 'science', tint: '#ffb04744',
       desc: 'Fly 8 probe missions from Earth, spin the planets in 3D, launch comets, and take the quiz.' },
-    { id: 'periodic-table', name: 'Periodic Table', emoji: '&#9879;',   tag: 'SCIENCE',        cat: 'science', tint: '#c07bff44',
+    { id: 'periodic-table', name: 'Periodic Table', emoji: '&#9879;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#c07bff44',
       desc: 'Click any of the 118 elements to see facts, mass, group and electron config.' },
     { id: 'squishy-pets',   name: 'Squishy Pets',   emoji: '&#129382;', tag: 'IDLE / COLLECT', cat: 'build',   tint: '#ff9fd044',
       desc: 'Open blind boxes, squish pets for Dough, earn achievements, and collect all 40 across 5 themes.' },
@@ -306,10 +353,10 @@
       desc: 'Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.' },
     { id: 'watchmaker',     name: 'Watchmaker',     emoji: '&#8986;',   tag: '3D BUILDER',     cat: 'build',   tint: '#d4af3744', updated: true,
       desc: 'Build real watches from history — pocket, trench, pilot, diver, moon-phase & Moon chronograph — at three grades of craftsmanship. Plus a Repair Shop!' },
-    { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44', isNew: true,
+    { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44',
       desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
     { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', isNew: true,
-      desc: 'Dig 500 m down through real rock layers. Sell gems, dodge boulders & lava, and fill a fossil museum — T. rex included!' },
+      desc: 'Dig 500 m down through real rock layers. Blast with dynamite, dodge bats & lava, find 4 hidden landmarks and fill a fossil museum!' },
   ];
   const CATS = [['all', 'ALL'], ['arcade', 'ARCADE'], ['science', 'SCIENCE'], ['build', 'BUILD & COLLECT']];
   const LAST_KEY = 'levi.lastPlayed', PLAYS_KEY = 'levi.plays';
@@ -381,6 +428,65 @@
     document.getElementById('count').textContent = GAMES.length;
   }
   render();
+
+  // ---- What's new: newest first. Add a line here whenever a game changes. ----
+  const UPDATES = [
+    { id: 'u7', date: 'NOV 1', game: 'levi-dig', kind: 'upd', title: 'Levi Dig: dynamite, bats & hidden landmarks',
+      text: 'Light dynamite and run, eat snacks for energy, dodge cave bats, discover a time capsule, an old gold mine, a glowworm grotto and a lava tube, take jobs from the camp job board, and fill the new Rock & Mineral Guide.' },
+    { id: 'u6', date: 'NOV 1', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: watches from history',
+      text: 'Build six real kinds of watch — railroad pocket watch, trench, pilot, moon-phase, diver and Moon chronograph — at three grades of craftsmanship, hand-finish the plate, and explore 500 years of watch history.' },
+    { id: 'u5', date: 'OCT 31', game: 'levi-dig', kind: 'new', title: 'Levi Dig',
+      text: 'A brand-new digging adventure: dig 500 m through real rock layers to the Crystal Cave, sell gems, buy gear and fill a fossil museum.' },
+    { id: 'u4', date: 'OCT 31', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: the Repair Shop',
+      text: 'Customers bring in broken watches. Watch and listen, inspect parts with the loupe, fix the fault and get paid.' },
+    { id: 'u3', date: 'OCT 29', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: lesson, guide & Master mode',
+      text: 'A guided lesson on how a watch works, a parts guide, a part-spotting quiz, and a no-labels Master mode.' },
+    { id: 'u2', date: 'OCT 28', game: 'levi-galaxy', kind: 'new', title: 'Levi Galaxy',
+      text: 'Levi rides a rocket board through waves of alien invaders, with a Mothership boss every 5th wave.' },
+  ];
+  const SEEN_KEY = 'levi.seenUpdate';
+  (function news() {
+    const seen = ls(SEEN_KEY);
+    const seenIdx = UPDATES.findIndex(u => u.id === seen);
+    const box = document.getElementById('news');
+    box.innerHTML = `<div class="news-head"><h3>&#9733; WHAT'S NEW</h3><button id="news-more">SHOW ALL &#9662;</button></div>` +
+      UPDATES.map((u, i) => {
+        const g = GAMES.find(x => x.id === u.game);
+        const fresh = seen && (seenIdx < 0 || i < seenIdx);
+        return `<a class="nitem${i >= 3 ? ' more' : ''}" href="${u.game}/index.html" data-game="${u.game}">
+          <span class="nd">${u.date}</span>
+          <span><span class="nt"><span class="kind ${u.kind}">${u.kind === 'new' ? 'NEW GAME' : 'UPDATE'}</span>${g ? g.emoji + ' ' : ''}${u.title}${fresh ? '<span class="fresh">&#9679; NEW SINCE YOUR LAST VISIT</span>' : ''}</span>
+          <span class="nx" style="display:block">${u.text}</span></span></a>`;
+      }).join('');
+    const more = document.getElementById('news-more');
+    more.addEventListener('click', () => { const open = box.classList.toggle('open'); more.innerHTML = open ? 'SHOW LESS &#9652;' : 'SHOW ALL &#9662;'; });
+    box.querySelectorAll('.nitem').forEach(a => a.addEventListener('click', () => {
+      try { localStorage.setItem(LAST_KEY, a.dataset.game); plays[a.dataset.game] = (plays[a.dataset.game] || 0) + 1; localStorage.setItem(PLAYS_KEY, JSON.stringify(plays)); } catch (e) {}
+    }));
+    try { localStorage.setItem(SEEN_KEY, UPDATES[0].id); } catch (e) {}
+  })();
+
+  // ---- Continue where you left off ----
+  (function cont() {
+    const g = GAMES.find(x => x.id === lastPlayed);
+    if (!g) return;
+    const a = document.getElementById('continue');
+    a.href = g.id + '/index.html';
+    a.innerHTML = `&#9654; CONTINUE: ${g.name.toUpperCase()}`;
+    a.style.display = 'inline-block';
+  })();
+
+  // ---- Levi's speech bubble ----
+  (function bubble() {
+    const el = document.getElementById('bubble');
+    const newest = GAMES.find(x => x.id === UPDATES[0].game);
+    const lines = ['Hi! Pick a game!', newest ? `Try ${newest.name}!` : 'Ready?', 'Press start!', `${GAMES.length} games!`, 'Beat my high score!'];
+    let i = 0;
+    setInterval(() => {
+      el.classList.add('fade');
+      setTimeout(() => { i = (i + 1) % lines.length; el.textContent = lines[i]; el.classList.remove('fade'); }, 300);
+    }, 3200);
+  })();
 
   // ---- Stat strip ----
   (function strip() {
