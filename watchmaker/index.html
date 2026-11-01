@@ -307,6 +307,22 @@ canvas { display: block; }
 .gcard .gn { font-size: 13px; letter-spacing: 3px; color: var(--gold); }
 .gcard .gj { font-size: 9px; letter-spacing: 1px; color: #7bd88f; margin: 3px 0; }
 .gcard .gd { font-size: 11px; color: #999; line-height: 1.45; }
+/* The bench (sandbox) */
+.bsec { padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.bsec select { width: 100%; background: #14141f; color: #ddd; border: 1px solid rgba(212,175,55,0.3); border-radius: 4px; font-family: inherit; font-size: 11px; padding: 6px; margin-bottom: 6px; }
+.bsec label { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 2px; color: #888; margin: 6px 0 2px; }
+.bsec label span { color: var(--gold); }
+.bsec input[type=range] { width: 100%; accent-color: var(--gold); cursor: pointer; }
+.brow { display: flex; gap: 5px; margin-top: 6px; }
+.brow .btn { flex: 1; padding: 6px 4px; font-size: 9px; letter-spacing: 1px; }
+.binfo .bn { font-size: 14px; color: #ddd; font-weight: 600; }
+.binfo .bn small { color: var(--gold); font-size: 9px; letter-spacing: 2px; margin-left: 6px; font-weight: 400; }
+.binfo .bd { font-size: 11px; color: #bbb; line-height: 1.5; margin-top: 4px; }
+.binfo .bl { font-size: 11px; color: #8ab4ff; line-height: 1.5; margin-top: 5px; }
+.bhint { font-size: 11px; color: #777; line-height: 1.5; font-style: italic; }
+.blist { display: flex; flex-wrap: wrap; gap: 4px; }
+.blist .btn { padding: 4px 7px; font-size: 9px; letter-spacing: 0.5px; }
+.bsub { font-size: 10px; letter-spacing: 3px; color: #666; margin-bottom: 4px; }
 /* Full service */
 #svc-ticket { background: rgba(0,0,0,0.2); backdrop-filter: none; justify-content: flex-end; padding-bottom: 36px; } /* the grimy watch stays in full view */
 #svc-ticket .sheet { max-width: min(560px, 94vw); }
@@ -479,6 +495,7 @@ canvas { display: block; }
     </div>
     <div id="start-links">
       <button id="lesson-btn" class="btn gold">&#9654; LESSON: HOW A WATCH WORKS</button>
+      <button id="bench-btn" class="btn gold">&#128300; THE BENCH: EXPLORE &amp; EXPLODE</button>
       <button id="guide-btn" class="btn">&#128214; PARTS GUIDE</button>
       <button id="quiz-btn" class="btn">&#10067; NAME THAT PART</button>
       <button id="history-btn" class="btn">&#128220; WATCH HISTORY</button>
@@ -2484,6 +2501,119 @@ function svcReport() {
   saveCareer();
 }
 
+// ─── THE BENCH: a sandbox. Any watch, exploded apart, in slow motion, X-rayed, part by part ───
+let bench = null, benchFlowTimer = null;
+const GHOSTABLE = ['dial', 'hands', 'case', 'crown', 'crystal', 'strap', 'bezel', 'pushers', 'rotor'];
+const FLOW_CHAIN = ['barrel', 'ratchet', 'geartrain', 'escape', 'pallet', 'balance', 'cock', 'glide', 'tri', 'hands'];
+function startBench(tk, gk) {
+  resetGame();
+  document.getElementById('start-overlay').classList.remove('show');
+  bench = { type: tk || 'trench', grade: gk || 'fine', explode: 0, speed: 1, xray: false, focus: null, isolate: false, spin: true, flow: -1 };
+  benchBuild();
+  phase = 'bench';
+  document.getElementById('tray').style.visibility = '';
+  document.getElementById('tray-title').textContent = 'THE BENCH';
+  document.getElementById('hint-btn').style.display = 'none';
+  document.getElementById('job-box').innerHTML = '';
+  renderBench();
+  updateHud();
+  setInstr('Drag to orbit · scroll to zoom · tap any part to learn about it');
+}
+function benchBuild() {
+  Object.values(placedMeshes).forEach(m => assemblyGroup.remove(m)); placedMeshes = {};
+  clearHighlight();
+  setWatchType(bench.type, bench.grade);
+  diff = DIFF.apprentice; diffName = 'bench';
+  finishTex = grade === 'standard' ? null : autoFinishTex(); perlageTex = null; screwHex = 0x1d2c9a; anglageQ = grade === 'chronometer' ? 1 : 0; zaratsuQ = 1;
+  if (!bench.design || bench.designFor !== bench.type) { bench.design = Object.assign({}, WATCH_TYPES[bench.type].defaults); bench.designFor = bench.type; }
+  design = Object.assign({}, bench.design);
+  PARTS.forEach(p => { const m = createPartMesh(p.id); m.userData.origPos = m.position.clone(); assemblyGroup.add(m); placedMeshes[p.id] = m; p.placed = true; });
+  placedCount = TOTAL; isComplete = true; movAnim = null;
+  const now = new Date(); watchTime = (now.getHours() % 12) * 3600 + now.getMinutes() * 60 + now.getSeconds(); handSpeed = 1;
+  applyDesign();
+  if (bench.xray) applyXray(true);
+  if (bench.focus && !PARTS.some(p => p.id === bench.focus)) bench.focus = null;
+  if (bench.focus) benchFocus(bench.focus, true);
+  frameSlot(null); userR = 12;
+}
+function applyXray(on) {
+  GHOSTABLE.forEach(id => { const m = placedMeshes[id]; if (!m) return; m.traverse(c => {
+    if (!c.isMesh || !c.material) return;
+    if (on) { if (c.userData.xrayOp === undefined) { c.userData.xrayOp = c.material.opacity; c.userData.xrayT = c.material.transparent; } c.material.transparent = true; c.material.opacity = 0.16; c.material.depthWrite = false; }
+    else if (c.userData.xrayOp !== undefined) { c.material.opacity = c.userData.xrayOp; c.material.transparent = c.userData.xrayT; c.material.depthWrite = true; delete c.userData.xrayOp; }
+  }); });
+}
+function benchFocus(id, silent) {
+  if (!bench) return;
+  if (bench.focus === id && !silent) { bench.focus = null; bench.isolate = false; clearHighlight(); PARTS.forEach(p => { if (placedMeshes[p.id]) placedMeshes[p.id].visible = true; }); frameSlot(null); renderBench(); return; }
+  bench.focus = id;
+  highlightPart(id);
+  if (!silent) sfx.select();
+  PARTS.forEach(p => { if (placedMeshes[p.id]) placedMeshes[p.id].visible = !bench.isolate || p.id === id; });
+  renderBench();
+}
+function benchFlow(on) {
+  if (benchFlowTimer) { clearInterval(benchFlowTimer); benchFlowTimer = null; }
+  if (!on) { bench.flow = -1; if (bench.focus && FLOW_CHAIN.includes(bench.focus)) { bench.focus = null; clearHighlight(); } renderBench(); return; }
+  const chain = FLOW_CHAIN.filter(id => PARTS.some(p => p.id === id));
+  bench.flow = 0;
+  const step = () => { benchFocus(chain[bench.flow % chain.length], true); bench.flow++; };
+  step();
+  benchFlowTimer = setInterval(step, 2600);
+}
+function renderBench() {
+  const list = document.getElementById('tray-list');
+  const T = WATCH_TYPES[bench.type];
+  const opt = (arr, cur, lab) => arr.map(k => `<option value="${k}" ${k === cur ? 'selected' : ''}>${lab(k)}</option>`).join('');
+  const part = bench.focus && PARTS.find(p => p.id === bench.focus);
+  const flowStep = bench.flow >= 0 && part ? (LESSON.find(l => l.id === part.id) || {}).text : '';
+  list.innerHTML = `
+    <div class="bsec">
+      <select id="b-type">${opt(TYPE_ORDER, bench.type, k => WATCH_TYPES[k].name + ' · ' + WATCH_TYPES[k].year)}</select>
+      <select id="b-grade">${opt(GRADE_ORDER, bench.grade, k => GRADES[k].label + ' · ' + GRADES[k].jewels + ' jewels')}</select>
+      <div class="brow"><button class="btn ${bench.spin ? 'gold' : ''}" id="b-spin">&#8635; SPIN</button><button class="btn" id="b-random">&#127922; RANDOM</button></div>
+    </div>
+    <div class="bsec">
+      <label>EXPLODE <span id="b-explode-v">${Math.round(bench.explode * 100)}%</span></label>
+      <input type="range" id="b-explode" min="0" max="1" step="0.01" value="${bench.explode}">
+      <label>SPEED <span id="b-speed-v">${bench.speed === 0 ? 'FROZEN' : bench.speed < 1 ? '1/' + Math.round(1 / bench.speed) : bench.speed + '×'}</span></label>
+      <input type="range" id="b-speed" min="0" max="3" step="0.01" value="${speedToSlider(bench.speed)}">
+      <div class="brow"><button class="btn ${bench.xray ? 'gold' : ''}" id="b-xray">&#128065; X-RAY</button><button class="btn ${bench.flow >= 0 ? 'gold' : ''}" id="b-flow">&#9889; POWER FLOW</button></div>
+      <div class="brow"><button class="btn" id="b-top">TOP</button><button class="btn" id="b-side">SIDE</button><button class="btn" id="b-inside">INSIDE</button></div>
+    </div>
+    ${part ? `<div class="bsec binfo"><div class="bn">${part.name}<small>${part.role}</small></div><div class="bd">${flowStep || part.desc + '.'}</div><div class="bl">${part.lore}</div>
+      <div class="brow"><button class="btn ${bench.isolate ? 'gold' : ''}" id="b-isolate">&#9673; ALONE</button><button class="btn" id="b-clear">&#10005; CLEAR</button></div></div>` : '<div class="bsec bhint">Tap a part on the watch, or in the list below, to learn what it does.</div>'}
+    <div class="bsec"><div class="blist">${PARTS.map(p => `<button class="btn ${bench.focus === p.id ? 'gold' : ''}" data-part="${p.id}">${p.name}</button>`).join('')}</div></div>
+    <div class="bsec"><div class="bsub">LOOKS</div>${['case', 'dial', 'hands', 'strap'].filter(k => !(k === 'strap' && bench.type === 'pocket')).map(k => `<div class="opt-row" style="justify-content:flex-start"><span class="on">${k.toUpperCase()}</span>${STYLE[k].map((o, i) => `<div class="swatch ${bench.design[k] === i ? 'sel' : ''}" data-k="${k}" data-i="${i}" style="background:${hexs(o[1])};width:20px;height:20px" title="${o[0]}"></div>`).join('')}</div>`).join('')}</div>`;
+  const $ = id => document.getElementById(id);
+  $('b-type').addEventListener('change', e => { bench.type = e.target.value; benchBuild(); renderBench(); sfx.select(); });
+  $('b-grade').addEventListener('change', e => { bench.grade = e.target.value; benchBuild(); renderBench(); sfx.select(); });
+  $('b-random').addEventListener('click', () => { bench.type = TYPE_ORDER[Math.floor(Math.random() * TYPE_ORDER.length)]; bench.grade = GRADE_ORDER[Math.floor(Math.random() * 3)]; bench.design = null; benchBuild(); bench.design = { case: Math.floor(Math.random() * STYLE.case.length), dial: Math.floor(Math.random() * STYLE.dial.length), hands: Math.floor(Math.random() * STYLE.hands.length), strap: Math.floor(Math.random() * STYLE.strap.length) }; design = Object.assign({}, bench.design); applyDesign(); renderBench(); sfx.select(); });
+  $('b-spin').addEventListener('click', () => { bench.spin = !bench.spin; renderBench(); });
+  $('b-explode').addEventListener('input', e => { bench.explode = parseFloat(e.target.value); $('b-explode-v').textContent = Math.round(bench.explode * 100) + '%'; userR = Math.max(userR, 12 + bench.explode * 9); if (bench.explode < 0.05) userR = Math.min(userR, 12); });
+  $('b-speed').addEventListener('input', e => { bench.speed = sliderToSpeed(parseFloat(e.target.value)); $('b-speed-v').textContent = bench.speed === 0 ? 'FROZEN' : bench.speed < 1 ? '1/' + Math.round(1 / bench.speed) : bench.speed + '×'; });
+  $('b-xray').addEventListener('click', () => { bench.xray = !bench.xray; applyXray(bench.xray); renderBench(); sfx.select(); });
+  $('b-flow').addEventListener('click', () => benchFlow(bench.flow < 0));
+  $('b-top').addEventListener('click', () => { cameraPhi = 0.12; bench.spin = false; renderBench(); });
+  $('b-side').addEventListener('click', () => { cameraPhi = 1.35; bench.spin = false; renderBench(); });
+  $('b-inside').addEventListener('click', () => { cameraPhi = 0.9; userR = 6; if (!bench.xray) { bench.xray = true; applyXray(true); } bench.spin = false; renderBench(); });
+  if ($('b-isolate')) $('b-isolate').addEventListener('click', () => { bench.isolate = !bench.isolate; benchFocus(bench.focus, true); });
+  if ($('b-clear')) $('b-clear').addEventListener('click', () => { benchFlow(false); const f = bench.focus; bench.focus = f; benchFocus(f); });
+  list.querySelectorAll('[data-part]').forEach(b => b.addEventListener('click', () => benchFocus(b.dataset.part)));
+  list.querySelectorAll('.swatch').forEach(sw => sw.addEventListener('click', () => { bench.design[sw.dataset.k] = parseInt(sw.dataset.i, 10); design = Object.assign({}, bench.design); applyDesign(); renderBench(); sfx.select(); }));
+}
+// speed slider: 0 = frozen, 1 = 1/50, 2 = 1x, 3 = 4x
+function sliderToSpeed(v) { if (v <= 0.02) return 0; if (v < 2) return Math.pow(50, (v - 2) / 1) ; return 1 + (v - 2) * 3; }
+function speedToSlider(sp) { if (sp === 0) return 0; if (sp <= 1) return 2 + Math.log(sp) / Math.log(50); return 2 + (sp - 1) / 3; }
+function benchFrame(dt, time) {
+  // Explode: each part lifts by its place in the build, with a gentle sway in slow motion
+  const step = 0.75 * bench.explode;
+  PARTS.forEach((p, i) => { const m = placedMeshes[p.id]; if (m && m.userData.origPos) m.position.y = m.userData.origPos.y + i * step; });
+  const wantLook = bench.focus && ghostMeshes[bench.focus] ? null : { x: 0, y: 0.5 + bench.explode * (TOTAL * 0.75) / 2, z: 0 };
+  if (wantLook && !bench.focus) camLookTarget = wantLook;
+  if (bench.focus && ghostMeshes[bench.focus]) { const g = ghostMeshes[bench.focus].position, i = PARTS.findIndex(p => p.id === bench.focus); camLookTarget = { x: g.x * 0.8, y: g.y + i * step, z: g.z * 0.8 }; }
+}
+
 // ─── WATCH HISTORY ───
 const HISTORY = [
   { y: 'c. 1510', n: 1510, t: 'Clocks you can carry', x: 'Peter Henlein, a locksmith in Nuremberg, is often credited with the first small spring-driven clocks you could carry. They had just an hour hand and could be off by an hour a day.', part: 'barrel' },
@@ -2749,6 +2879,7 @@ function init() {
   document.getElementById('hint-btn').addEventListener('click', useHint);
   document.getElementById('repair-btn').addEventListener('click', startRepairDay);
   document.getElementById('service-btn').addEventListener('click', startService);
+  document.getElementById('bench-btn').addEventListener('click', () => startBench());
   document.getElementById('svc-take').addEventListener('click', beginSvcOpen);
   const socv = document.getElementById('svc-open-cv');
   socv.addEventListener('pointerdown', e => { e.preventDefault(); if (svcOpen) svcOpen.lastAng = null; socv.setPointerCapture && socv.setPointerCapture(e.pointerId); socv.dataset.down = '1'; });
@@ -3519,7 +3650,7 @@ function updateHud() {
     document.getElementById('hud-time').textContent = fmtTime(elapsed);
     return;
   }
-  const stage = { finish: 'FINISHING', oil: 'OILING', sticket: 'SERVICE', svcopen: 'OPENING', svcstrip: 'STRIP', svcinspect: 'INSPECT', svcclean: 'CLEANING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
+  const stage = { bench: 'THE BENCH', finish: 'FINISHING', oil: 'OILING', sticket: 'SERVICE', svcopen: 'OPENING', svcstrip: 'STRIP', svcinspect: 'INSPECT', svcclean: 'CLEANING', wind: 'WIND', regulate: 'REGULATE', settime: 'SET TIME', style: 'CASE UP', done: 'DONE' }[phase];
   document.getElementById('hud-parts').textContent = placedCount + '/' + TOTAL + (stage ? ' · ' + stage : '');
   document.getElementById('hud-score').textContent = score;
   document.getElementById('hud-miss').textContent = mistakes;
@@ -4506,7 +4637,7 @@ function repairPickAt(x, y) {
   if (!hits.length) return;
   let obj = hits[0].object;
   while (obj.parent && !obj.userData.partId) obj = obj.parent;
-  if (obj.userData.partId) { if (phase === 'svcstrip') stripPart(obj.userData.partId); else inspectPart(obj.userData.partId); }
+  if (obj.userData.partId) { if (phase === 'bench') benchFocus(obj.userData.partId); else if (phase === 'svcstrip') stripPart(obj.userData.partId); else inspectPart(obj.userData.partId); }
 }
 
 function inspectPart(id) {
@@ -4840,7 +4971,7 @@ function onMouseMove(e) {
 }
 function onMouseUp() { mouseDown = false; }
 function onWheel(e) { userR = Math.max(5, Math.min(25, userR + e.deltaY * 0.01)); if (selectedPart === null) { cameraR = userR; updateCamera(); } }
-function onCanvasClick(e) { if (dragDist > 8) return; if (phase === 'repair' || phase === 'svcstrip') { repairPickAt(e.clientX, e.clientY); return; } placeAtScreen(e.clientX, e.clientY); }
+function onCanvasClick(e) { if (dragDist > 8) return; if (phase === 'repair' || phase === 'svcstrip' || phase === 'bench') { repairPickAt(e.clientX, e.clientY); return; } placeAtScreen(e.clientX, e.clientY); }
 
 // ─── TOUCH: one finger orbits, two fingers pinch-zoom, tap places parts ───
 let touchState = null;
@@ -4869,7 +5000,7 @@ function onTouchMove(e) {
 }
 function onTouchEnd(e) {
   e.preventDefault();
-  if (touchState && touchState.kind === 'orbit' && !touchState.moved) { if (phase === 'repair' || phase === 'svcstrip') repairPickAt(touchState.sx, touchState.sy); else placeAtScreen(touchState.sx, touchState.sy); }
+  if (touchState && touchState.kind === 'orbit' && !touchState.moved) { if (phase === 'repair' || phase === 'svcstrip' || phase === 'bench') repairPickAt(touchState.sx, touchState.sy); else placeAtScreen(touchState.sx, touchState.sy); }
   touchState = null;
 }
 function onResize() {
@@ -4897,7 +5028,7 @@ function resetGame() {
   lesson = null;
   repair = null; movAnim = null;
   ['ticket-overlay', 'paid-overlay', 'commission-overlay', 'finish-overlay', 'history-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
-  service = null; svcOpen = null; cleanG = null;
+  service = null; svcOpen = null; cleanG = null; bench = null; if (benchFlowTimer) { clearInterval(benchFlowTimer); benchFlowTimer = null; }
   ['svc-ticket', 'svc-open', 'svc-inspect', 'svc-clean', 'svc-report'].forEach(id => document.getElementById(id).classList.remove('show'));
   fin = null; perl = null; blu = null; ang = null; zar = null; moonOffset = 0; finishPts = 0; specPtsFinal = 0; specOkFinal = false; oil = null; oilPts = 0; oilDone = false;
   ['oil-overlay', 'guild-overlay'].forEach(id => document.getElementById(id).classList.remove('show'));
@@ -4955,6 +5086,7 @@ function animate() {
     // Rate error nudges the beat frequency so a fast watch visibly (and audibly) races.
     // movT is the movement's own clock; a repair-shop fault can stop, race, limp or stutter it.
     let rateMul = 1 + (reg ? currentRate() / 400 : 0);
+    if (phase === 'bench' && bench) { rateMul *= bench.speed; benchFrame(dt, time); }
     if (movAnim === 'stopped') rateMul = 0;
     else if (movAnim === 'fast') rateMul = 5;
     else if (movAnim === 'weak') rateMul = 0.8;
@@ -5013,7 +5145,7 @@ function animate() {
 
   // Subtle ambient rotation when not dragging (it stops while you aim a part);
   // a slow showroom turntable once the watch is being cased up
-  const showroom = phase === 'style' || phase === 'done' || phase === 'ticket' || phase === 'paid' || (phase === 'lesson' && !highlighted.length);
+  const showroom = phase === 'style' || phase === 'done' || phase === 'ticket' || phase === 'paid' || (phase === 'lesson' && !highlighted.length) || (phase === 'bench' && bench && bench.spin);
   if (!mouseDown && !touchState && selectedPart === null && (showroom || (!isComplete && phase !== 'seat'))) {
     cameraTheta += dt * (showroom ? 0.12 : 0.05);
     updateCamera();
