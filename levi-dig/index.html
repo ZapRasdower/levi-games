@@ -14,7 +14,7 @@ body {
   min-height: 100vh; padding: 12px 10px 24px;
   user-select: none; -webkit-user-select: none;
 }
-.top { width: 100%; max-width: 680px; display: flex; justify-content: space-between; align-items: center; }
+.top { width: 100%; max-width: 680px; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 30; } /* stays above full-screen pop-ups */
 .back { color: #777; text-decoration: none; font-size: 0.78rem; letter-spacing: 2px; }
 .back:hover { color: #ffe600; }
 h1 { font-size: 1.7rem; color: #ffe600; letter-spacing: 4px; margin: 4px 0 2px; text-shadow: 0 0 18px rgba(255,230,0,0.35); }
@@ -82,7 +82,18 @@ button.b:disabled { opacity: 0.4; cursor: default; }
 #rex { margin: 6px auto 0; font-size: 0.78rem; color: #ffcf6b; }
 .stats { font-size: 0.75rem; color: #99a; margin: 6px 0; }
 .stats b { color: #ffe600; }
+#jobs { text-align: left; margin: 6px 0 4px; }
+#jobs .jt { font-size: 0.75rem; color: #ffe600; letter-spacing: 2px; margin-bottom: 4px; text-align: center; }
+.job { background: #1a1a2e; border: 1px solid #2e2e4e; border-radius: 8px; padding: 6px 10px; margin-bottom: 5px; font-size: 0.72rem; color: #bbc; display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; align-items: center; }
+.job .jb { height: 7px; background: #2a2a3e; border-radius: 4px; overflow: hidden; }
+.job .jb i { display: block; height: 100%; background: linear-gradient(90deg, #7bd88f, #c6f26b); }
+.job .jr { white-space: nowrap; color: #889; } .job .jr b { color: #ffe600; }
+.gem { width: 22px; height: 22px; transform: rotate(45deg); border-radius: 3px; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.25), inset 3px 3px 0 rgba(255,255,255,0.4); }
+.nug { width: 26px; height: 20px; border-radius: 40% 55% 45% 60%; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.3), inset 3px 3px 0 rgba(255,255,255,0.35); }
+#pad .side { display: flex; flex-direction: column; gap: 6px; }
+#pad .side button { width: 56px; height: 56px; font-size: 1.5rem; }
 @media (max-width: 600px) {
+  .job { grid-template-columns: 1fr; gap: 3px; }
   .overlay { position: fixed; border-radius: 0; z-index: 20; }
   .shop { grid-template-columns: 1fr; }
   h1 { font-size: 1.3rem; }
@@ -100,6 +111,8 @@ button.b:disabled { opacity: 0.4; cursor: default; }
   <span class="pill">ENERGY<span id="energy"><i></i></span></span>
   <span class="pill">BAG<b id="h-bag">0/8</b></span>
   <span class="pill">LADDERS<b id="h-lad">10</b></span>
+  <span class="pill">&#129512;<b id="h-dyn">2</b></span>
+  <span class="pill">&#129386;<b id="h-snack">2</b></span>
 </div>
 <div id="wrap">
   <canvas id="c" width="680" height="600"></canvas>
@@ -114,7 +127,8 @@ button.b:disabled { opacity: 0.4; cursor: default; }
       <div class="fact" style="text-align:left">
         &#11013;&#65039;&#10145;&#65039;&#11015;&#65039; <b>Hold</b> a direction to walk or dig &middot; &#11014;&#65039; climbs: it places a <b>ladder</b> (or digs the rock above)<br>
         <b>R</b> = ride the rope back to camp to sell loot and buy upgrades. If your <b>energy</b> runs out you get rescued &mdash; but drop half your bag.<br>
-        Watch out for <b>wobbling boulders</b>, <b>gas pockets</b> and <b>lava</b>! Sparkles in the dark are fossils &amp; treasures.
+        Watch out for <b>wobbling boulders</b>, <b>gas pockets</b>, <b>lava</b> and <b>bats</b>! Sparkles in the dark are fossils &amp; treasures.<br>
+        <b>B</b> = dynamite (light it and run!) &middot; <b>E</b> = eat a snack &middot; <b>G</b> = rock &amp; mineral guide. Hunt for <b>4 hidden landmarks</b> and take jobs from the camp job board.
       </div>
       <div class="stats" id="title-stats"></div>
       <div class="row"><button class="b big" id="btn-start">START DIGGING</button></div>
@@ -135,11 +149,13 @@ button.b:disabled { opacity: 0.4; cursor: default; }
     <div class="card">
       <h2>BASE CAMP</h2>
       <div class="sold" id="camp-sold"></div>
+      <div id="jobs"></div>
       <div class="stats" id="camp-stats"></div>
       <div class="row" style="margin-top:4px">
         <button class="b big" id="btn-dive">DIVE</button>
         <button class="b" id="btn-top">START AT THE TOP</button>
         <button class="b" id="btn-mus2">&#127963;&#65039; MUSEUM</button>
+        <button class="b" id="btn-guide2">&#128214; GUIDE</button>
       </div>
       <div class="shop" id="shop"></div>
       <div class="row"><button class="b" id="btn-newsite" style="font-size:0.7rem;color:#888">NEW DIG SITE (keeps your money, gear &amp; museum)</button></div>
@@ -157,6 +173,17 @@ button.b:disabled { opacity: 0.4; cursor: default; }
     </div>
   </div>
 
+  <div id="ov-guide" class="overlay">
+    <div class="card">
+      <h2>&#128214; ROCK &amp; MINERAL GUIDE</h2>
+      <p id="geo-count"></p>
+      <div class="fact" style="font-size:0.72rem"><b>Mohs hardness</b> runs from 1 (talc, softer than a fingernail) to 10 (diamond). A harder mineral can scratch any softer one.</div>
+      <div class="museum" id="geo"></div>
+      <div class="fact" id="geo-fact">Tap a card to read about it.</div>
+      <div class="row"><button class="b big" id="geo-close">BACK</button></div>
+    </div>
+  </div>
+
   <div id="ov-win" class="overlay">
     <div class="card">
       <div class="big-emoji">&#128142;</div>
@@ -171,7 +198,10 @@ button.b:disabled { opacity: 0.4; cursor: default; }
 
 <div id="bar">
   <button class="b" id="btn-rope">&#129698; ROPE UP (R)</button>
+  <button class="b" id="btn-dyn">&#129512; DYNAMITE (B)</button>
+  <button class="b" id="btn-snack">&#129386; SNACK (E)</button>
   <button class="b" id="btn-mus">&#127963;&#65039; MUSEUM (M)</button>
+  <button class="b" id="btn-guide">&#128214; GUIDE (G)</button>
   <button class="b" id="btn-mute">&#128266;</button>
 </div>
 <div id="pad">
@@ -179,9 +209,13 @@ button.b:disabled { opacity: 0.4; cursor: default; }
     <span></span><button data-d="up">&#9650;</button><span></span>
     <button data-d="left">&#9664;</button><button data-d="down">&#9660;</button><button data-d="right">&#9654;</button>
   </div>
+  <div class="side">
+    <button id="pad-dyn">&#129512;</button>
+    <button id="pad-snack">&#129386;</button>
+  </div>
   <button class="rope" id="pad-rope">&#129698;<br>ROPE<br>UP</button>
 </div>
-<div class="keys">ARROWS / WASD: walk &amp; dig &middot; UP: ladder / dig up &middot; R: rope up &middot; M: museum &middot; SPACE / ENTER: close pop-ups</div>
+<div class="keys">ARROWS / WASD: walk &amp; dig &middot; UP: ladder / dig up &middot; R: rope up &middot; B: dynamite &middot; E: snack &middot; G: guide &middot; M: museum &middot; SPACE / ENTER: close pop-ups</div>
 
 <script>
 // ─── WORLD CONSTANTS ───
@@ -192,7 +226,7 @@ const depthOf = r => Math.max(0, (r - SURF + 1) * M_PER_ROW);
 const rowOf = m => SURF - 1 + Math.round(m / M_PER_ROW);
 const SAVE_KEY = 'leviDig.save', MUTE_KEY = 'leviDig.muted';
 
-const T = { AIR: 0, DIRT: 1, CLAY: 2, SAND: 3, LIME: 4, GRAN: 5, BAS: 6, OBS: 7, BED: 8, BOULDER: 9, LAVA: 10, CRYSTAL: 11, HEART: 12, LADDER: 13 };
+const T = { AIR: 0, DIRT: 1, CLAY: 2, SAND: 3, LIME: 4, GRAN: 5, BAS: 6, OBS: 7, BED: 8, BOULDER: 9, LAVA: 10, CRYSTAL: 11, HEART: 12, LADDER: 13, RAIL: 14, POST: 15, GLOW: 16, LANTERN: 17 };
 const TD = {
   1: { name: 'Dirt', hard: 1, tier: 1 },        2: { name: 'Clay', hard: 1.6, tier: 1 },
   3: { name: 'Sandstone', hard: 2.2, tier: 1 }, 4: { name: 'Limestone', hard: 3, tier: 1 },
@@ -201,8 +235,8 @@ const TD = {
   9: { name: 'Boulder', hard: 3.5, tier: 2 },   11: { name: 'Crystal', hard: 2, tier: 1 },
   12: { name: 'Giant crystal', hard: 3, tier: 1 },
 };
-const solid = t => t !== T.AIR && t !== T.LAVA && t !== T.LADDER;
-const open = t => t === T.AIR || t === T.LADDER;
+const open = t => t === T.AIR || t === T.LADDER || (t >= T.RAIL && t <= T.LANTERN); // decor tiles are walk-through
+const solid = t => !open(t) && t !== T.LAVA;
 
 const LAYERS = [
   { tile: 1, from: 0,   name: 'TOPSOIL',   fact: 'Topsoil is alive: worms, roots, fungi and billions of bacteria. Just 2 cm of it can take hundreds of years to form.' },
@@ -315,6 +349,7 @@ const sfx = {
   buy()     { beep(660, 0.06, 'square', 0.04); setTimeout(() => beep(990, 0.12, 'square', 0.04), 70); },
   faint()   { [440, 370, 311, 262].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.05), i * 150)); },
   layer()   { beep(392, 0.15, 'sine', 0.04); setTimeout(() => beep(523, 0.25, 'sine', 0.04), 150); },
+  boom()    { noise(0.9, 0.16, 500); beep(70, 0.6, 'sawtooth', 0.08, -40); },
   win()     { [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => setTimeout(() => beep(f, 0.2, 'triangle', 0.06), i * 120)); },
 };
 const muteBtn = document.getElementById('btn-mute');
@@ -340,6 +375,7 @@ function freshSave(keep) {
     seed: (Math.random() * 1e9) | 0, money: 0, ladders: 10,
     up: { tool: 0, food: 0, bag: 0, lamp: 0, helm: 0, mask: 0, radar: 0 },
     museum: {}, best: 0, layers: {}, rope: null, bag: [], won: false, digs: 0, trips: 0, sites: 1,
+    dyn: 2, snack: 2, lmFound: {}, geo: {}, jobs: [],
   }, keep || {});
 }
 
@@ -406,6 +442,7 @@ function generate() {
     else setTile(c, r, T.AIR);
   }
   setTile(8, floor, T.HEART); setTile(8, floor - 1, T.HEART); setItem(8, floor, 0);
+  stampLandmarks(rnd);
 }
 
 // Pack the world into the save (one character per tile / item)
@@ -422,7 +459,9 @@ function save() { try { packWorld(); localStorage.setItem(SAVE_KEY, JSON.stringi
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (s && s.tiles && s.tiles.length === ROWS * COLS) { S = Object.assign(freshSave(), s); S.up = Object.assign(freshSave().up, s.up); unpackWorld(); return true; }
+    if (s && s.tiles && s.tiles.length === ROWS * COLS) { S = Object.assign(freshSave(), s); S.up = Object.assign(freshSave().up, s.up); unpackWorld();
+      if (!S.lmv) stampLandmarks(mulberry32(S.seed ^ 777)); // older saves get the landmarks too
+      return true; }
   } catch (e) {}
   S = freshSave(); generate(); return false;
 }
@@ -455,6 +494,7 @@ function hud() {
   $('energy').classList.toggle('low', e < 0.25);
   $('h-bag').textContent = S.bag.length + '/' + bagCap();
   $('h-lad').textContent = S.ladders;
+  $('h-dyn').textContent = S.dyn; $('h-snack').textContent = S.snack;
 }
 function show(id) { document.querySelectorAll('.overlay').forEach(o => o.classList.toggle('show', o.id === id)); }
 function hideAll() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show')); }
@@ -555,7 +595,8 @@ function drawWorld() {
     const t = tiles[idx(c, r)], x = c * TILE, y = r * TILE - camY;
     const li = LAYERS[layerIdx(depthOf(r), c)].tile;
     const v = Math.floor(hash(c, r) * 4);
-    if (t === T.AIR || t === T.LADDER || t === T.BOULDER || t === T.LAVA || t === T.HEART) ctx.drawImage(art.bg[li] || art.bg[1], x, y);
+    if (t === T.AIR || t === T.LADDER || t === T.BOULDER || t === T.LAVA || t === T.HEART || decorTile(t)) ctx.drawImage(art.bg[li] || art.bg[1], x, y);
+    if (decorTile(t)) drawDecor(t, x, y, c, r);
     if (t >= 1 && t <= 8 || t === T.CRYSTAL) ctx.drawImage(art[t][v], x, y);
     if (t === T.LADDER) ctx.drawImage(art.ladder, x, y);
     if (t === T.BOULDER) {
@@ -595,6 +636,7 @@ function drawItem(it, x, y, c, r, t) {
     for (let k = 0; k < 4; k++) ctx.fillRect(x + 6 + hash(c, r + k) * 26, y + 6 + hash(c + k, r) * 26, 3, 3);
     return;
   }
+  if (it === CHEST) { drawChest(x, y); return; }
   if (it === CRYSTAL_SHARD) { ctx.fillStyle = '#f0e8ff'; ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + 5, cy); ctx.lineTo(cx, cy + 10); ctx.lineTo(cx - 5, cy); ctx.fill(); return; }
   if (it < ART_BASE) {
     const o = ORES[it - 1];
@@ -682,12 +724,16 @@ function drawDarkness() {
     const t = tileAt(c, r);
     if (t === T.LAVA) cut(c * TILE + 20, r * TILE + 20 - camY, TILE * 1.6, 0.85);
     if (t === T.HEART) cut(c * TILE + 20, r * TILE + 20 - camY, TILE * 3, 0.9);
+    if (t === T.LANTERN) cut(c * TILE + 20, r * TILE + 20 - camY, TILE * 3.2, 0.95);
+    if (t === T.GLOW) cut(c * TILE + 20, r * TILE + 20 - camY, TILE * 1.4, 0.55);
   }
   ctx.drawImage(dark, 0, 0);
+  drawGlowLights(r0, r1);
+  drawBats(true); // only their eyes show in the dark
   // Treasures twinkle through the dark
   for (let r = r0; r <= r1; r++) for (let c = 0; c < COLS; c++) {
     const it = itemAt(c, r);
-    if (it < ART_BASE && !(it >= 5 && it <= 8)) continue;
+    if (it < ART_BASE && !(it >= 5 && it <= 8) && it !== CHEST) continue;
     const tw = Math.sin(time * 2.5 + c * 1.7 + r * 0.9);
     if (tw > 0.55) {
       const s = (tw - 0.55) * 9, x = c * TILE + 20, y = r * TILE + 20 - camY;
@@ -803,6 +849,7 @@ function finishDig() {
   sfx.dug(TD[t].hard);
   burst(d.c, d.r, t === T.BOULDER ? '#999' : LAYER_COL[t] || '#888', 12);
   setTile(d.c, d.r, T.AIR);
+  if ((t >= 1 && t <= 7) || t === T.CRYSTAL) geoSeen('t' + t);
   if (t === T.HEART) { setTile(8, d.r === ROWS - 6 ? d.r - 1 : d.r + 1, T.AIR); return winGame(); }
   const it = itemAt(d.c, d.r);
   if (it === GAS) { setItem(d.c, d.r, 0); gasBurst(d.c, d.r); }
@@ -812,6 +859,7 @@ function finishDig() {
 function collect(c, r) {
   const it = itemAt(c, r);
   if (!it || it === GAS) return;
+  if (it === CHEST) { setItem(c, r, 0); discover('capsule'); return; }
   if (it >= ART_BASE) {
     setItem(c, r, 0);
     const a = ARTS[it - ART_BASE];
@@ -820,6 +868,7 @@ function collect(c, r) {
     S.museum[a.k] = (S.museum[a.k] || 0) + 1;
     sfx.art();
     burst(c, r, '#ffe600', 18, 200);
+    if (isNew) jobEvent('find');
     if (isNew) showFind(a); else floatText(c, r, `${a.name} again! +$${Math.round(a.val / 2)}`);
     save();
     return;
@@ -829,6 +878,7 @@ function collect(c, r) {
   if (it === CRYSTAL_SHARD) { S.bag.push(0); floatText(c, r, 'Crystal +$90', '#e2d6ff'); sfx.gem(); return; }
   const o = ORES[it - 1];
   S.bag.push(it);
+  geoSeen('o' + it);
   floatText(c, r, `${o.name} +$${o.val}`, o.col);
   if (o.gem) { sfx.gem(); burst(c, r, o.col, 14, 180); } else sfx.ore();
 }
@@ -889,6 +939,327 @@ function updateHazards(dt) {
   }
 }
 
+// ─── ROUND 2: landmarks, gear, bats, contracts, rock & mineral guide ───
+const CHEST = 11;
+const LANDMARKS = [
+  { k: 'capsule', name: '1920s Time Capsule', e: '&#128230;', m: 34, reward: 150,
+    fact: 'People bury time capsules full of everyday things for the future to find. Inside this one: a 1925 newspaper, a tin toy car, a photo of a steam train and a letter addressed "to whoever finds this".' },
+  { k: 'mine', name: 'Abandoned Gold Mine', e: '&#9935;&#65039;', m: 150, reward: 300,
+    fact: 'In gold rushes like California\'s in 1849, miners dug tunnels held up by timber beams and pushed ore out in carts on rails. They took canaries underground: if the bird stopped singing, there was dangerous gas — time to get out!' },
+  { k: 'grotto', name: 'Glowworm Grotto', e: '&#10024;', m: 270, reward: 400,
+    fact: 'Glowworm caves are real — like Waitomo in New Zealand. The "glowworms" are the larvae of a fungus gnat. They glow blue-green to lure insects into sticky silk threads hanging from the ceiling.' },
+  { k: 'tube', name: 'Lava Tube', e: '&#127755;', m: 404, reward: 500,
+    fact: 'When a river of lava cools on top, the crust becomes a roof while hot lava keeps flowing underneath. When it drains away it leaves a tunnel: a lava tube. Kazumura Cave in Hawaii is over 65 km long — and there are lava tubes on the Moon and Mars too.' },
+];
+const decorTile = t => t >= T.RAIL && t <= T.LANTERN;
+
+function stampLandmarks(rnd) {
+  S.lm = [];
+  const rockAt = r => LAYERS[layerIdx(depthOf(r), 8)].tile;
+  // 1. Time capsule: a chest buried in the clay
+  { const r = rowOf(34), c = 2 + Math.floor(rnd() * 13);
+    setTile(c, r, rockAt(r)); setItem(c, r, CHEST); S.lm.push({ k: 'capsule', c0: c, c1: c, r0: r, r1: r }); }
+  // 2. Gold mine: a timbered tunnel with rails, a lantern and a cart of gold
+  { const r = rowOf(150), c0 = 1 + Math.floor(rnd() * (COLS - 12));
+    for (let c = c0; c < c0 + 10; c++) {
+      setTile(c, r - 1, (c - c0) % 3 === 0 ? T.POST : T.AIR); setTile(c, r, T.RAIL);
+      setItem(c, r - 1, 0); setItem(c, r, 0);
+      if (!solid(tileAt(c, r + 1))) setTile(c, r + 1, rockAt(r + 1));
+      if (!solid(tileAt(c, r - 2)) || tileAt(c, r - 2) === T.BOULDER) setTile(c, r - 2, rockAt(r - 2));
+    }
+    setTile(c0 + 4, r - 1, T.LANTERN);
+    [7, 8].forEach(k => setItem(c0 + k, r, 4));
+    S.lm.push({ k: 'mine', c0, c1: c0 + 9, r0: r - 1, r1: r }); }
+  // 3. Glowworm grotto: a cave with a glowing ceiling and gems in the walls
+  { const r = rowOf(270), c0 = 2 + Math.floor(rnd() * (COLS - 14));
+    for (let y = -2; y <= 1; y++) for (let x = 0; x < 11; x++) {
+      const dx = (x - 5) / 5.5, dy = (y + 0.5) / 2.2;
+      if (dx * dx + dy * dy <= 1) { setTile(c0 + x, r + y, y === -2 || (y === -1 && Math.abs(x - 5) > 3) ? T.GLOW : T.AIR); setItem(c0 + x, r + y, 0); }
+    }
+    for (let x = 0; x < 11; x++) if (!solid(tileAt(c0 + x, r + 2)) && open(tileAt(c0 + x, r + 1))) setTile(c0 + x, r + 2, rockAt(r + 2));
+    [[-1, 0], [11, -1], [3, 2], [8, 2]].forEach(([x, y]) => { const t = tileAt(c0 + x, r + y); if (solid(t) && t !== T.BED) setItem(c0 + x, r + y, 5); });
+    S.lm.push({ k: 'grotto', c0, c1: c0 + 10, r0: r - 2, r1: r + 1 }); }
+  // 4. Lava tube: a long smooth tunnel right across the basalt
+  { const r = rowOf(404);
+    for (let c = 1; c < COLS - 1; c++) {
+      setTile(c, r, T.AIR); setTile(c, r + 1, T.AIR); setItem(c, r, 0); setItem(c, r + 1, 0);
+      for (const y of [r - 1, r + 2]) if (tileAt(c, y) === T.LAVA || !solid(tileAt(c, y)) || tileAt(c, y) === T.BOULDER) { setTile(c, y, T.BAS); setItem(c, y, 0); }
+    }
+    [3, 13].forEach(c => setItem(c, r - 1, 6));
+    S.lm.push({ k: 'tube', c0: 1, c1: COLS - 2, r0: r, r1: r + 1 }); }
+  S.lmv = 1;
+}
+
+function discover(k) {
+  if (S.lmFound[k]) return;
+  const lm = LANDMARKS.find(x => x.k === k);
+  S.lmFound[k] = 1;
+  S.money += lm.reward;
+  jobEvent('landmark');
+  sfx.art();
+  state = 'popup';
+  held.left = held.right = held.up = held.down = false;
+  $('find-e').innerHTML = lm.e; $('find-n').textContent = lm.name.toUpperCase();
+  $('find-f').textContent = lm.fact;
+  $('find-r').innerHTML = `LANDMARK DISCOVERED (${Object.keys(S.lmFound).length}/${LANDMARKS.length}) &middot; +$${lm.reward} explorer's reward`;
+  show('ov-find');
+  save();
+}
+function checkLandmarks() {
+  (S.lm || []).forEach(l => { if (l.k !== 'capsule' && !S.lmFound[l.k] && L.c >= l.c0 && L.c <= l.c1 && L.r >= l.r0 && L.r <= l.r1) discover(l.k); });
+}
+
+// Decor tiles (passable): mine timbers, rails, lantern, glowworms
+function buildDecorArt() {
+  art.post = mk(g => {
+    g.fillStyle = '#7a4f24'; g.fillRect(2, 0, 7, TILE); g.fillRect(TILE - 9, 0, 7, TILE);
+    g.fillStyle = '#946233'; g.fillRect(0, 0, TILE, 7);
+    g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(2, 7, 7, 3); g.fillRect(TILE - 9, 7, 7, 3);
+  });
+  art.rail = mk(g => {
+    g.fillStyle = '#5a3a1c'; for (let x = 2; x < TILE; x += 13) g.fillRect(x, TILE - 8, 8, 6);
+    g.fillStyle = '#9aa0a8'; g.fillRect(0, TILE - 11, TILE, 3);
+  });
+}
+function drawDecor(t, x, y, c, r) {
+  if (t === T.POST) ctx.drawImage(art.post, x, y);
+  if (t === T.RAIL) {
+    ctx.drawImage(art.rail, x, y);
+    // the mine cart sits on the two rail tiles holding gold
+    if (itemAt(c, r) === 4 && tileAt(c - 1, r) === T.RAIL && itemAt(c - 1, r) !== 4) {
+      ctx.fillStyle = '#5b5f66'; ctx.fillRect(x - 2, y + 12, TILE * 2 + 4, 18);
+      ctx.fillStyle = '#3c3f44'; ctx.fillRect(x - 2, y + 12, TILE * 2 + 4, 4);
+      ctx.fillStyle = '#222'; [x + 10, x + TILE * 2 - 10].forEach(wx => { ctx.beginPath(); ctx.arc(wx, y + 31, 5, 0, Math.PI * 2); ctx.fill(); });
+    }
+  }
+  if (t === T.LANTERN) {
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 20, y); ctx.lineTo(x + 20, y + 10); ctx.stroke();
+    ctx.fillStyle = '#2b2b2b'; ctx.fillRect(x + 13, y + 10, 14, 4); ctx.fillRect(x + 13, y + 28, 14, 3);
+    ctx.fillStyle = `rgba(255,200,90,${0.8 + Math.sin(time * 8) * 0.15})`; ctx.fillRect(x + 14, y + 14, 12, 14);
+  }
+  if (t === T.GLOW) { // silk threads hanging from the ceiling
+    ctx.strokeStyle = 'rgba(160,255,230,0.25)'; ctx.lineWidth = 1;
+    for (let k = 0; k < 4; k++) { const sx = x + 5 + hash(c, r + k) * 30; ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx, y + 10 + hash(c + k, r) * 24); ctx.stroke(); }
+  }
+}
+function drawGlowLights(r0, r1) {
+  for (let r = r0; r <= r1; r++) for (let c = 0; c < COLS; c++) {
+    if (tileAt(c, r) !== T.GLOW) continue;
+    for (let k = 0; k < 5; k++) {
+      const x = c * TILE + 4 + hash(c * 7 + k, r) * 32, y = r * TILE - camY + 4 + hash(c, r * 5 + k) * 30;
+      const a = 0.55 + Math.sin(time * 2 + k + c) * 0.35;
+      ctx.fillStyle = `rgba(120,255,220,${a})`; ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+function drawChest(x, y) {
+  ctx.fillStyle = '#7a4a1f'; ctx.fillRect(x + 7, y + 14, 26, 18);
+  ctx.fillStyle = '#946233'; ctx.beginPath(); ctx.moveTo(x + 7, y + 16); ctx.quadraticCurveTo(x + 20, y + 4, x + 33, y + 16); ctx.fill();
+  ctx.fillStyle = '#d4af37'; ctx.fillRect(x + 7, y + 20, 26, 3); ctx.fillRect(x + 18, y + 18, 4, 7);
+}
+
+// ─── GEAR: dynamite & snacks ───
+const fuses = [];
+function useDynamite() {
+  if (state !== 'play') return;
+  if (L.r < SURF) { say('Not at camp! Use dynamite underground.', true); return; }
+  if (S.dyn <= 0) { say('No dynamite! Buy some at camp.', true); return; }
+  if (fuses.length) return;
+  S.dyn--;
+  fuses.push({ c: L.c, r: L.r, t: 1.8 });
+  beep(1800, 0.05, 'square', 0.03);
+  say('Fuse lit — RUN!', true);
+  hud();
+}
+function explode(f) {
+  sfx.boom(); shake = 0.7;
+  for (let i = 0; i < 40; i++) parts.push({ x: f.c * TILE + 20, y: f.r * TILE + 20, vx: (Math.random() - 0.5) * 520, vy: (Math.random() - 0.7) * 420, s: 3 + Math.random() * 6, col: ['#ffb000', '#ff5a00', '#777', '#ccc'][i % 4], life: 0.6 + Math.random() * 0.5 });
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const c = f.c + dx, r = f.r + dy, t = tileAt(c, r);
+    if (r < SURF || t === T.BED || t === T.HEART || t === T.LAVA || t === T.OBS || t === T.CRYSTAL) continue;
+    if (solid(t) || t === T.LADDER || decorTile(t)) { setTile(c, r, T.AIR); digProg.delete(idx(c, r)); wobble.delete(idx(c, r)); }
+    if (itemAt(c, r) === GAS) setItem(c, r, 0); // the gas burns off harmlessly
+  }
+  if (Math.abs(L.c - f.c) <= 1 && Math.abs(L.r - f.r) <= 1) {
+    L.energy -= 30; L.stun = 0.9;
+    say('KABOOM! Levi was too close! −30 energy', true);
+  } else say('KABOOM! Loose ores are waiting in the rubble.');
+  hazardT = 0;
+}
+function updateFuses(dt) {
+  for (let i = fuses.length - 1; i >= 0; i--) {
+    const f = fuses[i]; f.t -= dt;
+    if (Math.random() < 0.6) parts.push({ x: f.c * TILE + 26, y: f.r * TILE + 14, vx: (Math.random() - 0.5) * 80, vy: -Math.random() * 90, s: 2, col: '#ffd060', life: 0.25 });
+    if (f.t <= 0) { fuses.splice(i, 1); explode(f); }
+  }
+}
+function drawFuses() {
+  fuses.forEach(f => {
+    const x = f.c * TILE, y = f.r * TILE - camY;
+    ctx.fillStyle = '#c0392b'; ctx.fillRect(x + 12, y + 22, 7, 16); ctx.fillRect(x + 20, y + 22, 7, 16);
+    ctx.fillStyle = '#7a1f16'; ctx.fillRect(x + 12, y + 28, 15, 3);
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 20, y + 22); ctx.quadraticCurveTo(x + 22, y + 14, x + 26, y + 14); ctx.stroke();
+    if (Math.sin(time * 40) > 0) { ctx.fillStyle = '#fff6a0'; ctx.beginPath(); ctx.arc(x + 26, y + 14, 3, 0, Math.PI * 2); ctx.fill(); }
+  });
+}
+function eatSnack() {
+  if (state !== 'play') return;
+  if (S.snack <= 0) { say('No snacks left! Buy some at camp.', true); return; }
+  if (L.energy >= maxEnergy() - 1) { say('Levi isn\'t hungry yet.'); return; }
+  S.snack--;
+  L.energy = Math.min(maxEnergy(), L.energy + 40); warned = false;
+  [660, 880].forEach((f, i) => setTimeout(() => beep(f, 0.08, 'triangle', 0.04), i * 80));
+  floatText(L.c, L.r, '+40 energy', '#7bd88f');
+  hud();
+}
+
+// ─── BATS (they live in the caves) ───
+const bats = [];
+let batT = 0;
+function caveTile(c, r) {
+  if (!open(tileAt(c, r)) || r < rowOf(50)) return false;
+  let n = 0; for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if (open(tileAt(c + x, r + y))) n++;
+  return n >= 6;
+}
+function updateBats(dt) {
+  batT -= dt;
+  if (batT <= 0 && bats.length < 4 && depthOf(L.r) > 50) {
+    batT = 1.5;
+    for (let tries = 0; tries < 12; tries++) {
+      const c = 1 + Math.floor(Math.random() * (COLS - 2)), r = L.r - 7 + Math.floor(Math.random() * 15);
+      if (Math.abs(c - L.c) + Math.abs(r - L.r) < 5 || !caveTile(c, r)) continue;
+      bats.push({ x: c * TILE + 20, y: r * TILE + 20, vx: (Math.random() - 0.5) * 80, vy: (Math.random() - 0.5) * 40, cd: 0, ph: Math.random() * 6 });
+      break;
+    }
+  }
+  const lx = L.x + 20, ly = L.y + 14;
+  for (let i = bats.length - 1; i >= 0; i--) {
+    const b = bats[i];
+    if (Math.abs(b.y - ly) > TILE * 12) { bats.splice(i, 1); continue; }
+    if (Math.random() < dt * 1.5) { b.vx += (Math.random() - 0.5) * 120; b.vy += (Math.random() - 0.5) * 80; }
+    // drawn toward Levi's lamp, but erratic
+    const dx = lx - b.x, dy = ly - b.y, d = Math.hypot(dx, dy) || 1;
+    if (d < TILE * 5 && b.cd <= 0) { b.vx += dx / d * 60 * dt; b.vy += dy / d * 60 * dt; }
+    const sp = Math.hypot(b.vx, b.vy); if (sp > 110) { b.vx *= 110 / sp; b.vy *= 110 / sp; }
+    const nx = b.x + b.vx * dt, ny = b.y + b.vy * dt;
+    if (open(tileAt(Math.floor(nx / TILE), Math.floor(b.y / TILE)))) b.x = nx; else b.vx *= -1;
+    if (open(tileAt(Math.floor(b.x / TILE), Math.floor(ny / TILE))) && ny > SURF * TILE) b.y = ny; else b.vy *= -1;
+    b.cd -= dt;
+    if (b.cd <= 0 && d < 20) {
+      b.cd = 2; b.vx = -dx / d * 110; b.vy = -dy / d * 110;
+      L.energy -= 4;
+      beep(3200, 0.06, 'square', 0.03, 800); beep(2600, 0.08, 'square', 0.025, 600);
+      say('A bat bumped into Levi! −4 energy', true);
+    }
+  }
+}
+function drawBats(eyesOnly) {
+  bats.forEach(b => {
+    const x = b.x, y = b.y - camY, flap = Math.sin(time * 22 + b.ph);
+    if (eyesOnly) { ctx.fillStyle = '#ff4040'; ctx.fillRect(x - 3, y - 2, 2, 2); ctx.fillRect(x + 1, y - 2, 2, 2); return; }
+    ctx.fillStyle = '#2a2235';
+    ctx.beginPath(); ctx.ellipse(x, y, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 3, y - 1); ctx.lineTo(x - 15, y - 6 * flap); ctx.lineTo(x - 9, y + 3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 3, y - 1); ctx.lineTo(x + 15, y - 6 * flap); ctx.lineTo(x + 9, y + 3); ctx.closePath(); ctx.fill();
+  });
+}
+
+// ─── CONTRACTS (the job board at camp) ───
+function newJob() {
+  const kinds = ['sell', 'sell', 'depth', 'find'];
+  if (LANDMARKS.some(l => !S.lmFound[l.k])) kinds.push('landmark');
+  if (S.best >= 250) kinds.push('gem');
+  const used = new Set((S.jobs || []).map(j => j.kind + (j.ore || '')));
+  for (let tries = 0; tries < 20; tries++) {
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    let j;
+    if (kind === 'sell') {
+      const pool = ORES.filter(o => !o.gem && o.min <= Math.max(30, S.best + 20));
+      const o = pool[Math.floor(Math.random() * pool.length)];
+      const need = 3 + Math.floor(Math.random() * 5);
+      j = { kind, ore: o.id, need, text: `Deliver ${need} ${o.name} ore to the foundry`, reward: Math.round(need * o.val * 1.5 + 20) };
+    } else if (kind === 'depth') {
+      const need = Math.min(500, Math.max(30, Math.ceil((S.best + 25) / 10) * 10));
+      j = { kind, need, text: `Survey the rock at ${need} m deep`, reward: Math.round(40 + need * 0.8) };
+    } else if (kind === 'find') j = { kind, need: 1, text: 'Find a fossil or treasure the museum doesn\'t have yet', reward: 120 };
+    else if (kind === 'landmark') j = { kind, need: 1, text: 'Discover a hidden landmark', reward: 150 };
+    else j = { kind, need: 2, text: 'Deliver 2 gemstones to the jeweller', reward: 260 };
+    if (used.has(j.kind + (j.ore || ''))) continue;
+    j.have = kind === 'depth' ? Math.min(S.best, j.need) : 0;
+    return j;
+  }
+  return { kind: 'find', need: 1, have: 0, text: 'Find a fossil or treasure the museum doesn\'t have yet', reward: 120 };
+}
+function ensureJobs() { S.jobs = S.jobs || []; while (S.jobs.length < 3) S.jobs.push(newJob()); }
+function jobEvent(kind, data) {
+  (S.jobs || []).forEach(j => {
+    if (j.have >= j.need) return;
+    if (kind === 'depth' && j.kind === 'depth') j.have = Math.min(j.need, Math.max(j.have, data));
+    else if (kind === 'sold' && j.kind === 'sell') j.have = Math.min(j.need, j.have + (data[j.ore] || 0));
+    else if (kind === 'sold' && j.kind === 'gem') j.have = Math.min(j.need, j.have + ORES.filter(o => o.gem).reduce((a, o) => a + (data[o.id] || 0), 0));
+    else if (kind === j.kind && (kind === 'find' || kind === 'landmark')) j.have = Math.min(j.need, j.have + 1);
+    else return;
+    if (j.have >= j.need && state === 'play' && kind !== 'sold') say(`Job done: ${j.text}! Collect $${j.reward} at camp.`);
+  });
+}
+function payJobs() {
+  let paid = 0; const done = [];
+  S.jobs = (S.jobs || []).filter(j => { if (j.have >= j.need) { paid += j.reward; done.push(j.text); return false; } return true; });
+  S.money += paid;
+  ensureJobs();
+  return paid ? `<br><b style="color:#7bd88f">JOBS DONE: ${done.join(' · ')} &rarr; +$${paid}</b>` : '';
+}
+function renderJobs() {
+  ensureJobs();
+  $('jobs').innerHTML = '<div class="jt">&#128203; JOB BOARD</div>' + S.jobs.map(j =>
+    `<div class="job"><div class="jx">${j.text}</div><div class="jb"><i style="width:${Math.round(j.have / j.need * 100)}%"></i></div><div class="jr">${j.have}/${j.need} &middot; <b>$${j.reward}</b></div></div>`).join('');
+}
+
+// ─── ROCK & MINERAL GUIDE ───
+const GEO = [
+  { k: 't1', tile: 1, name: 'Soil', kind: 'MIX', mohs: '—', fact: 'Broken rock, clay, water, air and rotting plants and animals. A teaspoon of healthy soil holds more living things than there are people on Earth.' },
+  { k: 't2', tile: 2, name: 'Clay', kind: 'SEDIMENT', mohs: '1–2', fact: 'Made of mineral flakes finer than 0.002 mm. Bake it in a kiln at around 1000 °C and it becomes hard pottery or bricks.' },
+  { k: 't3', tile: 3, name: 'Sandstone', kind: 'SEDIMENTARY ROCK', mohs: '6–7 (its quartz grains)', fact: 'Sand grains cemented together. The red cliffs of the Grand Canyon and the ancient city of Petra are sandstone.' },
+  { k: 't4', tile: 4, name: 'Limestone', kind: 'SEDIMENTARY ROCK', mohs: '3', fact: 'Mostly calcite from shells. Rainwater slowly dissolves it, carving out caves with stalactites. It\'s also baked to make cement.' },
+  { k: 't5', tile: 5, name: 'Granite', kind: 'IGNEOUS ROCK', mohs: '6–7', fact: 'Big crystals of quartz, feldspar and mica that grew as magma cooled slowly underground. Mount Rushmore is carved in granite.' },
+  { k: 't6', tile: 6, name: 'Basalt', kind: 'IGNEOUS ROCK', mohs: '6', fact: 'Cooled lava. At the Giant\'s Causeway in Northern Ireland, about 40,000 six-sided basalt columns formed as the lava cracked while cooling.' },
+  { k: 't7', tile: 7, name: 'Obsidian', kind: 'VOLCANIC GLASS', mohs: '5–5.5', fact: 'Lava that cooled too fast to grow crystals. Stone Age people made blades from it — its edge can be sharper than a steel scalpel.' },
+  { k: 't11', tile: 11, name: 'Selenite crystal', kind: 'MINERAL (GYPSUM)', mohs: '2', fact: 'So soft you can scratch it with a fingernail! The giant crystals of Mexico\'s Naica Cave are selenite, up to 12 m long.' },
+  { k: 'o1', ore: 1, name: 'Copper', kind: 'METAL', mohs: '2.5–3', fact: 'Carries electricity so well it\'s inside almost every wire. The Statue of Liberty is covered in copper — it turned green as it weathered.' },
+  { k: 'o2', ore: 2, name: 'Iron (hematite)', kind: 'METAL ORE', mohs: '5–6', fact: 'Iron ore is usually hematite or magnetite. Iron is made into steel, and Earth\'s core is mostly iron and nickel.' },
+  { k: 'o3', ore: 3, name: 'Silver', kind: 'METAL', mohs: '2.5–3', fact: 'The best conductor of electricity of all the metals, and the shiniest — it reflects about 95% of light.' },
+  { k: 'o4', ore: 4, name: 'Gold', kind: 'METAL', mohs: '2.5–3', fact: 'Never rusts, and is so stretchy that a single gram can be drawn into a wire about 2 km long.' },
+  { k: 'o5', ore: 5, name: 'Ruby', kind: 'GEM (CORUNDUM)', mohs: '9', fact: 'Red corundum: a pinch of chromium makes it red. The very first laser, built in 1960, used a ruby crystal.' },
+  { k: 'o6', ore: 6, name: 'Sapphire', kind: 'GEM (CORUNDUM)', mohs: '9', fact: 'The same mineral as ruby, in every colour except red. Synthetic sapphire is used for scratch-proof watch crystals.' },
+  { k: 'o7', ore: 7, name: 'Emerald', kind: 'GEM (BERYL)', mohs: '7.5–8', fact: 'Green beryl coloured by chromium or vanadium. Nearly every emerald has tiny flaws inside, which jewellers call its "garden".' },
+  { k: 'o8', ore: 8, name: 'Diamond', kind: 'GEM (CARBON)', mohs: '10', fact: 'Pure carbon squeezed about 150 km down in the mantle and carried up by volcanic eruptions. The hardest natural mineral.' },
+];
+function geoSeen(k) { S.geo = S.geo || {}; S.geo[k] = (S.geo[k] || 0) + 1; }
+function geoIcon(gEntry) {
+  if (gEntry.tile) return `<img src="${art[gEntry.tile][0].toDataURL()}" alt="" style="width:36px;height:36px;border-radius:6px">`;
+  const o = ORES[gEntry.ore - 1];
+  return o.gem ? `<div class="gem" style="background:${o.col}"></div>` : `<div class="nug" style="background:${o.col}"></div>`;
+}
+let guideFrom = null;
+function openGuide() {
+  guideFrom = state; state = 'guide';
+  held.left = held.right = held.up = held.down = false;
+  S.geo = S.geo || {};
+  const got = GEO.filter(x => S.geo[x.k]).length;
+  $('geo-count').textContent = `${got} of ${GEO.length} rocks & minerals identified`;
+  const box = $('geo'); box.innerHTML = '';
+  GEO.forEach(x => {
+    const has = S.geo[x.k];
+    const el = document.createElement('div'); el.className = 'mus' + (has ? '' : ' no');
+    el.innerHTML = `<div class="e" style="display:flex;justify-content:center;align-items:center">${geoIcon(x)}</div><div class="mn">${has ? x.name : '???'}</div><div>${has ? 'Mohs ' + x.mohs : x.kind}</div>`;
+    el.addEventListener('click', () => { $('geo-fact').innerHTML = has ? `<b>${x.name}</b> &middot; ${x.kind} &middot; hardness ${x.mohs}<br>${x.fact}${x.ore ? `<br><i>Collected: ${has}</i>` : ''}` : (x.tile ? 'Dig into this rock to identify it.' : 'Collect this one to identify it.'); });
+    box.appendChild(el);
+  });
+  $('geo-fact').textContent = 'Tap a card to read about it.';
+  show('ov-guide');
+}
+function closeGuide() { if (guideFrom === 'camp') { state = 'camp'; renderShop(); show('ov-camp'); } else { hideAll(); state = guideFrom === 'title' ? 'title' : 'play'; if (guideFrom === 'title') show('ov-title'); } }
+
 // ─── CAMP, ROPE & RESCUE ───
 function ropeUp() {
   if (state !== 'play') return;
@@ -910,6 +1281,7 @@ function rescue(why) {
 }
 
 function arriveAtCamp(note) {
+  bats.length = 0; fuses.length = 0;
   placeLevi(8, SURF - 1);
   camY = 0;
   S.trips++;
@@ -925,10 +1297,13 @@ function openCamp(arrived, note) {
     S.bag.forEach(id => { const n = id === 0 ? 'Crystal' : ORES[id - 1].name; counts[n] = (counts[n] || 0) + 1; });
     const total = S.bag.reduce((a, id) => a + bagValue(id), 0);
     S.money += total;
+    const byId = {}; S.bag.forEach(id => { byId[id] = (byId[id] || 0) + 1; });
+    jobEvent('sold', byId);
     soldHtml = `SOLD: ${Object.entries(counts).map(([n, k]) => `${k} ${n}`).join(', ')} &rarr; <b style="color:#ffe600">+$${total}</b>`;
     S.bag = [];
     sfx.cash();
   } else if (arrived) soldHtml = 'Nothing to sell this trip.';
+  soldHtml += payJobs();
   if (note) soldHtml = `<span style="color:#ff9f9f">${note}</span><br>` + soldHtml;
   $('camp-sold').innerHTML = soldHtml;
   L.energy = maxEnergy();
@@ -940,7 +1315,7 @@ function openCamp(arrived, note) {
 
 function renderShop() {
   const found = Object.keys(S.museum).length;
-  $('camp-stats').innerHTML = `$<b>${S.money}</b> &middot; deepest <b>${S.best} m</b> &middot; museum <b>${found}/${ARTS.length}</b>${S.won ? ' &middot; <b>&#128142; crystal cave reached</b>' : ''}`;
+  $('camp-stats').innerHTML = `$<b>${S.money}</b> &middot; deepest <b>${S.best} m</b> &middot; museum <b>${found}/${ARTS.length}</b> &middot; landmarks <b>${Object.keys(S.lmFound).length}/${LANDMARKS.length}</b>${S.won ? ' &middot; <b>&#128142; crystal cave reached</b>' : ''}`;
   const shop = $('shop'); shop.innerHTML = '';
   UPG_ORDER.forEach(k => {
     const u = UPG[k], cur = u.lv[S.up[k]], next = u.lv[S.up[k] + 1];
@@ -955,6 +1330,14 @@ function renderShop() {
   lad.innerHTML = `<div class="un">Ladders</div><div>You have ${S.ladders}. Climbing up places one.</div><div class="ul">10 LADDERS FOR $12</div><button class="b ${S.money >= 12 ? 'big' : ''}" ${S.money >= 12 ? '' : 'disabled'}>BUY 10 &middot; $12</button>`;
   lad.querySelector('button').addEventListener('click', () => { if (S.money < 12) return; S.money -= 12; S.ladders += 10; sfx.buy(); renderShop(); hud(); save(); });
   shop.appendChild(lad);
+  const gear = [['dyn', 'Dynamite', '&#129512;', 30, 'Press B to light it, then run! Blasts 3×3 rock (not obsidian).'], ['snack', 'Snack', '&#129386;', 8, 'Press E to eat: +40 energy.']];
+  gear.forEach(([k, name, ico, cost, desc]) => {
+    const el = document.createElement('div'); el.className = 'up';
+    el.innerHTML = `<div class="un">${ico} ${name}</div><div>${desc} You have ${S[k]}.</div><button class="b ${S.money >= cost && S[k] < 9 ? 'big' : ''}" ${S.money >= cost && S[k] < 9 ? '' : 'disabled'}>${S[k] >= 9 ? 'BAG FULL (9)' : 'BUY 1 · $' + cost}</button>`;
+    el.querySelector('button').addEventListener('click', () => { if (S.money < cost || S[k] >= 9) return; S.money -= cost; S[k]++; sfx.buy(); renderShop(); hud(); save(); });
+    shop.appendChild(el);
+  });
+  renderJobs();
   const ropeOk = S.rope && open(tileAt(S.rope.c, S.rope.r));
   $('btn-dive').textContent = ropeOk ? `DIVE TO ${depthOf(S.rope.r)} m` : 'START DIGGING';
 }
@@ -1049,6 +1432,8 @@ function update(dt) {
   if (state !== 'play') return;
 
   updateHazards(dt);
+  updateFuses(dt);
+  updateBats(dt);
   if (state !== 'play') return;
   if (L.stun > 0) L.stun -= dt;
 
@@ -1074,6 +1459,9 @@ function update(dt) {
       if (state !== 'play') return;
       const m = depthOf(L.r);
       if (m > S.best) S.best = m;
+      jobEvent('depth', m);
+      checkLandmarks();
+      if (state !== 'play') return;
       if (L.r >= SURF) showLayer(layerIdx(m, L.c));
     }
   } else if (!supported()) {
@@ -1111,6 +1499,8 @@ function render(dt) {
   drawWorld();
   // the rope
   if (state === 'rope') { ctx.strokeStyle = '#d9c38a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x + 20, -10); ctx.lineTo(L.x + 20, L.y - camY - 40); ctx.stroke(); }
+  drawFuses();
+  drawBats(false);
   drawLevi();
   drawParticles(dt);
   drawDarkness();
@@ -1134,12 +1524,16 @@ window.addEventListener('keydown', e => {
   const d = KEYMAP[e.code];
   if (d) { e.preventDefault(); if (!held[d]) lastDir = d; held[d] = true; }
   if (e.code === 'KeyR') ropeUp();
+  if (e.code === 'KeyB') useDynamite();
+  if (e.code === 'KeyE') eatSnack();
+  if (e.code === 'KeyG') { if (state === 'guide') closeGuide(); else if (state === 'play' || state === 'camp') openGuide(); }
   if (e.code === 'KeyM') { if (state === 'museum') closeMuseum(); else if (state === 'play' || state === 'camp') openMuseum(); }
   if (e.code === 'Space' || e.code === 'Enter') {
     if (state === 'popup' && $('ov-find').classList.contains('show')) { e.preventDefault(); closeFind(); }
     else if (state === 'popup' && $('ov-win').classList.contains('show')) { e.preventDefault(); closeFind(); }
     else if (state === 'title') { e.preventDefault(); startGame(); }
     else if (state === 'museum') { e.preventDefault(); closeMuseum(); }
+    else if (state === 'guide') { e.preventDefault(); closeGuide(); }
   }
   if (e.code === 'Escape' && state === 'museum') closeMuseum();
 });
@@ -1153,6 +1547,13 @@ document.querySelectorAll('#pad [data-d]').forEach(b => {
   b.addEventListener('contextmenu', e => e.preventDefault());
 });
 $('pad-rope').addEventListener('click', ropeUp);
+$('pad-dyn').addEventListener('click', useDynamite);
+$('pad-snack').addEventListener('click', eatSnack);
+$('btn-dyn').addEventListener('click', () => { useDynamite(); $('btn-dyn').blur(); });
+$('btn-snack').addEventListener('click', () => { eatSnack(); $('btn-snack').blur(); });
+$('btn-guide').addEventListener('click', () => { if (state === 'play' || state === 'camp') openGuide(); $('btn-guide').blur(); });
+$('btn-guide2').addEventListener('click', openGuide);
+$('geo-close').addEventListener('click', closeGuide);
 $('btn-rope').addEventListener('click', () => { ropeUp(); $('btn-rope').blur(); });
 $('btn-mus').addEventListener('click', () => { if (state === 'play' || state === 'camp') openMuseum(); $('btn-mus').blur(); });
 $('btn-mus2').addEventListener('click', openMuseum);
@@ -1164,7 +1565,7 @@ $('btn-top').addEventListener('click', () => dive(true));
 $('btn-newsite').addEventListener('click', () => {
   if (!confirm('Start a brand-new dig site? The ground resets, but you keep your money, gear and museum.')) return;
   S.seed = (Math.random() * 1e9) | 0; S.rope = null; S.sites++; S.best = 0;
-  generate(); digProg.clear(); wobble.clear(); save(); renderShop();
+  S.lmFound = {}; generate(); digProg.clear(); wobble.clear(); save(); renderShop();
 });
 $('btn-start').addEventListener('click', startGame);
 
@@ -1180,6 +1581,7 @@ function startGame() {
 
 // ─── BOOT ───
 buildArt();
+buildDecorArt();
 const had = load();
 placeLevi(8, SURF - 1);
 $('title-stats').innerHTML = had ? `Welcome back! $<b>${S.money}</b> &middot; deepest <b>${S.best} m</b> &middot; museum <b>${Object.keys(S.museum).length}/${ARTS.length}</b>` : '';
