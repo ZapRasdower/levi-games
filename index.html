@@ -421,7 +421,7 @@
     { id: 'brick-breaker',  name: 'Brick Breaker',  emoji: '&#129521;', tag: 'ARCADE',         cat: 'arcade',  tint: '#ff6b6b44',
       desc: 'Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.' },
     { id: 'watchmaker',     name: 'Watchmaker',     emoji: '&#8986;',   tag: '3D BUILDER',     cat: 'build',   tint: '#d4af3744', updated: true,
-      desc: 'Build 8 real watches from history, hand-finish them like a master, restore grimy heirlooms in Full Service, and rise through the Guild.' },
+      desc: 'Build 9 real watches from history, hand-finish them like a master, restore grimy heirlooms in Full Service, and rise through the Guild.' },
     { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44',
       desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
     { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', isNew: true,
@@ -449,7 +449,7 @@
     'watchmaker':     () => { const bests = ['apprentice', 'journeyman', 'master'].map(t => lsJSON('watchmaker.best.' + t, null)).filter(Boolean);
                               const b = bests.sort((x, y) => y.score - x.score)[0]; const n = lsJSON('watchmaker.showcase', []).length;
                               const rp = lsJSON('watchmaker.repair', null); const fixed = rp && rp.fixed ? ` · ${rp.fixed} REPAIRED` : '';
-                              const coll = Object.keys(lsJSON('watchmaker.collection', {})).length; const cs = coll ? ` · ${coll}/23 COLLECTED` : ''; const cr = lsJSON('watchmaker.career', null); const rk = cr && cr.rep ? (cr.rep >= 6000 ? 'LIVING LEGEND' : cr.rep >= 3000 ? 'GUILD MASTER' : cr.rep >= 1200 ? 'MASTER CRAFTSMAN' : cr.rep >= 400 ? 'CRAFTSMAN' : 'TRAINEE') : '';
+                              const coll = Object.keys(lsJSON('watchmaker.collection', {})).length; const cs = coll ? ` · ${coll}/26 COLLECTED` : ''; const cr = lsJSON('watchmaker.career', null); const rk = cr && cr.rep ? (cr.rep >= 6000 ? 'LIVING LEGEND' : cr.rep >= 3000 ? 'GUILD MASTER' : cr.rep >= 1200 ? 'MASTER CRAFTSMAN' : cr.rep >= 400 ? 'CRAFTSMAN' : 'TRAINEE') : '';
                               return b ? `${rk ? rk + ' · ' : ''}BEST ${fmt(b.score)}${cs}${fixed}` : ((cs + fixed).slice(3) || null); },
     'levi-galaxy':    () => { const b = num('leviGalaxy.best'); return b ? `BEST ${fmt(b)}` : null; },
     'levi-dig':       () => { const s = lsJSON('leviDig.save', null); if (!s || !s.best) return null; const f = Object.keys(s.museum || {}).length;
@@ -500,6 +500,8 @@
 
   // ---- What's new: newest first. Add a line here whenever a game changes. ----
   const UPDATES = [
+    { id: 'u14', date: 'NOV 11', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: the Tourbillon',
+      text: 'Breguet\'s 1801 masterpiece: a cage that carries the whole escapement round once a minute to cancel gravity. Reach Master Craftsman in the Guild to build one, or study it on the Bench now. Plus a tidier start screen.' },
     { id: 'u13', date: 'NOV 11', game: 'levi-dig', kind: 'upd', title: 'Levi Dig: the underground lake, fossil cleaning & a map',
       text: 'Swim and dive for cave pearls in a hidden lake (water really flows, and turns lava to rock!), brush the rock off your fossils to reveal them, watch the T. rex skeleton go up bone by bone, open a map that remembers everywhere you have dug, take a canary down with you, and earn 16 badges.' },
     { id: 'u12', date: 'NOV 1', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: The Bench',
