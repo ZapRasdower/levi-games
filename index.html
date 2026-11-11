@@ -425,7 +425,7 @@
     { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44',
       desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
     { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', isNew: true,
-      desc: 'Dig 500 m down through real rock layers. Blast with dynamite, dodge bats & lava, find 4 hidden landmarks and fill a fossil museum!' },
+      desc: 'Dig 500 m down through real rock layers. Dive in a hidden lake, blast with dynamite, clean your own fossils and build a T. rex!' },
   ];
   const CATS = [['all', 'ALL'], ['arcade', 'ARCADE'], ['science', 'SCIENCE'], ['build', 'BUILD & COLLECT']];
   const LAST_KEY = 'levi.lastPlayed', PLAYS_KEY = 'levi.plays';
@@ -453,7 +453,7 @@
                               return b ? `${rk ? rk + ' · ' : ''}BEST ${fmt(b.score)}${cs}${fixed}` : ((cs + fixed).slice(3) || null); },
     'levi-galaxy':    () => { const b = num('leviGalaxy.best'); return b ? `BEST ${fmt(b)}` : null; },
     'levi-dig':       () => { const s = lsJSON('leviDig.save', null); if (!s || !s.best) return null; const f = Object.keys(s.museum || {}).length;
-                              return `DEEPEST ${s.best} m · ${f}/17 FINDS${s.won ? ' · &#128142;' : ''}`; },
+                              const bd = Object.keys(s.badges || {}).length; return `DEEPEST ${s.best} m · ${f}/17 FINDS${bd ? ` · ${bd}/16 BADGES` : ''}${s.won ? ' · &#128142;' : ''}`; },
   };
 
   const grid = document.getElementById('grid');
@@ -500,6 +500,8 @@
 
   // ---- What's new: newest first. Add a line here whenever a game changes. ----
   const UPDATES = [
+    { id: 'u13', date: 'NOV 11', game: 'levi-dig', kind: 'upd', title: 'Levi Dig: the underground lake, fossil cleaning & a map',
+      text: 'Swim and dive for cave pearls in a hidden lake (water really flows, and turns lava to rock!), brush the rock off your fossils to reveal them, watch the T. rex skeleton go up bone by bone, open a map that remembers everywhere you have dug, take a canary down with you, and earn 16 badges.' },
     { id: 'u12', date: 'NOV 1', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: The Bench',
       text: 'A sandbox for just looking: pick any watch, spin it, explode it apart on a slider, slow the ticking down to a crawl, X-ray through the dial, tap any part to learn what it does, and follow the power from the mainspring to the hands.' },
     { id: 'u11', date: 'NOV 1', game: null, kind: 'upd', title: 'Saves & players',

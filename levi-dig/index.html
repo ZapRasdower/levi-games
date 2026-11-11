@@ -82,6 +82,16 @@ button.b:disabled { opacity: 0.4; cursor: default; }
 #rex { margin: 6px auto 0; font-size: 0.78rem; color: #ffcf6b; }
 .stats { font-size: 0.75rem; color: #99a; margin: 6px 0; }
 .stats b { color: #ffe600; }
+#prep-cv { width: 280px; height: 280px; max-width: 80vw; max-height: 80vw; display: block; margin: 8px auto; border-radius: 12px; border: 3px solid #33334d; touch-action: none; cursor: crosshair; }
+#map-cv { width: 100%; max-width: 440px; height: auto; display: block; margin: 4px auto; border-radius: 8px; }
+#rex-cv { width: 100%; max-width: 440px; height: auto; display: block; margin: 6px auto; border-radius: 8px; }
+#badges { margin: 8px 0 4px; }
+#badges .jt { font-size: 0.75rem; color: #ffe600; letter-spacing: 2px; margin-bottom: 4px; text-align: center; }
+#badges .brow { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.bdg { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; border-radius: 50%; background: #1a1a2e; border: 1px solid #2e2e4e; filter: grayscale(1) brightness(0.45); cursor: pointer; }
+.bdg.got { filter: none; border-color: #ffe600; background: #2a2a12; }
+.bnote { font-size: 0.7rem; color: #99a; text-align: center; margin-top: 5px; min-height: 1em; }
+.bnote b { color: #ffe600; }
 #jobs { text-align: left; margin: 6px 0 4px; }
 #jobs .jt { font-size: 0.75rem; color: #ffe600; letter-spacing: 2px; margin-bottom: 4px; text-align: center; }
 .job { background: #1a1a2e; border: 1px solid #2e2e4e; border-radius: 8px; padding: 6px 10px; margin-bottom: 5px; font-size: 0.72rem; color: #bbc; display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; align-items: center; }
@@ -128,7 +138,7 @@ button.b:disabled { opacity: 0.4; cursor: default; }
         &#11013;&#65039;&#10145;&#65039;&#11015;&#65039; <b>Hold</b> a direction to walk or dig &middot; &#11014;&#65039; climbs: it places a <b>ladder</b> (or digs the rock above)<br>
         <b>R</b> = ride the rope back to camp to sell loot and buy upgrades. If your <b>energy</b> runs out you get rescued &mdash; but drop half your bag.<br>
         Watch out for <b>wobbling boulders</b>, <b>gas pockets</b>, <b>lava</b> and <b>bats</b>! Sparkles in the dark are fossils &amp; treasures.<br>
-        <b>B</b> = dynamite (light it and run!) &middot; <b>E</b> = eat a snack &middot; <b>G</b> = rock &amp; mineral guide. Hunt for <b>4 hidden landmarks</b> and take jobs from the camp job board.
+        <b>B</b> = dynamite (light it and run!) &middot; <b>E</b> = eat a snack &middot; <b>G</b> = rock &amp; mineral guide &middot; <b>V</b> = map. Hunt for <b>5 hidden landmarks</b>, swim in the underground lake (watch your air!), earn badges and take jobs from the camp job board.
       </div>
       <div class="stats" id="title-stats"></div>
       <div class="row"><button class="b big" id="btn-start">START DIGGING</button></div>
@@ -151,11 +161,13 @@ button.b:disabled { opacity: 0.4; cursor: default; }
       <div class="sold" id="camp-sold"></div>
       <div id="jobs"></div>
       <div class="stats" id="camp-stats"></div>
+      <div id="badges"></div>
       <div class="row" style="margin-top:4px">
         <button class="b big" id="btn-dive">DIVE</button>
         <button class="b" id="btn-top">START AT THE TOP</button>
         <button class="b" id="btn-mus2">&#127963;&#65039; MUSEUM</button>
         <button class="b" id="btn-guide2">&#128214; GUIDE</button>
+        <button class="b" id="btn-map2">&#128506;&#65039; MAP</button>
       </div>
       <div class="shop" id="shop"></div>
       <div class="row"><button class="b" id="btn-newsite" style="font-size:0.7rem;color:#888">NEW DIG SITE (keeps your money, gear &amp; museum)</button></div>
@@ -166,7 +178,7 @@ button.b:disabled { opacity: 0.4; cursor: default; }
     <div class="card">
       <h2>&#127963;&#65039; LEVI'S MUSEUM</h2>
       <p id="mus-count"></p>
-      <div id="rex"></div>
+      <canvas id="rex-cv" width="440" height="180"></canvas>
       <div class="museum" id="museum"></div>
       <div class="fact" id="mus-fact">Tap a find to read about it.</div>
       <div class="row"><button class="b big" id="mus-close">BACK</button></div>
@@ -181,6 +193,25 @@ button.b:disabled { opacity: 0.4; cursor: default; }
       <div class="museum" id="geo"></div>
       <div class="fact" id="geo-fact">Tap a card to read about it.</div>
       <div class="row"><button class="b big" id="geo-close">BACK</button></div>
+    </div>
+  </div>
+
+  <div id="ov-prep" class="overlay">
+    <div class="card">
+      <h2>YOU FOUND SOMETHING!</h2>
+      <p>It's still stuck in the rock. Fossil hunters call this <b>preparation</b>: brushing and picking the stone away, grain by grain. Rub the rock to see what it is.</p>
+      <canvas id="prep-cv" width="320" height="320"></canvas>
+      <div class="stats" id="prep-hint"></div>
+      <div class="row"><button class="b" id="prep-skip">JUST SHOW ME</button></div>
+    </div>
+  </div>
+
+  <div id="ov-map" class="overlay">
+    <div class="card">
+      <h2>&#128506;&#65039; MAP OF THE DIG</h2>
+      <canvas id="map-cv" width="440" height="556"></canvas>
+      <div class="stats" id="map-info"></div>
+      <div class="row"><button class="b big" id="map-close">BACK</button></div>
     </div>
   </div>
 
@@ -202,6 +233,7 @@ button.b:disabled { opacity: 0.4; cursor: default; }
   <button class="b" id="btn-snack">&#129386; SNACK (E)</button>
   <button class="b" id="btn-mus">&#127963;&#65039; MUSEUM (M)</button>
   <button class="b" id="btn-guide">&#128214; GUIDE (G)</button>
+  <button class="b" id="btn-map">&#128506;&#65039; MAP (V)</button>
   <button class="b" id="btn-mute">&#128266;</button>
 </div>
 <div id="pad">
@@ -215,7 +247,7 @@ button.b:disabled { opacity: 0.4; cursor: default; }
   </div>
   <button class="rope" id="pad-rope">&#129698;<br>ROPE<br>UP</button>
 </div>
-<div class="keys">ARROWS / WASD: walk &amp; dig &middot; UP: ladder / dig up &middot; R: rope up &middot; B: dynamite &middot; E: snack &middot; G: guide &middot; M: museum &middot; SPACE / ENTER: close pop-ups</div>
+<div class="keys">ARROWS / WASD: walk &amp; dig &middot; UP: ladder / dig up &middot; R: rope up &middot; B: dynamite &middot; E: snack &middot; G: guide &middot; V: map &middot; M: museum &middot; SPACE / ENTER: close pop-ups</div>
 
 <script>
 // ─── WORLD CONSTANTS ───
@@ -226,7 +258,7 @@ const depthOf = r => Math.max(0, (r - SURF + 1) * M_PER_ROW);
 const rowOf = m => SURF - 1 + Math.round(m / M_PER_ROW);
 const SAVE_KEY = 'leviDig.save', MUTE_KEY = 'leviDig.muted';
 
-const T = { AIR: 0, DIRT: 1, CLAY: 2, SAND: 3, LIME: 4, GRAN: 5, BAS: 6, OBS: 7, BED: 8, BOULDER: 9, LAVA: 10, CRYSTAL: 11, HEART: 12, LADDER: 13, RAIL: 14, POST: 15, GLOW: 16, LANTERN: 17 };
+const T = { AIR: 0, DIRT: 1, CLAY: 2, SAND: 3, LIME: 4, GRAN: 5, BAS: 6, OBS: 7, BED: 8, BOULDER: 9, LAVA: 10, CRYSTAL: 11, HEART: 12, LADDER: 13, RAIL: 14, POST: 15, GLOW: 16, LANTERN: 17, WATER: 18, WLADDER: 19 };
 const TD = {
   1: { name: 'Dirt', hard: 1, tier: 1 },        2: { name: 'Clay', hard: 1.6, tier: 1 },
   3: { name: 'Sandstone', hard: 2.2, tier: 1 }, 4: { name: 'Limestone', hard: 3, tier: 1 },
@@ -235,7 +267,7 @@ const TD = {
   9: { name: 'Boulder', hard: 3.5, tier: 2 },   11: { name: 'Crystal', hard: 2, tier: 1 },
   12: { name: 'Giant crystal', hard: 3, tier: 1 },
 };
-const open = t => t === T.AIR || t === T.LADDER || (t >= T.RAIL && t <= T.LANTERN); // decor tiles are walk-through
+const open = t => t === T.AIR || t === T.LADDER || (t >= T.RAIL && t <= T.LANTERN) || t === T.WATER || t === T.WLADDER; // decor and water are walk-through
 const solid = t => !open(t) && t !== T.LAVA;
 
 const LAYERS = [
@@ -293,9 +325,11 @@ const UPG = {
   lamp:  { name: 'Helmet lamp', lv: [['Candle', 0, 3], ['Lantern', 70, 4.4], ['Headlamp', 260, 6], ['Floodlight', 800, 8]], desc: l => `lights ${l[2]} tiles around you` },
   helm:  { name: 'Hard hat', lv: [['Cap', 0, 30], ['Hard hat', 160, 14], ['Steel helmet', 520, 5]], desc: l => `boulder hit: −${l[2]} energy` },
   mask:  { name: 'Gas mask', lv: [['None', 0, 20], ['Gas mask', 280, 0]], desc: l => l[2] ? `gas pocket: −${l[2]} energy` : 'gas pockets are harmless' },
+  canary: { name: 'Canary', lv: [['None', 0, 0], ['Canary', 220, 1]], desc: l => l[2] ? 'chirps and marks gas pockets within 3 tiles' : 'gas pockets are a nasty surprise' },
+  air:   { name: 'Diving gear', lv: [['Big breath', 0, 12], ['Snorkel mask', 120, 22], ['Diving helmet', 380, 40]], desc: l => `${l[2]} seconds of air underwater` },
   radar: { name: 'Fossil radar', lv: [['None', 0, 0], ['Fossil radar', 300, 1]], desc: l => l[2] ? 'points to the nearest treasure' : 'find treasures by their sparkle' },
 };
-const UPG_ORDER = ['tool', 'food', 'bag', 'lamp', 'helm', 'mask', 'radar'];
+const UPG_ORDER = ['tool', 'food', 'bag', 'lamp', 'helm', 'mask', 'canary', 'air', 'radar'];
 
 // ─── CANVAS ───
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
@@ -373,9 +407,9 @@ function setItem(c, r, v) { if (c >= 0 && c < COLS && r >= 0 && r < ROWS) items[
 function freshSave(keep) {
   return Object.assign({
     seed: (Math.random() * 1e9) | 0, money: 0, ladders: 10,
-    up: { tool: 0, food: 0, bag: 0, lamp: 0, helm: 0, mask: 0, radar: 0 },
+    up: { tool: 0, food: 0, bag: 0, lamp: 0, helm: 0, mask: 0, radar: 0, canary: 0, air: 0 },
     museum: {}, best: 0, layers: {}, rope: null, bag: [], won: false, digs: 0, trips: 0, sites: 1,
-    dyn: 2, snack: 2, lmFound: {}, geo: {}, jobs: [],
+    dyn: 2, snack: 2, lmFound: {}, geo: {}, jobs: [], badges: {},
   }, keep || {});
 }
 
@@ -389,6 +423,7 @@ function layerIdx(m, c) {
 
 function generate() {
   const rnd = mulberry32(S.seed);
+  seen = new Uint8Array(ROWS * COLS);
   tiles = new Uint8Array(ROWS * COLS); items = new Uint8Array(ROWS * COLS);
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     let t;
@@ -447,20 +482,24 @@ function generate() {
 
 // Pack the world into the save (one character per tile / item)
 function packWorld() {
-  let t = '', it = '';
-  for (let i = 0; i < tiles.length; i++) { t += String.fromCharCode(48 + tiles[i]); it += String.fromCharCode(48 + items[i]); }
-  S.tiles = t; S.items = it;
+  let t = '', it = '', sn = '';
+  for (let i = 0; i < tiles.length; i++) { t += String.fromCharCode(48 + tiles[i]); it += String.fromCharCode(48 + items[i]); sn += seen[i] ? '1' : '0'; }
+  S.tiles = t; S.items = it; S.seen = sn;
 }
 function unpackWorld() {
   tiles = new Uint8Array(ROWS * COLS); items = new Uint8Array(ROWS * COLS);
   for (let i = 0; i < tiles.length; i++) { tiles[i] = S.tiles.charCodeAt(i) - 48; items[i] = S.items.charCodeAt(i) - 48; }
+  seen = new Uint8Array(ROWS * COLS);
+  if (S.seen && S.seen.length === seen.length) { for (let i = 0; i < seen.length; i++) seen[i] = S.seen.charCodeAt(i) === 49 ? 1 : 0; }
+  else seedSeen();
 }
 function save() { try { packWorld(); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (s && s.tiles && s.tiles.length === ROWS * COLS) { S = Object.assign(freshSave(), s); S.up = Object.assign(freshSave().up, s.up); unpackWorld();
-      if (!S.lmv) stampLandmarks(mulberry32(S.seed ^ 777)); // older saves get the landmarks too
+      if (!S.lmv) stampLandmarks(mulberry32(S.seed ^ 777), true); // older saves get the landmarks too
+      else if (S.lmv < 2) stampLake(mulberry32(S.seed ^ 999), true);
       return true; }
   } catch (e) {}
   S = freshSave(); generate(); return false;
@@ -595,10 +634,11 @@ function drawWorld() {
     const t = tiles[idx(c, r)], x = c * TILE, y = r * TILE - camY;
     const li = LAYERS[layerIdx(depthOf(r), c)].tile;
     const v = Math.floor(hash(c, r) * 4);
-    if (t === T.AIR || t === T.LADDER || t === T.BOULDER || t === T.LAVA || t === T.HEART || decorTile(t)) ctx.drawImage(art.bg[li] || art.bg[1], x, y);
+    if (t === T.AIR || t === T.LADDER || t === T.BOULDER || t === T.LAVA || t === T.HEART || decorTile(t) || isWater(t)) ctx.drawImage(art.bg[li] || art.bg[1], x, y);
     if (decorTile(t)) drawDecor(t, x, y, c, r);
     if (t >= 1 && t <= 8 || t === T.CRYSTAL) ctx.drawImage(art[t][v], x, y);
-    if (t === T.LADDER) ctx.drawImage(art.ladder, x, y);
+    if (t === T.LADDER || t === T.WLADDER) ctx.drawImage(art.ladder, x, y);
+    if (isWater(t)) drawWaterTile(x, y, c, r);
     if (t === T.BOULDER) {
       const wb = wobble.get(idx(c, r));
       ctx.drawImage(art.boulder, x + (wb !== undefined && wb > 0 ? Math.sin(time * 50) * 2.5 : 0), y);
@@ -637,6 +677,7 @@ function drawItem(it, x, y, c, r, t) {
     return;
   }
   if (it === CHEST) { drawChest(x, y); return; }
+  if (it === PEARL) { const g = ctx.createRadialGradient(cx - 3, cy + 5, 1, cx, cy + 8, 8); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#c9c2d8'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy + 8, 7, 0, Math.PI * 2); ctx.fill(); return; }
   if (it === CRYSTAL_SHARD) { ctx.fillStyle = '#f0e8ff'; ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx + 5, cy); ctx.lineTo(cx, cy + 10); ctx.lineTo(cx - 5, cy); ctx.fill(); return; }
   if (it < ART_BASE) {
     const o = ORES[it - 1];
@@ -678,8 +719,9 @@ function drawLevi() {
   const h = 54, w = h * (leviImg.naturalWidth / leviImg.naturalHeight);
   const bob = L.act && L.act.kind === 'walk' ? Math.abs(Math.sin(time * 18)) * 2 : 0;
   const digging = L.dig ? Math.sin(time * 30) * 2 : 0;
+  const afloat = !L.act && !wetAt(L.c, L.r) && wetAt(L.c, L.r + 1) && tileAt(L.c, L.r) !== T.LADDER ? 11 + Math.sin(time * 2.5) * 1.5 : 0; // bobbing at the surface
   ctx.save();
-  ctx.translate(x + TILE / 2, y + TILE + 1 - bob);
+  ctx.translate(x + TILE / 2, y + TILE + 1 - bob + afloat);
   if (L.stun > 0) ctx.rotate(Math.sin(time * 25) * 0.12);
   ctx.scale(L.face, 1);
   // tool
@@ -697,6 +739,11 @@ function drawLevi() {
   ctx.beginPath(); ctx.ellipse(-1.5, -h + 5, 8.5, 6, 0, Math.PI, 0); ctx.fill();
   ctx.fillRect(-10, -h + 4, 19, 2.5);
   ctx.fillStyle = '#fffbe0'; ctx.beginPath(); ctx.arc(4, -h + 1.5, 2.3, 0, Math.PI * 2); ctx.fill();
+  if (S.up.canary) { // the canary rides on his shoulder
+    const cy = -h * 0.68 + Math.sin(time * 6) * 0.6;
+    ctx.fillStyle = '#ffd92e'; ctx.beginPath(); ctx.ellipse(-9, cy, 4.5, 3.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(-12, cy - 3.6, 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f08a1c'; ctx.fillRect(-16.5, cy - 4.2, 2.6, 1.6); ctx.fillStyle = '#000'; ctx.fillRect(-13, cy - 4.6, 1, 1);
+  }
   ctx.restore();
   if (L.stun > 0) { ctx.fillStyle = '#ffe600'; ctx.font = '14px serif'; ctx.textAlign = 'center'; for (let k = 0; k < 3; k++) { const a = time * 6 + k * 2.1; ctx.fillText('★', x + TILE / 2 + Math.cos(a) * 12, y - 18 + Math.sin(a) * 4); } }
 }
@@ -709,6 +756,7 @@ function drawDarkness() {
   dctx.clearRect(0, 0, W, H);
   dctx.fillStyle = `rgba(4,3,8,${a})`; dctx.fillRect(0, 0, W, H);
   dctx.globalCompositeOperation = 'destination-out';
+  cutSeen(Math.floor(camY / TILE), Math.floor(camY / TILE) + Math.ceil(H / TILE) + 1);
   const cut = (x, y, rad, k = 1) => {
     const g = dctx.createRadialGradient(x, y, rad * 0.25, x, y, rad);
     g.addColorStop(0, `rgba(0,0,0,${k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -733,7 +781,7 @@ function drawDarkness() {
   // Treasures twinkle through the dark
   for (let r = r0; r <= r1; r++) for (let c = 0; c < COLS; c++) {
     const it = itemAt(c, r);
-    if (it < ART_BASE && !(it >= 5 && it <= 8) && it !== CHEST) continue;
+    if (it < ART_BASE && !(it >= 5 && it <= 8) && it !== CHEST && it !== PEARL) continue;
     const tw = Math.sin(time * 2.5 + c * 1.7 + r * 0.9);
     if (tw > 0.55) {
       const s = (tw - 0.55) * 9, x = c * TILE + 20, y = r * TILE + 20 - camY;
@@ -796,7 +844,7 @@ function floatText(c, r, text, col = '#ffe600') { parts.push({ x: c * TILE + 20,
 // ─── RULES ───
 function supported() {
   const here = tileAt(L.c, L.r), below = tileAt(L.c, L.r + 1);
-  return here === T.LADDER || solid(below) || below === T.LADDER;
+  return here === T.LADDER || solid(below) || below === T.LADDER || isWater(here) || isWater(below); // he swims, and floats at the surface
 }
 function digTime(t) { return 0.14 + TD[t].hard * 0.2 / lv('tool')[2]; }
 function digCost(t) { return 0.6 + TD[t].hard * 0.55; }
@@ -813,9 +861,13 @@ function tryDir(dir) {
   if (tr < 0) return;
   if (t === T.LAVA) { say('Too hot! That\'s lava!', true); held[dir] = false; return; }
   if (open(t)) {
+    const inW = wetAt(L.c, L.r), swim = inW || isWater(t);
+    if (swim && dy >= 0) { L.energy -= 0.05; return startMove(tc, tr, 0.2, 'swim'); }
     if (dy < 0) {
-      // Climbing: needs a ladder in the tile you leave
+      // Climbing: needs a ladder in the tile you leave (unless he is swimming up)
+      if (inW) { L.energy -= 0.05; return startMove(tc, tr, 0.2, 'swim'); }
       if (tileAt(L.c, L.r) !== T.LADDER) {
+        if (wetAt(L.c, L.r + 1)) { say('A ladder can\'t stand on water! Swim to the bank.', true); held.up = false; return; }
         if (S.ladders <= 0) { say('Out of ladders! Press R to ride the rope up.', true); held.up = false; return; }
         if (L.r >= SURF) { setTile(L.c, L.r, T.LADDER); S.ladders--; sfx.ladder(); }
       }
@@ -846,6 +898,7 @@ function finishDig() {
   digProg.delete(idx(d.c, d.r));
   L.energy -= digCost(t);
   S.digs++;
+  if (S.digs === 1) checkBadges();
   sfx.dug(TD[t].hard);
   burst(d.c, d.r, t === T.BOULDER ? '#999' : LAYER_COL[t] || '#888', 12);
   setTile(d.c, d.r, T.AIR);
@@ -869,20 +922,21 @@ function collect(c, r) {
     sfx.art();
     burst(c, r, '#ffe600', 18, 200);
     if (isNew) jobEvent('find');
-    if (isNew) showFind(a); else floatText(c, r, `${a.name} again! +$${Math.round(a.val / 2)}`);
+    if (isNew) beginPrep(a, c, r); else floatText(c, r, `${a.name} again! +$${Math.round(a.val / 2)}`);
     save();
     return;
   }
   if (S.bag.length >= bagCap()) { if (msgT <= 0) say('Backpack full! Press R to rope up and sell.', true); return; }
   setItem(c, r, 0);
   if (it === CRYSTAL_SHARD) { S.bag.push(0); floatText(c, r, 'Crystal +$90', '#e2d6ff'); sfx.gem(); return; }
+  if (it === PEARL) { S.bag.push(PEARL); S.pearls = (S.pearls || 0) + 1; geoSeen('p'); floatText(c, r, 'Cave pearl +$120', '#f4f0ff'); sfx.gem(); burst(c, r, '#ffffff', 10, 120); checkBadges(); return; }
   const o = ORES[it - 1];
   S.bag.push(it);
   geoSeen('o' + it);
   floatText(c, r, `${o.name} +$${o.val}`, o.col);
   if (o.gem) { sfx.gem(); burst(c, r, o.col, 14, 180); } else sfx.ore();
 }
-const bagValue = id => id === 0 ? 90 : ORES[id - 1].val;
+const bagValue = id => id === 0 ? 90 : id === PEARL ? 120 : ORES[id - 1].val;
 
 function gasBurst(c, r) {
   const dmg = lv('mask')[2];
@@ -910,8 +964,10 @@ function updateHazards(dt) {
   if (hazardT > 0) return;
   hazardT = 0.09;
   const r0 = Math.max(SURF, L.r - 16), r1 = Math.min(ROWS - 2, L.r + 16);
-  for (let r = r1; r >= r0; r--) for (let c = 1; c < COLS - 1; c++) {
+  for (let r = r1; r >= r0; r--) { levelWater(r); for (let c = 1; c < COLS - 1; c++) {
     const t = tiles[idx(c, r)], below = tileAt(c, r + 1), k = idx(c, r);
+    if (isWater(t)) { flowWaterCell(c, r); continue; }
+    if (t === T.LAVA && quenchLava(c, r)) continue;
     if (t === T.BOULDER) {
       if (!open(below) && !(below === T.LAVA)) { wobble.delete(k); continue; }
       if (!wobble.has(k)) { wobble.set(k, 0.75); sfx.rumble(); continue; }
@@ -936,7 +992,7 @@ function updateHazards(dt) {
         if (L.c === tc && L.r === tr) return burn();
       }
     }
-  }
+  } }
 }
 
 // ─── ROUND 2: landmarks, gear, bats, contracts, rock & mineral guide ───
@@ -946,6 +1002,8 @@ const LANDMARKS = [
     fact: 'People bury time capsules full of everyday things for the future to find. Inside this one: a 1925 newspaper, a tin toy car, a photo of a steam train and a letter addressed "to whoever finds this".' },
   { k: 'mine', name: 'Abandoned Gold Mine', e: '&#9935;&#65039;', m: 150, reward: 300,
     fact: 'In gold rushes like California\'s in 1849, miners dug tunnels held up by timber beams and pushed ore out in carts on rails. They took canaries underground: if the bird stopped singing, there was dangerous gas — time to get out!' },
+  { k: 'lake', name: 'Underground Lake', e: '&#127754;', m: 186, reward: 350,
+    fact: 'Rainwater seeps down through cracks in limestone, dissolving the rock and filling hidden lakes. Creatures that live in them, like the olm and the blind cave fish, have no eyes at all — in total darkness there is nothing to see. Dive for the cave pearls on the bottom, but watch your air!' },
   { k: 'grotto', name: 'Glowworm Grotto', e: '&#10024;', m: 270, reward: 400,
     fact: 'Glowworm caves are real — like Waitomo in New Zealand. The "glowworms" are the larvae of a fungus gnat. They glow blue-green to lure insects into sticky silk threads hanging from the ceiling.' },
   { k: 'tube', name: 'Lava Tube', e: '&#127755;', m: 404, reward: 500,
@@ -953,7 +1011,7 @@ const LANDMARKS = [
 ];
 const decorTile = t => t >= T.RAIL && t <= T.LANTERN;
 
-function stampLandmarks(rnd) {
+function stampLandmarks(rnd, careful) {
   S.lm = [];
   const rockAt = r => LAYERS[layerIdx(depthOf(r), 8)].tile;
   // 1. Time capsule: a chest buried in the clay
@@ -987,7 +1045,7 @@ function stampLandmarks(rnd) {
     }
     [3, 13].forEach(c => setItem(c, r - 1, 6));
     S.lm.push({ k: 'tube', c0: 1, c1: COLS - 2, r0: r, r1: r + 1 }); }
-  S.lmv = 1;
+  stampLake(rnd, careful);
 }
 
 function discover(k) {
@@ -1002,6 +1060,7 @@ function discover(k) {
   $('find-e').innerHTML = lm.e; $('find-n').textContent = lm.name.toUpperCase();
   $('find-f').textContent = lm.fact;
   $('find-r').innerHTML = `LANDMARK DISCOVERED (${Object.keys(S.lmFound).length}/${LANDMARKS.length}) &middot; +$${lm.reward} explorer's reward`;
+  checkBadges();
   show('ov-find');
   save();
 }
@@ -1080,6 +1139,7 @@ function explode(f) {
     if (solid(t) || t === T.LADDER || decorTile(t)) { setTile(c, r, T.AIR); digProg.delete(idx(c, r)); wobble.delete(idx(c, r)); }
     if (itemAt(c, r) === GAS) setItem(c, r, 0); // the gas burns off harmlessly
   }
+  S.booms = (S.booms || 0) + 1; checkBadges();
   if (Math.abs(L.c - f.c) <= 1 && Math.abs(L.r - f.r) <= 1) {
     L.energy -= 30; L.stun = 0.9;
     say('KABOOM! Levi was too close! −30 energy', true);
@@ -1117,8 +1177,8 @@ function eatSnack() {
 const bats = [];
 let batT = 0;
 function caveTile(c, r) {
-  if (!open(tileAt(c, r)) || r < rowOf(50)) return false;
-  let n = 0; for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if (open(tileAt(c + x, r + y))) n++;
+  if (!airy(tileAt(c, r)) || r < rowOf(50)) return false;
+  let n = 0; for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if (airy(tileAt(c + x, r + y))) n++;
   return n >= 6;
 }
 function updateBats(dt) {
@@ -1142,8 +1202,8 @@ function updateBats(dt) {
     if (d < TILE * 5 && b.cd <= 0) { b.vx += dx / d * 60 * dt; b.vy += dy / d * 60 * dt; }
     const sp = Math.hypot(b.vx, b.vy); if (sp > 110) { b.vx *= 110 / sp; b.vy *= 110 / sp; }
     const nx = b.x + b.vx * dt, ny = b.y + b.vy * dt;
-    if (open(tileAt(Math.floor(nx / TILE), Math.floor(b.y / TILE)))) b.x = nx; else b.vx *= -1;
-    if (open(tileAt(Math.floor(b.x / TILE), Math.floor(ny / TILE))) && ny > SURF * TILE) b.y = ny; else b.vy *= -1;
+    if (airy(tileAt(Math.floor(nx / TILE), Math.floor(b.y / TILE)))) b.x = nx; else b.vx *= -1;
+    if (airy(tileAt(Math.floor(b.x / TILE), Math.floor(ny / TILE))) && ny > SURF * TILE) b.y = ny; else b.vy *= -1;
     b.cd -= dt;
     if (b.cd <= 0 && d < 20) {
       b.cd = 2; b.vx = -dx / d * 110; b.vy = -dy / d * 110;
@@ -1205,7 +1265,7 @@ function jobEvent(kind, data) {
 function payJobs() {
   let paid = 0; const done = [];
   S.jobs = (S.jobs || []).filter(j => { if (j.have >= j.need) { paid += j.reward; done.push(j.text); return false; } return true; });
-  S.money += paid;
+  S.money += paid; S.jobsDone = (S.jobsDone || 0) + done.length;
   ensureJobs();
   return paid ? `<br><b style="color:#7bd88f">JOBS DONE: ${done.join(' · ')} &rarr; +$${paid}</b>` : '';
 }
@@ -1225,6 +1285,7 @@ const GEO = [
   { k: 't6', tile: 6, name: 'Basalt', kind: 'IGNEOUS ROCK', mohs: '6', fact: 'Cooled lava. At the Giant\'s Causeway in Northern Ireland, about 40,000 six-sided basalt columns formed as the lava cracked while cooling.' },
   { k: 't7', tile: 7, name: 'Obsidian', kind: 'VOLCANIC GLASS', mohs: '5–5.5', fact: 'Lava that cooled too fast to grow crystals. Stone Age people made blades from it — its edge can be sharper than a steel scalpel.' },
   { k: 't11', tile: 11, name: 'Selenite crystal', kind: 'MINERAL (GYPSUM)', mohs: '2', fact: 'So soft you can scratch it with a fingernail! The giant crystals of Mexico\'s Naica Cave are selenite, up to 12 m long.' },
+  { k: 'p', pearl: true, name: 'Cave pearl', kind: 'MINERAL (CALCITE)', mohs: '3', fact: 'Not from an oyster! In a cave pool, dripping water rolls a grain of sand around while calcite coats it layer by layer, like a snowball. Take one out of its pool and it soon goes dull.' },
   { k: 'o1', ore: 1, name: 'Copper', kind: 'METAL', mohs: '2.5–3', fact: 'Carries electricity so well it\'s inside almost every wire. The Statue of Liberty is covered in copper — it turned green as it weathered.' },
   { k: 'o2', ore: 2, name: 'Iron (hematite)', kind: 'METAL ORE', mohs: '5–6', fact: 'Iron ore is usually hematite or magnetite. Iron is made into steel, and Earth\'s core is mostly iron and nickel.' },
   { k: 'o3', ore: 3, name: 'Silver', kind: 'METAL', mohs: '2.5–3', fact: 'The best conductor of electricity of all the metals, and the shiniest — it reflects about 95% of light.' },
@@ -1236,6 +1297,7 @@ const GEO = [
 ];
 function geoSeen(k) { S.geo = S.geo || {}; S.geo[k] = (S.geo[k] || 0) + 1; }
 function geoIcon(gEntry) {
+  if (gEntry.pearl) return '<div style="width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#c9c2d8)"></div>';
   if (gEntry.tile) return `<img src="${art[gEntry.tile][0].toDataURL()}" alt="" style="width:36px;height:36px;border-radius:6px">`;
   const o = ORES[gEntry.ore - 1];
   return o.gem ? `<div class="gem" style="background:${o.col}"></div>` : `<div class="nug" style="background:${o.col}"></div>`;
@@ -1259,6 +1321,351 @@ function openGuide() {
   show('ov-guide');
 }
 function closeGuide() { if (guideFrom === 'camp') { state = 'camp'; renderShop(); show('ov-camp'); } else { hideAll(); state = guideFrom === 'title' ? 'title' : 'play'; if (guideFrom === 'title') show('ov-title'); } }
+
+// ─── ROUND 3: water, the lake, fossil prep, the T. rex hall, the map, the canary, badges ───
+const PEARL = 12;
+const isWater = t => t === T.WATER || t === T.WLADDER;
+const wetAt = (c, r) => isWater(tileAt(c, r));
+const dryAt = (c, r) => { const t = tileAt(c, r); return t === T.AIR || t === T.LADDER; }; // water can flow in here
+const airy = t => open(t) && !isWater(t);
+function addWater(c, r) { setTile(c, r, tileAt(c, r) === T.LADDER ? T.WLADDER : T.WATER); }
+function removeWater(c, r) { setTile(c, r, tileAt(c, r) === T.WLADDER ? T.LADDER : T.AIR); }
+const maxAir = () => lv('air')[2];
+
+// Water falls, and a pool with any depth to it pushes out sideways until it lies flat
+let splashT = 0;
+function flowWaterCell(c, r) {
+  if (dryAt(c, r + 1)) {
+    removeWater(c, r); addWater(c, r + 1);
+    if (splashT <= 0 && Math.abs(r - L.r) < 8) { splashT = 0.25; noise(0.12, 0.03, 1400); }
+    return true;
+  }
+  return false;
+}
+function levelWater(r) {
+  let c = 1;
+  while (c < COLS - 1) {
+    if (!wetAt(c, r)) { c++; continue; }
+    const a = c; while (c < COLS - 1 && wetAt(c, r)) c++;
+    const b = c - 1;
+    const la = dryAt(a - 1, r), ra = dryAt(b + 1, r);
+    if (!la && !ra) continue;
+    let src = -1; for (let x = a; x <= b; x++) if (wetAt(x, r - 1)) { src = x; break; }
+    if (src < 0) { // a thin sheet only creeps toward a drop
+      if (la && dryAt(a - 1, r + 1)) { removeWater(a, r); addWater(a - 1, r); }
+      else if (ra && dryAt(b + 1, r + 1)) { removeWater(b, r); addWater(b + 1, r); }
+      continue;
+    }
+    let sr = r - 1; while (wetAt(src, sr - 1)) sr--;
+    const tx = la && ra ? (hash(r, a + Math.floor(time * 5)) < 0.5 ? a - 1 : b + 1) : la ? a - 1 : b + 1;
+    removeWater(src, sr); addWater(tx, r);
+  }
+}
+// Lava that touches water cools to rock in a burst of steam
+function quenchLava(c, r) {
+  for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1]]) {
+    if (!wetAt(c + dx, r + dy)) continue;
+    removeWater(c + dx, r + dy); setTile(c, r, T.BAS);
+    for (let i = 0; i < 14; i++) parts.push({ x: c * TILE + 20, y: r * TILE + 10, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 80, g: -30, s: 6 + Math.random() * 8, col: 'rgba(230,240,255,0.5)', life: 0.8 + Math.random() * 0.6 });
+    noise(0.5, 0.07, 3000);
+    S.quench = (S.quench || 0) + 1;
+    if (S.quench === 1) say('TSSSS! Water cools lava into solid basalt — under the sea it makes "pillow lava".');
+    checkBadges();
+    return true;
+  }
+  return false;
+}
+
+// The underground lake (landmark 5)
+function stampLake(rnd, careful) {
+  const rockAt = r => LAYERS[layerIdx(depthOf(r), 8)].tile;
+  const tries = [186, 176, 196, 166, 204];
+  for (const m of tries) {
+    const r = rowOf(m), c0 = 2 + Math.floor(rnd() * (COLS - 14));
+    if (careful) { // an older save: never flood a shaft the player has already built
+      let used = S.rope && S.rope.r >= r - 4 && S.rope.r <= r + 5;
+      for (let y = r - 3; y <= r + 5 && !used; y++) for (let x = c0 - 1; x <= c0 + 11; x++) if (tileAt(x, y) === T.LADDER) { used = true; break; }
+      if (used) continue;
+    }
+    for (let y = -2; y <= 3; y++) for (let x = 0; x < 11; x++) {
+      const dx = (x - 5) / 5.6, c = c0 + x;
+      if (y < 0 ? dx * dx + ((y + 0.4) / 2.4) ** 2 <= 1 : dx * dx + (y / 4.2) ** 2 <= 1) { setTile(c, r + y, y < 0 ? T.AIR : T.WATER); setItem(c, r + y, 0); }
+    }
+    // seal the basin: rock under and beside every water tile
+    for (let y = 0; y <= 4; y++) for (let x = -1; x <= 11; x++) {
+      const c = c0 + x, t = tileAt(c, r + y);
+      if (isWater(t) || t === T.BED) continue;
+      const touches = wetAt(c - 1, r + y) || wetAt(c + 1, r + y) || wetAt(c, r + y - 1);
+      if (touches && (!solid(t) || t === T.BOULDER)) { setTile(c, r + y, rockAt(r + y)); setItem(c, r + y, 0); }
+      if (touches && itemAt(c, r + y) === GAS) setItem(c, r + y, 0);
+    }
+    // cave pearls lying on the bottom
+    [2, 5, 8].forEach(x => { let y = 3; while (y >= 0 && !wetAt(c0 + x, r + y)) y--; if (y >= 0) setItem(c0 + x, r + y, PEARL); });
+    S.lm = (S.lm || []).filter(l => l.k !== 'lake');
+    S.lm.push({ k: 'lake', c0, c1: c0 + 10, r0: r - 2, r1: r + 3 });
+    break;
+  }
+  S.lmv = 2;
+}
+
+// Levi in the water
+let air = 12, bubbleT = 0;
+function updateBreath(dt) {
+  splashT -= dt;
+  if (wetAt(L.c, L.r)) { // holding his breath
+    air -= dt;
+    bubbleT -= dt;
+    if (bubbleT <= 0) { bubbleT = 0.35; parts.push({ x: L.x + 20 + (Math.random() - 0.5) * 10, y: L.y + 6, vx: (Math.random() - 0.5) * 10, vy: -40, g: -20, s: 3, col: 'rgba(210,235,255,0.8)', life: 0.9 }); }
+    if (air < 4 && Math.floor(air * 2) !== Math.floor((air + dt) * 2)) beep(500, 0.06, 'sine', 0.04);
+    if (air <= 0) { air = maxAir(); rescue('Levi ran out of air!'); }
+  } else air = Math.min(maxAir(), air + dt * 8);
+}
+function drawWaterTile(x, y, c, r) {
+  ctx.fillStyle = 'rgba(40,110,190,0.55)'; ctx.fillRect(x, y, TILE, TILE);
+  if (!wetAt(c, r - 1)) { // the surface ripples
+    ctx.fillStyle = 'rgba(190,230,255,0.75)';
+    for (let k = 0; k < 4; k++) ctx.fillRect(x + k * 10, y + Math.sin(time * 3 + c * 1.3 + k) * 1.5 + 1, 10, 2);
+  }
+}
+function drawLeviWater() {
+  const x = L.x, y = L.y - camY;
+  const inW = wetAt(L.c, L.r), onW = !inW && wetAt(L.c, L.r + 1) && tileAt(L.c, L.r) !== T.LADDER;
+  if (inW || (L.act && wetAt(L.act.c, L.act.r))) { ctx.fillStyle = 'rgba(40,110,190,0.45)'; ctx.fillRect(x, y - 14, TILE, TILE + 14); }
+  else if (onW) { ctx.fillStyle = 'rgba(40,110,190,0.5)'; ctx.fillRect(x, y + TILE, TILE, 12); }
+  if (air < maxAir() - 0.05) { // the air gauge, as a row of bubbles
+    const n = 6, full = Math.ceil(air / maxAir() * n);
+    for (let i = 0; i < n; i++) { ctx.strokeStyle = 'rgba(200,235,255,0.9)'; ctx.fillStyle = i < full ? (air < 4 ? 'rgba(255,140,120,0.9)' : 'rgba(170,220,255,0.9)') : 'rgba(0,0,0,0)'; ctx.beginPath(); ctx.arc(x + 20 - (n - 1) * 5 + i * 10, y - 26, 3.6, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 1; ctx.stroke(); }
+  }
+}
+
+// ─── MEMORY: the map remembers every tile Levi's lamp has lit ───
+let seen = new Uint8Array(ROWS * COLS);
+function markSeen() {
+  const rad = Math.ceil(lv('lamp')[2]) - 1;
+  for (let y = -rad; y <= rad; y++) for (let x = -rad; x <= rad; x++) {
+    if (x * x + y * y > rad * rad + 1) continue;
+    const c = L.c + x, r = L.r + y;
+    if (c >= 0 && c < COLS && r >= 0 && r < ROWS) seen[idx(c, r)] = 1;
+  }
+}
+function seedSeen() { // an older save: at least remember the shafts with ladders in them
+  for (let r = SURF; r < ROWS; r++) for (let c = 1; c < COLS - 1; c++) if (tiles[idx(c, r)] === T.LADDER)
+    for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) if (c + x >= 0 && c + x < COLS && r + y < ROWS) seen[idx(c + x, r + y)] = 1;
+}
+function cutSeen(r0, r1) { // remembered tiles stay dimly visible in the dark
+  dctx.fillStyle = 'rgba(0,0,0,0.3)';
+  for (let r = Math.max(SURF, r0); r <= Math.min(ROWS - 1, r1); r++) {
+    let c = 0;
+    while (c < COLS) {
+      if (!seen[idx(c, r)]) { c++; continue; }
+      const a = c; while (c < COLS && seen[idx(c, r)]) c++;
+      dctx.fillRect(a * TILE, r * TILE - camY, (c - a) * TILE, TILE);
+    }
+  }
+}
+let mapFrom = null;
+function openMap() {
+  mapFrom = state; state = 'map';
+  held.left = held.right = held.up = held.down = false;
+  drawMap();
+  show('ov-map');
+}
+function closeMap() { if (mapFrom === 'camp') { state = 'camp'; renderShop(); show('ov-camp'); } else { hideAll(); state = 'play'; } }
+function drawMap() {
+  const cv = $('map-cv'), g = cv.getContext('2d'), CW = 9, CH = 2, X0 = 78, Y0 = 16;
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#0c0c16'; g.fillRect(0, 0, cv.width, cv.height);
+  // sky
+  g.fillStyle = '#7cc6ff'; g.fillRect(X0, Y0, COLS * CW, SURF * CH);
+  let nSeen = 0, nAll = 0;
+  for (let r = SURF; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = tiles[idx(c, r)], li = LAYERS[layerIdx(depthOf(r), c)].tile, s = seen[idx(c, r)];
+    if (t !== T.BED) { nAll++; nSeen += s; }
+    let col;
+    if (!s) col = shade(LAYER_COL[li] || '#444', 0.22);
+    else if (t === T.LADDER || t === T.WLADDER) col = '#c08a4a';
+    else if (isWater(t)) col = '#3d8be0';
+    else if (t === T.LAVA) col = '#ff6a00';
+    else if (open(t)) col = '#05050a';
+    else if (t === T.BOULDER) col = '#8a8780';
+    else col = LAYER_COL[t] || LAYER_COL[li] || '#666';
+    g.fillStyle = col; g.fillRect(X0 + c * CW, Y0 + r * CH, CW, CH);
+  }
+  g.strokeStyle = '#444'; g.strokeRect(X0 - 0.5, Y0 - 0.5, COLS * CW + 1, ROWS * CH + 1);
+  const yOf = m => Y0 + rowOf(m) * CH;
+  g.font = '10px Courier New'; g.textBaseline = 'middle';
+  // depth scale and layer names
+  g.textAlign = 'right'; g.fillStyle = '#889';
+  for (let m = 0; m <= 500; m += 50) { g.fillText(m + ' m', X0 - 8, yOf(m)); g.fillRect(X0 - 5, yOf(m), 5, 1); }
+  g.textAlign = 'left';
+  LAYERS.forEach(ly => { g.fillStyle = S.layers[ly.name] ? '#ffe600' : '#555'; g.fillText(S.layers[ly.name] ? ly.name : '? ? ?', X0 + COLS * CW + 10, yOf(ly.from) + 7); g.fillStyle = '#333'; g.fillRect(X0 + COLS * CW, yOf(ly.from), 8, 1); });
+  // landmarks: found ones by name, the rest as a rumour of roughly where
+  (S.lm || []).forEach(l => {
+    const lm = LANDMARKS.find(x => x.k === l.k), y = Y0 + ((l.r0 + l.r1) / 2) * CH + 20;
+    if (S.lmFound[l.k]) { g.fillStyle = '#6bffd1'; g.fillText('★ ' + lm.name, X0 + COLS * CW + 10, y); g.fillStyle = '#6bffd1'; g.fillRect(X0 + l.c0 * CW, Y0 + l.r0 * CH, (l.c1 - l.c0 + 1) * CW, 1); }
+    else { g.fillStyle = '#777'; g.fillText('? something near ' + Math.round(depthOf(l.r0) / 10) * 10 + ' m', X0 + COLS * CW + 10, y); }
+  });
+  // deepest, rope point, Levi
+  g.fillStyle = '#7bd88f'; g.fillRect(X0 - 2, yOf(S.best), COLS * CW + 4, 1);
+  if (S.rope) { g.fillStyle = '#d9c38a'; g.fillRect(X0 + S.rope.c * CW + 3, Y0, 2, S.rope.r * CH); g.beginPath(); g.arc(X0 + S.rope.c * CW + 4, Y0 + S.rope.r * CH, 4, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#ffe600'; g.beginPath(); g.arc(X0 + L.c * CW + CW / 2, Y0 + L.r * CH + 1, 4.5, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#000'; g.stroke();
+  g.textBaseline = 'alphabetic';
+  $('map-info').innerHTML = `Explored <b>${Math.round(nSeen / nAll * 100)}%</b> of the dig &middot; deepest <b>${S.best} m</b> &middot; landmarks <b>${Object.keys(S.lmFound).length}/${LANDMARKS.length}</b><br><span style="color:#ffe600">&#9679;</span> Levi &nbsp; <span style="color:#d9c38a">&#9679;</span> rope &nbsp; <span style="color:#7bd88f">&#9644;</span> deepest &nbsp; <span style="color:#c08a4a">&#9632;</span> ladders &nbsp; <span style="color:#3d8be0">&#9632;</span> water`;
+}
+
+// ─── THE CANARY: chirps when a gas pocket is close ───
+let canaryNear = 0;
+function drawCanary() {
+  if (!S.up.canary || state !== 'play') return;
+  let n = 0;
+  for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) {
+    const c = L.c + x, r = L.r + y;
+    if (itemAt(c, r) !== GAS) continue;
+    n++;
+    const px = c * TILE + 20, py = r * TILE + 20 - camY, a = 0.55 + Math.sin(time * 8) * 0.3;
+    ctx.strokeStyle = `rgba(150,255,110,${a})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, 13 + Math.sin(time * 8) * 2, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = `rgba(150,255,110,${a})`; ctx.font = 'bold 15px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', px, py + 1); ctx.textBaseline = 'alphabetic';
+  }
+  if (n > canaryNear) { [2600, 3100, 2800, 3300].forEach((f, i) => setTimeout(() => beep(f, 0.05, 'sine', 0.045), i * 70)); if (canaryNear === 0) say('CHEEP CHEEP! The canary smells gas nearby.', true); }
+  canaryNear = n;
+}
+
+// ─── BADGES ───
+const BADGES = [
+  { k: 'dig1', e: '&#9935;&#65039;', name: 'Groundbreaker', desc: 'Dig your first tile', test: () => S.digs >= 1 },
+  { k: 'd100', e: '&#11015;&#65039;', name: 'Going Down', desc: 'Reach 100 m', test: () => S.best >= 100 },
+  { k: 'd250', e: '&#129704;', name: 'Rock Bottom?', desc: 'Reach 250 m', test: () => S.best >= 250 },
+  { k: 'd400', e: '&#127755;', name: 'Journey to the Centre', desc: 'Reach 400 m', test: () => S.best >= 400 },
+  { k: 'win', e: '&#128142;', name: 'Crystal Clear', desc: 'Reach the Crystal Cave', test: () => S.won },
+  { k: 'find1', e: '&#129460;', name: 'Fossil Hunter', desc: 'Put your first find in the museum', test: () => Object.keys(S.museum).length >= 1 },
+  { k: 'find10', e: '&#127963;&#65039;', name: 'Curator', desc: 'Put 10 finds in the museum', test: () => Object.keys(S.museum).length >= 10 },
+  { k: 'findall', e: '&#127942;', name: 'Museum Complete', desc: 'Find all 17 fossils and treasures', test: () => Object.keys(S.museum).length >= ARTS.length },
+  { k: 'rex', e: '&#129430;', name: 'Dino Detective', desc: 'Find all four T. rex bones', test: () => ARTS.filter(a => a.rex).every(a => S.museum[a.k]) },
+  { k: 'lm', e: '&#129517;', name: 'Explorer', desc: 'Discover every hidden landmark', test: () => Object.keys(S.lmFound).length >= LANDMARKS.length },
+  { k: 'swim', e: '&#129407;', name: 'Cave Diver', desc: 'Bring up a cave pearl from the lake', test: () => (S.pearls || 0) >= 1 },
+  { k: 'quench', e: '&#128168;', name: 'Rock Maker', desc: 'Turn lava into rock with water', test: () => (S.quench || 0) >= 1 },
+  { k: 'boom', e: '&#129512;', name: 'Demolition Expert', desc: 'Set off 10 sticks of dynamite', test: () => (S.booms || 0) >= 10 },
+  { k: 'jobs', e: '&#128203;', name: 'Hard Worker', desc: 'Finish 10 jobs from the job board', test: () => (S.jobsDone || 0) >= 10 },
+  { k: 'geo', e: '&#128214;', name: 'Rock Star', desc: 'Identify every rock and mineral in the guide', test: () => GEO.every(x => (S.geo || {})[x.k]) },
+  { k: 'rich', e: '&#128176;', name: 'Money Bags', desc: 'Have $1,000 in your pocket', test: () => S.money >= 1000 },
+];
+function checkBadges() {
+  S.badges = S.badges || {};
+  for (const b of BADGES) {
+    if (S.badges[b.k]) continue;
+    let ok = false; try { ok = b.test(); } catch (e) {}
+    if (!ok) continue;
+    S.badges[b.k] = 1; S.money += 25;
+    [784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.05), i * 80));
+    if (state === 'play') { say(`BADGE EARNED: ${b.name}! +$25`); burst(L.c, L.r, '#ffe600', 14, 180); }
+    else badgeNote = `&#127941; BADGE EARNED: <b>${b.name}</b> +$25`;
+  }
+}
+let badgeNote = '';
+function renderBadges() {
+  S.badges = S.badges || {};
+  const got = BADGES.filter(b => S.badges[b.k]).length;
+  $('badges').innerHTML = `<div class="jt">&#127941; BADGES ${got}/${BADGES.length}</div><div class="brow">` + BADGES.map(b => `<span class="bdg ${S.badges[b.k] ? 'got' : ''}" data-k="${b.k}" title="${b.name}: ${b.desc}">${b.e}</span>`).join('') + `</div><div class="bnote" id="bnote">${badgeNote || 'Tap a badge to see how to earn it.'}</div>`;
+  badgeNote = '';
+  document.querySelectorAll('#badges .bdg').forEach(el => el.addEventListener('click', () => { const b = BADGES.find(x => x.k === el.dataset.k); $('bnote').innerHTML = `<b>${b.name}</b> &mdash; ${b.desc}${S.badges[b.k] ? ' &#10003;' : ''}`; }));
+}
+
+// ─── FOSSIL PREP: brush the rock away to see what you found ───
+let prep = null;
+const PREP_S = 320, PREP_G = 16;
+function beginPrep(a, c, r) {
+  state = 'popup';
+  held.left = held.right = held.up = held.down = false;
+  const rock = LAYER_COL[LAYERS[layerIdx(depthOf(r), c)].tile] || '#8a7a60';
+  const cover = document.createElement('canvas'); cover.width = cover.height = PREP_S;
+  const g = cover.getContext('2d'), R = mulberry32(a.k.length * 131 + r);
+  g.fillStyle = rock; g.fillRect(0, 0, PREP_S, PREP_S);
+  for (let i = 0; i < 900; i++) { g.fillStyle = shade(rock, R() < 0.5 ? 0.72 : 1.25); const s = 2 + R() * 6; g.fillRect(R() * PREP_S, R() * PREP_S, s, s); }
+  g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 2;
+  for (let i = 0; i < 6; i++) { g.beginPath(); let x = R() * PREP_S, y = R() * PREP_S; g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (R() - 0.5) * 90; y += (R() - 0.5) * 90; g.lineTo(x, y); } g.stroke(); }
+  prep = { a, cover, cells: new Uint8Array(PREP_G * PREP_G), down: false, done: false, rock };
+  $('prep-hint').textContent = 'RUB THE ROCK AWAY WITH YOUR BRUSH';
+  drawPrep();
+  show('ov-prep');
+}
+function prepPos(e) { const r = $('prep-cv').getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * PREP_S, y: (e.clientY - r.top) / r.height * PREP_S }; }
+function prepBrush(e) {
+  if (!prep || prep.done) return;
+  const p = prepPos(e), g = prep.cover.getContext('2d');
+  g.globalCompositeOperation = 'destination-out';
+  const gr = g.createRadialGradient(p.x, p.y, 6, p.x, p.y, 30); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, 30, 0, Math.PI * 2); g.fill();
+  g.globalCompositeOperation = 'source-over';
+  const cs = PREP_S / PREP_G;
+  for (let y = 0; y < PREP_G; y++) for (let x = 0; x < PREP_G; x++) if (Math.hypot((x + 0.5) * cs - p.x, (y + 0.5) * cs - p.y) < 22) prep.cells[y * PREP_G + x] = 1;
+  if (Math.random() < 0.4) noise(0.05, 0.03, 1200 + Math.random() * 800);
+  drawPrep();
+  if (prepProgress() >= 0.8) finishPrep();
+}
+function prepProgress() {
+  let got = 0, all = 0; const cs = PREP_S / PREP_G;
+  for (let y = 0; y < PREP_G; y++) for (let x = 0; x < PREP_G; x++) { if (Math.hypot((x + 0.5) * cs - PREP_S / 2, (y + 0.5) * cs - PREP_S / 2) > PREP_S * 0.36) continue; all++; got += prep.cells[y * PREP_G + x]; }
+  return got / all;
+}
+function drawPrep() {
+  const g = $('prep-cv').getContext('2d');
+  g.clearRect(0, 0, PREP_S, PREP_S);
+  const bg = g.createRadialGradient(PREP_S / 2, PREP_S / 2, 20, PREP_S / 2, PREP_S / 2, PREP_S * 0.7);
+  bg.addColorStop(0, shade(prep.rock, 0.75)); bg.addColorStop(1, shade(prep.rock, 0.4));
+  g.fillStyle = bg; g.fillRect(0, 0, PREP_S, PREP_S);
+  g.font = '170px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(decode(prep.a.e), PREP_S / 2, PREP_S / 2 + 10);
+  g.textBaseline = 'alphabetic';
+  g.drawImage(prep.cover, 0, 0);
+  if (!prep.done) $('prep-hint').textContent = `CLEANED ${Math.round(Math.min(1, prepProgress() / 0.8) * 100)}%`;
+}
+function finishPrep() {
+  if (!prep || prep.done) return;
+  prep.done = true;
+  prep.cover.getContext('2d').clearRect(0, 0, PREP_S, PREP_S);
+  drawPrep();
+  $('prep-hint').textContent = 'THERE IT IS!';
+  sfx.gem();
+  const a = prep.a;
+  setTimeout(() => { prep = null; showFind(a); checkBadges(); }, 700);
+}
+
+// ─── THE GREAT HALL: the T. rex goes up bone by bone ───
+function drawRex() {
+  const cv = $('rex-cv'), g = cv.getContext('2d');
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#1a1a2e'; g.fillRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#2a2a44'; g.fillRect(0, 172, cv.width, 8);
+  const has = k => !!S.museum[k];
+  const BONE = '#eadfc4', EDGE = '#8a7a58';
+  const style = on => { g.setLineDash(on ? [] : [4, 5]); g.strokeStyle = on ? EDGE : 'rgba(255,255,255,0.22)'; g.fillStyle = on ? BONE : 'rgba(0,0,0,0)'; g.lineWidth = 1.5; g.lineCap = 'round'; g.lineJoin = 'round'; };
+  const shape = (on, pts) => { style(on); g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); g.stroke(); };
+  const stick = (on, x0, y0, x1, y1, w) => { g.setLineDash(on ? [] : [4, 5]); g.lineCap = 'round'; if (on) { g.strokeStyle = EDGE; g.lineWidth = w + 2; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.strokeStyle = BONE; g.lineWidth = w; } else { g.strokeStyle = 'rgba(255,255,255,0.22)'; g.lineWidth = 1.5; } g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+  // tail
+  let on = has('rextail');
+  for (let i = 0; i < 16; i++) { const t = i / 15, x = 278 + t * 150, y = 84 + t * 30 + Math.sin(t * 3) * 4, s = 9 - t * 6.5; shape(on, [[x - 4, y - s], [x + 4, y - s * 0.8], [x + 4, y + s * 0.8], [x - 4, y + s]]); if (i < 10) stick(on, x, y + s, x - 3, y + s + 7 - t * 4, 1.5); }
+  // ribs, spine, neck and the tiny arms
+  on = has('rexribs');
+  for (let i = 0; i < 12; i++) { const t = i / 11, x = 152 + t * 100, y = 64 + Math.sin(t * Math.PI) * -6 + t * 14; shape(on, [[x - 4, y - 6], [x + 4, y - 6], [x + 4, y + 5], [x - 4, y + 5]]); if (i > 1 && i < 10) { g.setLineDash(on ? [] : [4, 5]); g.strokeStyle = on ? BONE : 'rgba(255,255,255,0.22)'; g.lineWidth = on ? 3 : 1.5; g.beginPath(); g.moveTo(x, y + 5); g.quadraticCurveTo(x - 16, y + 30, x - 6 + t * 10, y + 52 - Math.abs(t - 0.5) * 30); g.stroke(); } }
+  stick(on, 182, 100, 172, 114, 3); stick(on, 172, 114, 180, 124, 2.5); stick(on, 180, 124, 176, 128, 1.5); stick(on, 180, 124, 184, 128, 1.5);
+  // hips and legs
+  on = has('rexleg');
+  shape(on, [[236, 70], [282, 72], [290, 86], [262, 98], [232, 88]]);
+  stick(on, 272, 92, 286, 126, 5); stick(on, 286, 126, 274, 156, 4); stick(on, 274, 156, 252, 168, 3.5); // the far leg
+  stick(on, 256, 92, 232, 128, 8); stick(on, 232, 128, 250, 158, 6); stick(on, 250, 158, 222, 168, 5);
+  [[222, 168, 208, 170], [228, 166, 216, 160], [226, 170, 214, 174]].forEach(a => stick(on, a[0], a[1], a[2], a[3], 2.5));
+  // skull
+  on = has('rexskull');
+  shape(on, [[58, 60], [72, 46], [100, 40], [132, 38], [152, 50], [156, 70], [146, 82], [120, 76], [70, 76]]);
+  shape(on, [[66, 80], [120, 82], [146, 86], [140, 96], [84, 96], [64, 90]]);
+  if (on) { g.fillStyle = '#1a1a2e'; g.beginPath(); g.arc(128, 54, 7, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(102, 58, 9, 6, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(72, 56, 3, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(144, 66, 4, 7, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = BONE; g.strokeStyle = EDGE; g.lineWidth = 1; for (let i = 0; i < 9; i++) { const x = 66 + i * 6.5; g.beginPath(); g.moveTo(x, 76); g.lineTo(x + 2.5, 76 + 6 + (i % 2) * 2); g.lineTo(x + 5, 76); g.fill(); g.stroke(); g.beginPath(); g.moveTo(x + 2, 82); g.lineTo(x + 4.5, 77); g.lineTo(x + 7, 82); g.fill(); g.stroke(); } }
+  g.setLineDash([]);
+  const rex = ARTS.filter(x => x.rex), n = rex.filter(x => has(x.k)).length;
+  g.fillStyle = n === 4 ? '#ffcf6b' : '#889'; g.font = 'bold 11px Courier New'; g.textAlign = 'center';
+  g.fillText(n === 4 ? 'TYRANNOSAURUS REX · 12 m LONG · 67 MILLION YEARS OLD' : `TYRANNOSAURUS REX · ${n}/4 BONES · LOOK 100–250 m DOWN`, cv.width / 2, 16);
+}
 
 // ─── CAMP, ROPE & RESCUE ───
 function ropeUp() {
@@ -1294,7 +1701,7 @@ function openCamp(arrived, note) {
   let soldHtml = '';
   if (S.bag.length) {
     const counts = {};
-    S.bag.forEach(id => { const n = id === 0 ? 'Crystal' : ORES[id - 1].name; counts[n] = (counts[n] || 0) + 1; });
+    S.bag.forEach(id => { const n = id === 0 ? 'Crystal' : id === PEARL ? 'Cave pearl' : ORES[id - 1].name; counts[n] = (counts[n] || 0) + 1; });
     const total = S.bag.reduce((a, id) => a + bagValue(id), 0);
     S.money += total;
     const byId = {}; S.bag.forEach(id => { byId[id] = (byId[id] || 0) + 1; });
@@ -1304,6 +1711,7 @@ function openCamp(arrived, note) {
     sfx.cash();
   } else if (arrived) soldHtml = 'Nothing to sell this trip.';
   soldHtml += payJobs();
+  checkBadges();
   if (note) soldHtml = `<span style="color:#ff9f9f">${note}</span><br>` + soldHtml;
   $('camp-sold').innerHTML = soldHtml;
   L.energy = maxEnergy();
@@ -1338,6 +1746,7 @@ function renderShop() {
     shop.appendChild(el);
   });
   renderJobs();
+  renderBadges();
   const ropeOk = S.rope && open(tileAt(S.rope.c, S.rope.r));
   $('btn-dive').textContent = ropeOk ? `DIVE TO ${depthOf(S.rope.r)} m` : 'START DIGGING';
 }
@@ -1347,8 +1756,9 @@ function dive(fromTop) {
   const ropeOk = !fromTop && S.rope && open(tileAt(S.rope.c, S.rope.r));
   if (ropeOk) placeLevi(S.rope.c, S.rope.r); else placeLevi(8, SURF - 1);
   camY = Math.max(0, L.y - H * 0.42);
-  L.energy = maxEnergy(); warned = false;
+  L.energy = maxEnergy(); warned = false; air = maxAir(); canaryNear = 0;
   state = 'play';
+  markSeen();
   sfx.rope();
   hud();
 }
@@ -1379,7 +1789,7 @@ function openMuseum() {
   const found = ARTS.filter(a => S.museum[a.k]).length;
   $('mus-count').textContent = `${found} of ${ARTS.length} finds on display` + (found === ARTS.length ? ' — the collection is COMPLETE!' : '');
   const rex = ARTS.filter(x => x.rex), have = rex.filter(x => S.museum[x.k]).length;
-  $('rex').innerHTML = have === rex.length ? '&#129430; The T. rex skeleton stands in the main hall!' : `&#129430; T. rex skeleton: ${have}/${rex.length} bones (100–250 m down)`;
+  drawRex();
   const box = $('museum'); box.innerHTML = '';
   ARTS.forEach(a => {
     const got = S.museum[a.k];
@@ -1400,6 +1810,7 @@ function winGame() {
   S.money += first ? 2000 : 0;
   state = 'popup';
   for (let i = 0; i < 60; i++) parts.push({ x: L.x + 20, y: L.y, vx: (Math.random() - 0.5) * 400, vy: -Math.random() * 400, s: 4 + Math.random() * 5, col: ['#d6c4ff', '#ffe600', '#9b7fe0', '#fff'][i % 4], life: 1.5 });
+  checkBadges();
   $('win-stats').innerHTML = `${first ? '<b style="color:#ffe600">+$2000 crystal bonus!</b><br>' : ''}Digs: ${S.digs} &middot; trips: ${S.trips} &middot; museum: ${Object.keys(S.museum).length}/${ARTS.length}`;
   save();
   setTimeout(() => show('ov-win'), 600);
@@ -1434,6 +1845,7 @@ function update(dt) {
   updateHazards(dt);
   updateFuses(dt);
   updateBats(dt);
+  updateBreath(dt);
   if (state !== 'play') return;
   if (L.stun > 0) L.stun -= dt;
 
@@ -1449,17 +1861,21 @@ function update(dt) {
       if (a.kind === 'fall') {
         L.fall++;
         if (supported()) {
-          if (L.fall > 3) { const dmg = (L.fall - 3) * 5; L.energy -= dmg; shake = 0.25; sfx.thud(); say(`Ouch! Fell ${L.fall * M_PER_ROW} m. −${dmg} energy`, true); }
+          if (wetAt(L.c, L.r + 1) || wetAt(L.c, L.r)) { if (L.fall > 1) { noise(0.3, 0.07, 1500); burst(L.c, L.r + 1, 'rgba(190,230,255,0.9)', 12, 150); } }
+          else if (L.fall > 3) { const dmg = (L.fall - 3) * 5; L.energy -= dmg; shake = 0.25; sfx.thud(); say(`Ouch! Fell ${L.fall * M_PER_ROW} m. −${dmg} energy`, true); }
           else if (L.fall > 1) sfx.thud();
           L.fall = 0;
         }
       } else if (a.kind === 'walk') { sfx.step(); L.energy -= 0.05; }
       else if (a.kind === 'climb') sfx.ladder();
+      else if (a.kind === 'swim' && Math.random() < 0.5) noise(0.1, 0.025, 1000);
+      markSeen();
       collect(L.c, L.r);
       if (state !== 'play') return;
       const m = depthOf(L.r);
       if (m > S.best) S.best = m;
       jobEvent('depth', m);
+      checkBadges();
       checkLandmarks();
       if (state !== 'play') return;
       if (L.r >= SURF) showLayer(layerIdx(m, L.c));
@@ -1502,9 +1918,11 @@ function render(dt) {
   drawFuses();
   drawBats(false);
   drawLevi();
+  drawLeviWater();
   drawParticles(dt);
   drawDarkness();
   drawRadar();
+  drawCanary();
   ctx.restore();
   drawGauge();
 }
@@ -1527,15 +1945,19 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyB') useDynamite();
   if (e.code === 'KeyE') eatSnack();
   if (e.code === 'KeyG') { if (state === 'guide') closeGuide(); else if (state === 'play' || state === 'camp') openGuide(); }
+  if (e.code === 'KeyV' || e.code === 'Tab') { if (state === 'map') { e.preventDefault(); closeMap(); } else if (state === 'play' || state === 'camp') { e.preventDefault(); openMap(); } }
   if (e.code === 'KeyM') { if (state === 'museum') closeMuseum(); else if (state === 'play' || state === 'camp') openMuseum(); }
   if (e.code === 'Space' || e.code === 'Enter') {
-    if (state === 'popup' && $('ov-find').classList.contains('show')) { e.preventDefault(); closeFind(); }
+    if (prep) { e.preventDefault(); finishPrep(); }
+    else if (state === 'map') { e.preventDefault(); closeMap(); }
+    else if (state === 'popup' && $('ov-find').classList.contains('show')) { e.preventDefault(); closeFind(); }
     else if (state === 'popup' && $('ov-win').classList.contains('show')) { e.preventDefault(); closeFind(); }
     else if (state === 'title') { e.preventDefault(); startGame(); }
     else if (state === 'museum') { e.preventDefault(); closeMuseum(); }
     else if (state === 'guide') { e.preventDefault(); closeGuide(); }
   }
   if (e.code === 'Escape' && state === 'museum') closeMuseum();
+  if (e.code === 'Escape' && state === 'map') closeMap();
 });
 window.addEventListener('keyup', e => { const d = KEYMAP[e.code]; if (d) held[d] = false; });
 window.addEventListener('blur', () => { held.left = held.right = held.up = held.down = false; });
@@ -1554,6 +1976,15 @@ $('btn-snack').addEventListener('click', () => { eatSnack(); $('btn-snack').blur
 $('btn-guide').addEventListener('click', () => { if (state === 'play' || state === 'camp') openGuide(); $('btn-guide').blur(); });
 $('btn-guide2').addEventListener('click', openGuide);
 $('geo-close').addEventListener('click', closeGuide);
+$('btn-map').addEventListener('click', () => { if (state === 'play' || state === 'camp') openMap(); $('btn-map').blur(); });
+$('btn-map2').addEventListener('click', openMap);
+$('map-close').addEventListener('click', closeMap);
+$('prep-skip').addEventListener('click', finishPrep);
+{ const pc = $('prep-cv');
+  pc.addEventListener('pointerdown', e => { e.preventDefault(); if (prep) { prep.down = true; prepBrush(e); } pc.setPointerCapture && pc.setPointerCapture(e.pointerId); });
+  pc.addEventListener('pointermove', e => { if (prep && prep.down) prepBrush(e); });
+  const up = () => { if (prep) prep.down = false; };
+  pc.addEventListener('pointerup', up); pc.addEventListener('pointercancel', up); }
 $('btn-rope').addEventListener('click', () => { ropeUp(); $('btn-rope').blur(); });
 $('btn-mus').addEventListener('click', () => { if (state === 'play' || state === 'camp') openMuseum(); $('btn-mus').blur(); });
 $('btn-mus2').addEventListener('click', openMuseum);
@@ -1574,6 +2005,7 @@ function startGame() {
   state = 'play';
   L.energy = maxEnergy();
   placeLevi(8, SURF - 1);
+  air = maxAir(); markSeen();
   if (S.trips === 0 && S.digs === 0) say('Hold ↓ to dig! Ores & gems go in your bag.');
   else if (S.rope && open(tileAt(S.rope.c, S.rope.r))) { openCamp(false); }
   hud();
