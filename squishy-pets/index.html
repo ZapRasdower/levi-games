@@ -64,6 +64,13 @@
   .btn.disabled{filter:grayscale(.6) brightness(.95);opacity:.7;}
   .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 5px 0 #e5cfa6;border:2px solid #f0d9b3;}
   .btn.ghost:active{box-shadow:0 1px 0 #e5cfa6;}
+  .pill.frenzy{position:relative;overflow:hidden;min-width:104px;text-align:center;}
+  .pill.frenzy i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ffd27a,#ef6f53);opacity:.45;transition:width .2s;}
+  .pill.frenzy span{position:relative;}
+  .pill.frenzy.on{border-color:var(--coral);animation:frz .35s infinite alternate;}
+  @keyframes frz{to{transform:scale(1.08);}}
+  .giftbtn{pointer-events:auto;cursor:pointer;font-family:inherit;}
+  .giftbtn.ready{background:var(--coral);color:#fff;border-color:var(--coral-d);box-shadow:0 3px 0 var(--coral-d);animation:bob 1.2s ease-in-out infinite;}
   .iconbtn{width:46px;height:46px;border-radius:14px;border:2px solid #f0d9b3;background:#fff;box-shadow:0 4px 0 #ead7b3;cursor:pointer;font-size:19px;display:flex;align-items:center;justify-content:center;padding:0;}
   .iconbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #ead7b3;}
 
@@ -129,6 +136,10 @@
       <div class="pill" id="rateP">⚡ <b id="rateVal">0</b>/s</div>
       <div class="pill">🧸 <b id="cFound">0</b>/<span id="cTotal">32</span></div>
       <div class="pill" id="pityP" title="boxes until a rare or better is guaranteed">🎁 rare ≤<b id="pityVal">10</b></div>
+    </div>
+    <div class="hud-row">
+      <div class="pill frenzy" id="frenzyP" title="squish at full combo to charge a Squish Frenzy"><i id="frenzyFill"></i><span>🔥 <b id="frenzyVal">Frenzy 0%</b></span></div>
+      <button class="pill giftbtn" id="giftBtn">🎁 Daily gift</button>
     </div>
   </div>
 </header>
@@ -285,6 +296,9 @@ const ACH=[
  {id:"legend",emoji:"👑",name:"Legendary!",desc:"Pull a legendary pet",reward:1000,test:()=>Object.keys(PET_INDEX).some(id=>PET_INDEX[id].rarity==="legendary"&&state.pets[id]>0)},
  {id:"crit",emoji:"✨",name:"Golden Moment",desc:"Land a ×10 golden squish",reward:200,test:()=>state.stats.crits>=1},
  {id:"rich",emoji:"💰",name:"Dough Tycoon",desc:"Hold 10,000 Dough at once",reward:500,test:()=>state.dough>=10000},
+ {id:"frenzy",emoji:"🔥",name:"Frenzy!",desc:"Set off a Squish Frenzy",reward:300,test:()=>state.stats.frenzies>=1},
+ {id:"streak3",emoji:"📅",name:"Regular",desc:"Claim the daily gift 3 days in a row",reward:400,test:()=>state.daily.streak>=3},
+ {id:"streak7",emoji:"🗓️",name:"Best Friends",desc:"Claim the daily gift 7 days in a row",reward:1500,test:()=>state.daily.streak>=7},
  {id:"allcats",emoji:"🗺️",name:"World Tour",desc:"Unlock every box theme",reward:1200,test:()=>CATEGORIES.every(c=>state.unlocked[c.id])},
 ];
 function checkAch(){let got=false;
@@ -298,7 +312,8 @@ const state={
   mode:"box", blob:null, cat:CATEGORIES[0],
   dough:50, boxes:0,
   pets:{}, up:{}, unlocked:{dumpling:true}, pulls:{}, pity:{},
-  stats:{squishes:0,crits:0}, ach:{},
+  stats:{squishes:0,crits:0,frenzies:0}, ach:{},
+  daily:{last:"",streak:0}, freeBox:false, frenzyCharge:0, frenzy:0,
   pendingPet:null, pendingNew:false,
   lidLift:0, openT:0, boxScale:1, boxAlpha:1, bob:0, bobT:0, hop:0, flash:0,
   pressing:false, pointer:{x:0,y:0}, pointerR:0,
@@ -325,7 +340,7 @@ const collBonus=()=>uniqueCount()*0.02;
 const SAVE_KEY="squishy_pets_v2";
 const hasStore=()=>{try{return!!(window.storage&&typeof window.storage.get==="function");}catch(e){return false;}};
 const hasLocal=()=>{try{return!!window.localStorage;}catch(e){return false;}};
-function serialize(){return JSON.stringify({d:state.dough,b:state.boxes,p:state.pets,u:state.up,k:Object.keys(state.unlocked),pl:state.pulls,py:state.pity,st:state.stats,a:Object.keys(state.ach),m:Sfx.muted,t:Date.now()});}
+function serialize(){return JSON.stringify({d:state.dough,b:state.boxes,p:state.pets,u:state.up,k:Object.keys(state.unlocked),pl:state.pulls,py:state.pity,st:state.stats,a:Object.keys(state.ach),m:Sfx.muted,t:Date.now(),dl:state.daily,fb:state.freeBox});}
 let saveT=null;
 function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{ const data=serialize();
     if(hasStore()){try{window.storage.set(SAVE_KEY,data,false).catch(()=>{});}catch(e){}}
@@ -347,7 +362,9 @@ async function loadGame(){
       if(s.k)s.k.forEach(id=>{if(catById(id))state.unlocked[id]=true;});
       if(s.pl)for(const id in s.pl)if(id in state.pulls)state.pulls[id]=s.pl[id];
       if(s.py)for(const id in s.py)if(id in state.pity)state.pity[id]=s.py[id];
-      if(s.st){state.stats.squishes=s.st.squishes||0;state.stats.crits=s.st.crits||0;}
+      if(s.st){state.stats.squishes=s.st.squishes||0;state.stats.crits=s.st.crits||0;state.stats.frenzies=s.st.frenzies||0;}
+      if(s.dl){state.daily.last=s.dl.last||"";state.daily.streak=s.dl.streak||0;}
+      state.freeBox=!!s.fb;
       if(s.a)s.a.forEach(id=>state.ach[id]=true);
       if(s.m)Sfx.muted=true;
       // offline idle earnings (capped 4h)
@@ -529,7 +546,7 @@ function applyTheme(c){document.documentElement.style.setProperty("--accent",c.a
 
 function updateHUD(){elDough.textContent=fmt(state.dough);elRate.textContent=helperRate().toFixed(1);elFound.textContent=uniqueCount();
   elPity.textContent=Math.max(1,PITY_AT-(state.pity[state.cat.id]||0));
-  const cost=pullCost(state.cat);elOpenCost.textContent=fmt(cost);elOpenLabel.textContent="Open "+state.cat.emoji+" Box";
+  const cost=state.freeBox?0:pullCost(state.cat);elOpenCost.textContent=state.freeBox?"FREE":fmt(cost);elOpenLabel.textContent=(state.freeBox?"Open 🎁 Gift ":"Open "+state.cat.emoji+" ")+"Box";
   const can=state.dough>=cost&&state.unlocked[state.cat.id];elOpenBtn.classList.toggle("disabled",!can);}
 
 function buildCatStrip(){elCatStrip.innerHTML="";CATEGORIES.forEach(c=>{const d=document.createElement("div");d.className="cat"+(c.id===state.cat.id?" active":"")+(state.unlocked[c.id]?"":" locked");
@@ -552,9 +569,10 @@ function attemptOpen(){
   if(state.mode==="opening")return;
   const c=state.cat;
   if(!state.unlocked[c.id]){selectCat(c);return;}
-  const cost=pullCost(c);
+  const free=state.freeBox,cost=free?0:pullCost(c);
   if(state.dough<cost){Sfx.buzz();showToast("Need 🥟"+fmt(cost)+" to open");return;}
-  state.dough-=cost;state.boxes++;state.pulls[c.id]=(state.pulls[c.id]||0)+1;Sfx.thud();
+  state.dough-=cost;state.boxes++;if(!free)state.pulls[c.id]=(state.pulls[c.id]||0)+1;Sfx.thud();
+  if(free){state.freeBox=false;state.pity[c.id]=PITY_AT;} // the gift box always holds a rare or better
   // roll pet
   state.pendingPet=rollPet(c);state.pendingNew=state.pets[state.pendingPet.id]===0;
   const rr=state.pendingPet.rarity; // higher rarity = longer, shakier reveal
@@ -591,6 +609,10 @@ function doSquishEarn(){
   const cm=Math.min(comboCap(),1+state.combo*0.2);
   let amt=squishPower()*cm*RARITY[state.blob.type.rarity].mult*(1+collBonus());
   let crit=false;if(Math.random()<critChance()){amt*=10;crit=true;state.stats.crits++;}
+  // Squish Frenzy: charge it by squishing at full combo, then everything pays triple for a while
+  if(state.frenzy>0)amt*=3;
+  else if(cm>=comboCap()){state.frenzyCharge++;if(state.frenzyCharge>=45){state.frenzyCharge=0;state.frenzy=9;state.stats.frenzies++;state.flash=0.8;burst(40,CC);Sfx.sparkle();showToast("🔥 SQUISH FRENZY! Triple Dough!");}}
+  refreshFrenzy();
   amt=Math.max(1,Math.round(amt));
   state.dough+=amt;spawnFloat("+"+fmt(amt)+(crit?" ✨":(state.combo>2?" x"+cm.toFixed(1):"")),crit);
   const b=state.blob;burstDrops(state.pointer.x||b.cx,Math.min(state.pointer.y||b.cy,b.bb.maxY),b.type.body,crit?12:4);
@@ -652,6 +674,23 @@ function openShelf(){Sfx.init();const list=$("shelfList");list.innerHTML="";
   $("shelfModal").classList.add("show");}
 
 /* ---------------- main loop ---------------- */
+/* ---------------- daily gift & frenzy ---------------- */
+const dayStr=d=>d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+const giftReady=()=>state.daily.last!==dayStr(new Date());
+function refreshGift(){const b=$("giftBtn"),r=giftReady();b.classList.toggle("ready",r);b.textContent=r?"🎁 Daily gift!":"📅 Day "+(((state.daily.streak-1)%7+7)%7+1)+"/7";}
+function claimGift(){Sfx.init();
+  if(!giftReady()){showToast("Come back tomorrow for day "+((state.daily.streak%7)+1)+" — day 7 is a free rare box!");return;}
+  const y=new Date();y.setDate(y.getDate()-1);
+  state.daily.streak=state.daily.last===dayStr(y)?state.daily.streak+1:1;state.daily.last=dayStr(new Date());
+  const day=(state.daily.streak-1)%7+1,amt=Math.round((40+day*35)*(1+uniqueCount()*0.2)*(1+state.up.power*0.25));
+  state.dough+=amt;burst(30,CC);Sfx.sparkle();
+  if(day===7){state.freeBox=true;showToast("🎁 Day 7! +"+fmt(amt)+" 🥟 and a FREE rare box!");}
+  else showToast("🎁 Day "+day+" gift: +"+fmt(amt)+" 🥟 — day 7 is a free rare box");
+  refreshGift();updateHUD();checkAch();save();}
+function refreshFrenzy(){const on=state.frenzy>0,pct=on?state.frenzy/9*100:state.frenzyCharge/45*100;
+  $("frenzyFill").style.width=pct+"%";$("frenzyP").classList.toggle("on",on);$("frenzyVal").textContent=on?"FRENZY ×3!":"Frenzy "+Math.round(pct)+"%";}
+$("giftBtn").addEventListener("click",claimGift);
+
 let last=performance.now(),sparkT=0;
 function frame(now){
   let dt=(now-last)/1000;last=now;dt=Math.min(dt,0.033);
@@ -661,6 +700,7 @@ function frame(now){
   // sparks
   sparkT+=dt;if(sparkT>0.16){spawnSpark();sparkT=0;}updSpark(dt);
   updConf(dt);updFloat(dt);updDrops(dt);if(state.flash>0)state.flash=Math.max(0,state.flash-dt*1.6);
+  if(state.frenzy>0){state.frenzy=Math.max(0,state.frenzy-dt);state.flash=Math.max(state.flash,0.18);if(Math.random()<dt*14)spawnSpark();refreshFrenzy();}
   // combo decay
   if(state.combo>0){state.comboTimer-=dt;if(state.comboTimer<=0)state.combo=0;}
   // opening anim
@@ -713,7 +753,7 @@ function frame(now){
 (async function boot(){
   await loadGame();
   resize();
-  applyTheme(state.cat);buildCatStrip();updateHUD();refreshMute();checkAch();
+  applyTheme(state.cat);buildCatStrip();updateHUD();refreshMute();checkAch();refreshGift();refreshFrenzy();
   if(uniqueCount()===0){elPrompt.style.opacity=1;}else{elPrompt.style.opacity=1;}
   requestAnimationFrame(frame);
 })();
