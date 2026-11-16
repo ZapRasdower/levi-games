@@ -442,7 +442,7 @@
     'mushroom-forest': () => { const s = lsJSON('mushroomForest.save', null); if (!s || !s.stats || !s.stats.runs) return null; const d = Object.values(s.guide || {}).filter(g => g.n > 0).length;
                               return `LEVEL ${s.lvl} · ${d}/47 SPECIES${s.daily && s.daily.streak > 1 ? ` · &#128293;${s.daily.streak}` : ''}`; },
     'pixel-jump':     () => { const b = num('leviLeap.best'), c = num('leviLeap.totalCoins'); return b ? `BEST ${fmt(b)}${c ? ` · ${fmt(c)} COINS` : ''}` : null; },
-    'levi-crossing':  () => { const b = num('leviCrossingBest'), u = num('leviCrossingUnlocked'); return (b || u > 1) ? `BEST ${fmt(b)} · LEVEL ${Math.min(u, 10)}/10` : null; },
+    'levi-crossing':  () => { const b = num('leviCrossingBest'), u = num('leviCrossingUnlocked'); const st = lsJSON('leviCrossingStars', []).reduce((x, y) => x + (y || 0), 0); return (b || u > 1) ? `BEST ${fmt(b)} · LEVEL ${Math.min(u, 10)}/10${st ? ` · ${st}/30 &#9733;` : ''}` : null; },
     'snake':          () => { const b = num('leviSnake.best'); return b ? `BEST ${fmt(b)}` : null; },
     'atom-builder':   () => { const d = lsJSON('atomBuilderDiscovered', []); return d.length ? `${d.length}/20 ELEMENTS FOUND` : null; },
     'solar-system':   () => { const q = num('solarSystem.quizBest'); const m = lsJSON('solarSystem.missions', {}); const st = Object.values(m).reduce((a, b) => a + b, 0);
