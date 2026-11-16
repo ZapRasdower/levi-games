@@ -612,6 +612,7 @@ canvas { display: block; }
     <div class="sub">OF WATCHMAKERS</div>
     <div class="cert"><div class="cr">THIS CERTIFIES THAT LEVI IS A</div><div class="ct" id="guild-rank"></div><div class="cr" id="guild-rep"></div></div>
     <div class="stats" id="guild-stats"></div>
+    <div id="guild-daily" style="margin:12px 0 2px;padding:10px 12px;border:1px solid #6a5a2a;border-radius:8px;background:rgba(212,175,55,0.07);font-size:12px;line-height:1.5;text-align:left"></div>
     <div class="sub" style="margin:14px 0 6px">THE WORKSHOP &middot; SPEND YOUR EARNINGS ON BETTER TOOLS</div>
     <div class="tools" id="tool-shop"></div>
     <p style="font-size:11px;color:#777;margin-top:10px">Earn money and reputation by finishing watches (more for customer orders), repairing in the shop, and acing the quizzes.</p>
@@ -1661,8 +1662,33 @@ function settleBuild() {
   return html;
 }
 
+// The Guild's daily stipend: one a day, bigger with rank and with a visit streak, plus a page of watch history
+const STIPEND_KEY = 'watchmaker.stipend';
+function loadStipend() { try { return Object.assign({ last: '', streak: 0 }, JSON.parse(localStorage.getItem(STIPEND_KEY) || '{}')); } catch (e) { return { last: '', streak: 0 }; } }
+function dayKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function stipendReady() { return loadStipend().last !== dayKey(new Date()); }
+function renderStipend() {
+  const el = document.getElementById('guild-daily'); if (!el) return;
+  const st = loadStipend(), now = new Date(), fact = HISTORY[(now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate()) % HISTORY.length];
+  const page = `<div style="margin-top:8px;color:#bbb"><b style="color:#d4af37">TODAY IN THE GUILD LIBRARY &middot; ${fact.y} &middot; ${fact.t.toUpperCase()}</b><br>${fact.x}</div>`;
+  if (!stipendReady()) { el.innerHTML = `<b style="color:#d4af37">DAILY STIPEND COLLECTED</b> &middot; ${st.streak}-day streak &middot; come back tomorrow` + page; return; }
+  el.innerHTML = `<b style="color:#d4af37">YOUR DAILY STIPEND IS READY</b> &middot; the Guild pays its members for showing up at the bench<br><button id="stipend-btn" class="btn gold" style="margin-top:8px">COLLECT TODAY&#39;S STIPEND</button>` + page;
+  document.getElementById('stipend-btn').addEventListener('click', () => {
+    if (!stipendReady()) return;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    st.streak = st.last === dayKey(y) ? st.streak + 1 : 1; st.last = dayKey(new Date());
+    try { localStorage.setItem(STIPEND_KEY, JSON.stringify(st)); } catch (e) {}
+    const rankIdx = Math.max(0, RANKS.indexOf(rankOf(career.rep))), k = Math.min(7, st.streak);
+    const money = 20 + rankIdx * 15 + k * 10, rep = 5 + k * 2;
+    earn(money, rep);
+    toast('STIPEND', `$${money} and +${rep} reputation · day ${st.streak} of your streak`);
+    showGuild();
+  });
+}
+
 // The Guild hall & workshop
 function showGuild() {
+  renderStipend();
   const r = rankOf(career.rep), nx = nextRank(career.rep);
   document.getElementById('guild-rank').textContent = r[1];
   document.getElementById('guild-rep').innerHTML = nx
@@ -2988,6 +3014,7 @@ function init() {
   document.getElementById('history-close').addEventListener('click', () => document.getElementById('history-overlay').classList.remove('show'));
   document.getElementById('history-quiz').addEventListener('click', startHistoryQuiz);
   document.getElementById('guild-btn').addEventListener('click', showGuild);
+  if (stipendReady()) document.getElementById('guild-btn').innerHTML += ' <span style="color:#ffe27a">&#9679; STIPEND READY</span>';
   document.getElementById('guild-close').addEventListener('click', () => document.getElementById('guild-overlay').classList.remove('show'));
   document.getElementById('result-guild').addEventListener('click', showGuild);
   const ocv = document.getElementById('oil-cv');

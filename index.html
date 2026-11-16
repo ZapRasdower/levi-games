@@ -406,26 +406,26 @@
   const GAMES = [
     { id: 'mushroom-forest', name: "Levi's Mushroom Forest", emoji: '&#127812;', tag: 'FORAGING ADVENTURE', cat: 'build', tint: '#7fc85a44', isNew: true,
       desc: 'Walk the forest trails, pick 47 real mushrooms with a clean cut, dodge deadly lookalikes, cook, trade and get home before dark.' },
-    { id: 'pixel-jump',     name: 'Levi Leap',      emoji: '&#129354;', tag: 'ENDLESS RUNNER', cat: 'arcade',  tint: '#ffe60044',
-      desc: 'Help Levi jump over obstacles and grab coins. How far can you go?' },
-    { id: 'levi-crossing',  name: 'Levi Crossing',  emoji: '&#128056;', tag: 'ARCADE',         cat: 'arcade',  tint: '#6bffd144',
-      desc: 'Hop Levi across roads, rivers & railways. 10 levels — the last two are LEGENDARY.' },
-    { id: 'snake',          name: 'Levi Snake',     emoji: '&#128013;', tag: 'ARCADE',         cat: 'arcade',  tint: '#7bd88f44',
-      desc: "Eat, grow, and don't bite yourself. Watch for bonus snacks!" },
-    { id: 'atom-builder',   name: 'Atom Builder',   emoji: '&#9883;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#6bd1ff44',
-      desc: 'Build atoms in 3D, discover all 20 elements & zoom in to see quarks!' },
-    { id: 'solar-system',   name: 'Solar System',   emoji: '&#128640;', tag: 'SCIENCE',        cat: 'science', tint: '#ffb04744',
+    { id: 'pixel-jump',     name: 'Levi Leap',      emoji: '&#129354;', tag: 'ENDLESS RUNNER', cat: 'arcade',  tint: '#ffe60044', updated: true,
+      desc: 'Jump the blocks, run under the birds, grab shields and magnets, and spend your coins on a triple jump.' },
+    { id: 'levi-crossing',  name: 'Levi Crossing',  emoji: '&#128056;', tag: 'ARCADE',         cat: 'arcade',  tint: '#6bffd144', updated: true,
+      desc: 'Hop Levi across roads, rivers & railways. 10 levels, 30 stars to earn — the last two are LEGENDARY.' },
+    { id: 'snake',          name: 'Levi Snake',     emoji: '&#128013;', tag: 'ARCADE',         cat: 'arcade',  tint: '#7bd88f44', updated: true,
+      desc: "Classic, Portal and Maze modes, combo apples, ghost and slow-mo snacks, and 6 skins to unlock." },
+    { id: 'atom-builder',   name: 'Atom Builder',   emoji: '&#9883;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#6bd1ff44', updated: true,
+      desc: 'Build atoms in 3D, discover all 20 elements and 16 famous atoms, and zoom in to see quarks!' },
+    { id: 'solar-system',   name: 'Solar System',   emoji: '&#128640;', tag: 'SCIENCE',        cat: 'science', tint: '#ffb04744', updated: true,
       desc: 'Fly 12 probe missions from Earth, spin the planets in 3D, launch comets, and take the quiz.' },
-    { id: 'periodic-table', name: 'Periodic Table', emoji: '&#9879;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#c07bff44',
-      desc: 'Click any of the 118 elements to see facts, mass, group and electron config.' },
-    { id: 'squishy-pets',   name: 'Squishy Pets',   emoji: '&#129382;', tag: 'IDLE / COLLECT', cat: 'build',   tint: '#ff9fd044',
-      desc: 'Open blind boxes, squish pets for Dough, earn achievements, and collect all 40 across 5 themes.' },
-    { id: 'brick-breaker',  name: 'Brick Breaker',  emoji: '&#129521;', tag: 'ARCADE',         cat: 'arcade',  tint: '#ff6b6b44',
-      desc: 'Levi IS the ball! Bounce him through 6 brick levels and catch the power-ups.' },
+    { id: 'periodic-table', name: 'Periodic Table', emoji: '&#9879;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#c07bff44', updated: true,
+      desc: 'Collect all 118 elements, then test yourself: Easy, Medium or Hard quiz and a 60-second speed round.' },
+    { id: 'squishy-pets',   name: 'Squishy Pets',   emoji: '&#129382;', tag: 'IDLE / COLLECT', cat: 'build',   tint: '#ff9fd044', updated: true,
+      desc: 'Open blind boxes, squish pets for Dough, set off a Squish Frenzy, claim a daily gift, and collect all 40.' },
+    { id: 'brick-breaker',  name: 'Brick Breaker',  emoji: '&#129521;', tag: 'ARCADE',         cat: 'arcade',  tint: '#ff6b6b44', updated: true,
+      desc: 'Levi IS the ball! 12 levels with TNT and steel bricks, lasers, fireballs and a safety shield.' },
     { id: 'watchmaker',     name: 'Watchmaker',     emoji: '&#8986;',   tag: '3D BUILDER',     cat: 'build',   tint: '#d4af3744', updated: true,
       desc: 'Build 9 real watches from history, hand-finish them like a master, restore grimy heirlooms in Full Service, and rise through the Guild.' },
-    { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44',
-      desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
+    { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44', updated: true,
+      desc: 'Blast alien waves with wingmen and homing missiles. Beat a Mothership to save a checkpoint!' },
     { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', updated: true,
       desc: 'Dig 500 m down through real rock layers. Dive in a hidden lake, blast with dynamite, clean your own fossils and build a T. rex!' },
   ];
@@ -444,10 +444,11 @@
     'pixel-jump':     () => { const b = num('leviLeap.best'), c = num('leviLeap.totalCoins'); return b ? `BEST ${fmt(b)}${c ? ` · ${fmt(c)} COINS` : ''}` : null; },
     'levi-crossing':  () => { const b = num('leviCrossingBest'), u = num('leviCrossingUnlocked'); const st = lsJSON('leviCrossingStars', []).reduce((x, y) => x + (y || 0), 0); return (b || u > 1) ? `BEST ${fmt(b)} · LEVEL ${Math.min(u, 10)}/10${st ? ` · ${st}/30 &#9733;` : ''}` : null; },
     'snake':          () => { const b = num('leviSnake.best'); return b ? `BEST ${fmt(b)}` : null; },
-    'atom-builder':   () => { const d = lsJSON('atomBuilderDiscovered', []); return d.length ? `${d.length}/20 ELEMENTS FOUND` : null; },
+    'atom-builder':   () => { const d = lsJSON('atomBuilderDiscovered', []), f = lsJSON('atomBuilderFamous', []); return d.length || f.length ? `${d.length}/20 ELEMENTS${f.length ? ` · ${f.length}/16 FAMOUS` : ''}` : null; },
     'solar-system':   () => { const q = num('solarSystem.quizBest'); const m = lsJSON('solarSystem.missions', {}); const st = Object.values(m).reduce((a, b) => a + b, 0);
                               const parts = []; if (st) parts.push(`${st}/36 &#9733;`); if (q) parts.push(`QUIZ BEST ${q}`); return parts.length ? parts.join(' · ') : null; },
-    'periodic-table': () => { const q = num('ptable.quizBest'); return q ? `QUIZ BEST ${q}` : null; },
+    'periodic-table': () => { const q = Math.max(num('ptable.quizBest'), num('ptable.quizBest.54'), num('ptable.quizBest.20')), c = lsJSON('ptable.seen', []).length, sp = Math.max(num('ptable.speedBest.20'), num('ptable.speedBest.54'), num('ptable.speedBest.118'));
+                              const parts = []; if (c) parts.push(`${c}/118 COLLECTED`); if (q) parts.push(`QUIZ BEST ${q}`); if (sp) parts.push(`SPEED ${sp}`); return parts.length ? parts.join(' · ') : null; },
     'squishy-pets':   () => { const s = lsJSON('squishy_pets_v2', null); const k = s && s.k ? s.k.length : 0; return k ? `${k}/40 PETS` : null; },
     'brick-breaker':  () => { const b = num('brickBreaker.best'); return b ? `BEST ${fmt(b)}` : null; },
     'watchmaker':     () => { const bests = ['apprentice', 'journeyman', 'master'].map(t => lsJSON('watchmaker.best.' + t, null)).filter(Boolean);
@@ -455,7 +456,7 @@
                               const rp = lsJSON('watchmaker.repair', null); const fixed = rp && rp.fixed ? ` · ${rp.fixed} REPAIRED` : '';
                               const coll = Object.keys(lsJSON('watchmaker.collection', {})).length; const cs = coll ? ` · ${coll}/26 COLLECTED` : ''; const cr = lsJSON('watchmaker.career', null); const rk = cr && cr.rep ? (cr.rep >= 6000 ? 'LIVING LEGEND' : cr.rep >= 3000 ? 'GUILD MASTER' : cr.rep >= 1200 ? 'MASTER CRAFTSMAN' : cr.rep >= 400 ? 'CRAFTSMAN' : 'TRAINEE') : '';
                               return b ? `${rk ? rk + ' · ' : ''}BEST ${fmt(b.score)}${cs}${fixed}` : ((cs + fixed).slice(3) || null); },
-    'levi-galaxy':    () => { const b = num('leviGalaxy.best'); return b ? `BEST ${fmt(b)}` : null; },
+    'levi-galaxy':    () => { const b = num('leviGalaxy.best'), cp = num('leviGalaxy.checkpoint'); return b ? `BEST ${fmt(b)}${cp ? ` · CHECKPOINT WAVE ${cp + 1}` : ''}` : null; },
     'levi-dig':       () => { const s = lsJSON('leviDig.save', null); if (!s || !s.best) return null; const f = Object.keys(s.museum || {}).length;
                               const bd = Object.keys(s.badges || {}).length; return `DEEPEST ${s.best} m · ${f}/17 FINDS${bd ? ` · ${bd}/16 BADGES` : ''}${s.won ? ' · &#128142;' : ''}`; },
   };
@@ -504,6 +505,8 @@
 
   // ---- What's new: newest first. Add a line here whenever a game changes. ----
   const UPDATES = [
+    { id: 'u16', date: 'NOV 16', game: null, kind: 'upd', title: 'Every game got an upgrade',
+      text: 'Snake: Portal and Maze modes, power snacks and skins. Brick Breaker: 12 levels, TNT, lasers and fireballs. Levi Leap: shields, magnets and a coin shop. Levi Galaxy: wingmen, homing missiles and checkpoints. Levi Crossing: 30 stars to earn. Solar System: 4 new missions. Periodic Table: collect all 118 and a speed round. Atom Builder: 16 famous atoms. Squishy Pets: Squish Frenzy and a daily gift. Levi Dig: a daily supply crate. Watchmaker: a daily Guild stipend.' },
     { id: 'u15', date: 'NOV 16', game: 'mushroom-forest', kind: 'new', title: "New game: Levi's Mushroom Forest",
       text: 'Grab a basket and go foraging! Five forest trails through four seasons, 47 real mushrooms to discover (some glow, some are deadly lookalikes), a timing cut for every pick, villagers to cook and trade for, mushroom logs that grow while you are away, a dog who sniffs out truffles, daily quests and a Field Guide to fill.' },
     { id: 'u14', date: 'NOV 11', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: the Tourbillon',
