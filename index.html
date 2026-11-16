@@ -404,6 +404,8 @@
   // ---- The games. Add a new one here (folder, emoji, blurb, tag, category) and it
   //      shows up on the grid with filters, ribbons and best-score readouts. ----
   const GAMES = [
+    { id: 'mushroom-forest', name: "Levi's Mushroom Forest", emoji: '&#127812;', tag: 'FORAGING ADVENTURE', cat: 'build', tint: '#7fc85a44', isNew: true,
+      desc: 'Walk the forest trails, pick 47 real mushrooms with a clean cut, dodge deadly lookalikes, cook, trade and get home before dark.' },
     { id: 'pixel-jump',     name: 'Levi Leap',      emoji: '&#129354;', tag: 'ENDLESS RUNNER', cat: 'arcade',  tint: '#ffe60044',
       desc: 'Help Levi jump over obstacles and grab coins. How far can you go?' },
     { id: 'levi-crossing',  name: 'Levi Crossing',  emoji: '&#128056;', tag: 'ARCADE',         cat: 'arcade',  tint: '#6bffd144',
@@ -424,7 +426,7 @@
       desc: 'Build 9 real watches from history, hand-finish them like a master, restore grimy heirlooms in Full Service, and rise through the Guild.' },
     { id: 'levi-galaxy',    name: 'Levi Galaxy',    emoji: '&#128126;', tag: 'SPACE SHOOTER',  cat: 'arcade',  tint: '#8a7bff44',
       desc: 'Levi rides a rocket board and blasts waves of alien invaders. Beat the Mothership every 5th wave!' },
-    { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', isNew: true,
+    { id: 'levi-dig',       name: 'Levi Dig',       emoji: '&#9935;&#65039;', tag: 'DIGGING ADVENTURE', cat: 'science', tint: '#c98a4a44', updated: true,
       desc: 'Dig 500 m down through real rock layers. Dive in a hidden lake, blast with dynamite, clean your own fossils and build a T. rex!' },
   ];
   const CATS = [['all', 'ALL'], ['arcade', 'ARCADE'], ['science', 'SCIENCE'], ['build', 'BUILD & COLLECT']];
@@ -437,6 +439,8 @@
 
   // Each game's "best" readout, read from the save data that game already keeps.
   const STATS = {
+    'mushroom-forest': () => { const s = lsJSON('mushroomForest.save', null); if (!s || !s.stats || !s.stats.runs) return null; const d = Object.values(s.guide || {}).filter(g => g.n > 0).length;
+                              return `LEVEL ${s.lvl} · ${d}/47 SPECIES${s.daily && s.daily.streak > 1 ? ` · &#128293;${s.daily.streak}` : ''}`; },
     'pixel-jump':     () => { const b = num('leviLeap.best'), c = num('leviLeap.totalCoins'); return b ? `BEST ${fmt(b)}${c ? ` · ${fmt(c)} COINS` : ''}` : null; },
     'levi-crossing':  () => { const b = num('leviCrossingBest'), u = num('leviCrossingUnlocked'); return (b || u > 1) ? `BEST ${fmt(b)} · LEVEL ${Math.min(u, 10)}/10` : null; },
     'snake':          () => { const b = num('leviSnake.best'); return b ? `BEST ${fmt(b)}` : null; },
@@ -500,6 +504,8 @@
 
   // ---- What's new: newest first. Add a line here whenever a game changes. ----
   const UPDATES = [
+    { id: 'u15', date: 'NOV 16', game: 'mushroom-forest', kind: 'new', title: "New game: Levi's Mushroom Forest",
+      text: 'Grab a basket and go foraging! Five forest trails through four seasons, 47 real mushrooms to discover (some glow, some are deadly lookalikes), a timing cut for every pick, villagers to cook and trade for, mushroom logs that grow while you are away, a dog who sniffs out truffles, daily quests and a Field Guide to fill.' },
     { id: 'u14', date: 'NOV 11', game: 'watchmaker', kind: 'upd', title: 'Watchmaker: the Tourbillon',
       text: 'Breguet\'s 1801 masterpiece: a cage that carries the whole escapement round once a minute to cancel gravity. Reach Master Craftsman in the Guild to build one, or study it on the Bench now. Plus a tidier start screen.' },
     { id: 'u13', date: 'NOV 11', game: 'levi-dig', kind: 'upd', title: 'Levi Dig: the underground lake, fossil cleaning & a map',
