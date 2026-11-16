@@ -359,21 +359,35 @@
       h1 { font-size: 1.3rem; letter-spacing: 2px; }
       .ptable { min-width: 720px; }
     }
-  </style>
+    #quizLevel { font-family: inherit; font-size: 0.8rem; padding: 7px 8px; background: #1a1a30; color: #ddd; border: 2px solid #33334d; border-radius: 3px; }
+  #collectBar { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.72rem; letter-spacing: 1px; color: #9a9ab0; margin: 2px 0 8px; }
+  #collectBar .cbar { width: 160px; height: 7px; background: #22223a; border-radius: 4px; overflow: hidden; display: inline-block; }
+  #collectBar .cbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6bffd1, #ffe600); transition: width .4s; }
+  .cell { position: relative; }
+  .cell.seen::after { content: ""; position: absolute; right: 3px; top: 3px; width: 5px; height: 5px; border-radius: 50%; background: #ffe600; box-shadow: 0 0 4px #ffe600; }
+</style>
 </head>
 <body>
 
   <h1>&#9879; Periodic Table</h1>
-  <p class="subtitle">Click any element to see its atom &middot; quiz yourself &middot; recolor by state of matter</p>
+  <p class="subtitle">Click any element to see its atom and collect it &middot; quiz yourself (Easy, Medium or Hard) &middot; try the 60-second speed round</p>
 
   <div class="controls">
     <input id="search" type="text" placeholder="Search name, symbol, number...">
     <button id="clearBtn">Clear</button>
     <button id="randomBtn">Random element</button>
     <button id="colorBtn">Color: category</button>
+    <select id="quizLevel" title="Quiz difficulty">
+      <option value="20">Easy: first 20</option>
+      <option value="54">Medium: first 54</option>
+      <option value="118">Hard: all 118</option>
+    </select>
     <button id="quizBtn">Quiz me</button>
+    <button id="speedBtn" title="How many can you find in 60 seconds?">&#9201; Speed round</button>
     <button id="muteBtn" title="toggle sound">&#128266;</button>
   </div>
+
+  <div id="collectBar"><span id="collectText"></span><span class="cbar"><i id="collectFill"></i></span></div>
 
   <div id="questionBar"></div>
 
@@ -832,7 +846,24 @@ requestAnimationFrame(drawBohr);
 
 let currentIndex = 0;
 
+// ---- Collection: every element you open (or get right in a quiz) is collected ----
+const SEEN_KEY = 'ptable.seen';
+let seen = new Set(); try { seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')); } catch (e) {}
+function refreshCollection() {
+  for (const n of seen) if (cells[n]) cells[n].classList.add('seen');
+  document.getElementById('collectText').textContent = seen.size >= 118 ? 'ALL 118 ELEMENTS COLLECTED — YOU KNOW THE WHOLE TABLE!' : `COLLECTED ${seen.size} / 118 — open an element to collect it`;
+  document.getElementById('collectFill').style.width = (seen.size / 118 * 100) + '%';
+}
+function collect(n) {
+  if (seen.has(n)) return; seen.add(n);
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch (e) {}
+  refreshCollection();
+  if (seen.size === 118) sfx.right(12);
+}
+refreshCollection();
+
 function showModal(el) {
+  collect(el[0]);
   const [n, sym, name, mass, cat, group, period, ec, state, fact] = el;
   currentIndex = ELEMENTS.indexOf(el);
   bohrEl = el;
@@ -880,9 +911,23 @@ const questionBar = document.getElementById('questionBar');
 const quizBtn = document.getElementById('quizBtn');
 let quiz = null; // { score, best, current: {q, test} }
 
+// Everyday clues for the elements you meet in real life
+const CLUES = { H: 'the lightest element — the fuel the Sun burns', He: 'fills party balloons and makes your voice squeaky', Li: 'inside phone and laptop batteries', C: 'both diamonds and pencil lead are made of it',
+  N: 'makes up 78% of the air', O: 'the gas we breathe to stay alive', F: 'added to toothpaste to protect teeth', Ne: 'glows red-orange in bright shop signs', Na: 'one half of table salt (the metal half)',
+  Mg: 'burns with a blinding white flame in fireworks', Al: 'kitchen foil and drink cans', Si: 'computer chips are made of it', P: 'on the tip of a match', S: 'yellow, and smells of rotten eggs when burned',
+  Cl: 'keeps swimming pools clean', K: 'bananas are famous for it', Ca: 'makes bones and teeth strong', Ti: 'a strong, light metal used in aeroplanes', Fe: 'makes steel — and rust',
+  Ni: 'gives its name to a 5-cent coin', Cu: 'the reddish metal in electric wires', Zn: 'coats steel so it does not rust', Ag: 'shiny metal of second-place medals', Sn: 'the classic food can metal',
+  I: 'the brown liquid a doctor dabs on a cut', W: 'the glowing wire in an old light bulb', Pt: 'a precious metal rarer than gold', Au: 'first-place medals and pirate treasure', Hg: 'the only metal that is liquid at room temperature',
+  Pb: 'a very heavy metal that blocks X-rays', U: 'the fuel of nuclear power stations' };
 function makeQuestion() {
-  const el = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
+  const limit = quiz ? quiz.limit : 118, pool = ELEMENTS.filter(e => e[0] <= limit);
+  const el = pool[Math.floor(Math.random() * pool.length)];
   const roll = Math.random();
+  const clued = pool.filter(e => CLUES[e[1]]);
+  if (roll < 0.22 && clued.length) {
+    const ce = clued[Math.floor(Math.random() * clued.length)];
+    return { q: `Which element is this? ${CLUES[ce[1]][0].toUpperCase() + CLUES[ce[1]].slice(1)}.`, test: e2 => e2 === ce };
+  }
   if (roll < 0.3) {
     return { q: `Click the element with symbol "${el[1]}"`, test: e2 => e2 === el };
   }
@@ -893,7 +938,7 @@ function makeQuestion() {
     return { q: `Find ${el[2]}!`, test: e2 => e2 === el };
   }
   if (roll < 0.85) {
-    const cats = ['alkali', 'alkaline', 'halogen', 'noble', 'lanthanide', 'actinide', 'metalloid'];
+    const cats = limit < 100 ? ['alkali', 'alkaline', 'halogen', 'noble', 'metalloid'] : ['alkali', 'alkaline', 'halogen', 'noble', 'lanthanide', 'actinide', 'metalloid'];
     const cat = cats[Math.floor(Math.random() * cats.length)];
     return { q: `Click any ${CAT_NAMES[cat].toLowerCase()}`, test: e2 => e2[4] === cat };
   }
@@ -909,7 +954,7 @@ function nextQuestion() {
   if (!quiz) return;
   quiz.current = makeQuestion();
   questionBar.className = 'show';
-  questionBar.textContent = `${quiz.current.q}  —  Score: ${quiz.score}  Best: ${quiz.best}`;
+  questionBar.textContent = quiz.speed ? `${quiz.current.q}  —  ${quiz.time}s left  ·  Found: ${quiz.score}  Best: ${quiz.best}` : `${quiz.current.q}  —  Score: ${quiz.score}  Best: ${quiz.best}`;
 }
 
 function answerQuiz(el, cell) {
@@ -918,9 +963,10 @@ function answerQuiz(el, cell) {
   const correct = quiz.current.test(el);
   if (correct) {
     quiz.score++;
+    collect(el[0]);
     if (quiz.score > quiz.best) {
       quiz.best = quiz.score;
-      localStorage.setItem(QUIZ_BEST_KEY, quiz.best);
+      localStorage.setItem(quiz.key, quiz.best);
     }
     sfx.right(quiz.score);
     cell.classList.add('right');
@@ -929,9 +975,9 @@ function answerQuiz(el, cell) {
     setTimeout(() => {
       cell.classList.remove('right');
       if (quiz) { quiz.waiting = false; nextQuestion(); }
-    }, 1000);
+    }, quiz.speed ? 350 : 1000);
   } else {
-    quiz.score = 0;
+    if (quiz.speed) quiz.time = Math.max(0, quiz.time - 3); else quiz.score = 0;
     sfx.wrong();
     cell.classList.add('wrong');
     // Light up every element that would have been a correct answer
@@ -939,16 +985,40 @@ function answerQuiz(el, cell) {
     answers.forEach(e2 => cells[e2[0]].classList.add('answer'));
     questionBar.className = 'show wrong';
     const names = answers.slice(0, 3).map(e2 => e2[2]).join(', ');
-    questionBar.textContent = `✗ Nope — that was ${el[2]}. Answer: ${names}${answers.length > 3 ? '…' : ''}.  Score reset.`;
+    questionBar.textContent = `✗ Nope — that was ${el[2]}. Answer: ${names}${answers.length > 3 ? '…' : ''}.  ${quiz.speed ? '−3 seconds!' : 'Score reset.'}`;
     setTimeout(() => {
       cell.classList.remove('wrong');
       answers.forEach(e2 => cells[e2[0]].classList.remove('answer'));
       if (quiz) { quiz.waiting = false; nextQuestion(); }
-    }, 2000);
+    }, quiz.speed ? 900 : 2000);
   }
 }
 
+const speedBtn = document.getElementById('speedBtn'), levelSel = document.getElementById('quizLevel');
+levelSel.value = localStorage.getItem('ptable.quizLevel') || '20';
+levelSel.addEventListener('change', () => { localStorage.setItem('ptable.quizLevel', levelSel.value); if (quiz) stopQuiz(); });
+const levelKey = () => QUIZ_BEST_KEY + (levelSel.value === '118' ? '' : '.' + levelSel.value);
+let speedTimer = null;
+function stopQuiz(msg) {
+  quiz = null; clearInterval(speedTimer); speedTimer = null;
+  questionBar.className = msg ? 'show right' : ''; questionBar.textContent = msg || '';
+  quizBtn.textContent = 'Quiz me'; quizBtn.classList.remove('active'); speedBtn.innerHTML = '&#9201; Speed round'; speedBtn.classList.remove('active');
+}
+speedBtn.addEventListener('click', () => {
+  if (quiz) { stopQuiz(); return; }
+  const key = 'ptable.speedBest.' + levelSel.value;
+  quiz = { score: 0, best: parseInt(localStorage.getItem(key) || '0', 10), waiting: false, limit: +levelSel.value, key, speed: true, time: 60 };
+  speedBtn.textContent = 'Stop'; speedBtn.classList.add('active');
+  nextQuestion();
+  speedTimer = setInterval(() => {
+    if (!quiz) return;
+    quiz.time--;
+    if (quiz.time <= 0) { const sc = quiz.score, nb = sc >= quiz.best && sc > 0; sfx.right(8); stopQuiz(`⏱ Time! You found ${sc} element${sc === 1 ? '' : 's'} in 60 seconds.${nb ? ' NEW BEST!' : ''}`); }
+    else if (!quiz.waiting) questionBar.textContent = `${quiz.current.q}  —  ${quiz.time}s left  ·  Found: ${quiz.score}  Best: ${quiz.best}`;
+  }, 1000);
+});
 quizBtn.addEventListener('click', () => {
+  if (quiz) { stopQuiz(); return; }
   if (quiz) {
     quiz = null;
     questionBar.className = '';
@@ -956,7 +1026,7 @@ quizBtn.addEventListener('click', () => {
     quizBtn.textContent = 'Quiz me';
     quizBtn.classList.remove('active');
   } else {
-    quiz = { score: 0, best: parseInt(localStorage.getItem(QUIZ_BEST_KEY) || '0', 10), waiting: false };
+    quiz = { score: 0, best: parseInt(localStorage.getItem(levelKey()) || '0', 10), waiting: false, limit: +levelSel.value, key: levelKey() };
     quizBtn.textContent = 'Stop quiz';
     quizBtn.classList.add('active');
     nextQuestion();

@@ -83,6 +83,13 @@
 
     #muteBtn:hover { border-color: #ffe600; }
 
+    #opts { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; align-items: center; max-width: 480px; }
+    .optrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .optlabel { font-size: 0.65rem; letter-spacing: 2px; color: #777; }
+    .optbtn { font-family: inherit; font-size: 0.68rem; letter-spacing: 1px; font-weight: bold; padding: 5px 9px; margin: 0 2px; background: #1a1a30; color: #bbb; border: 2px solid #33334d; border-radius: 3px; cursor: pointer; }
+    .optbtn.on { border-color: #9bff5a; color: #9bff5a; }
+    .optbtn.locked { opacity: 0.45; cursor: default; }
+    .optbtn i { font-style: normal; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
     #message {
       margin-top: 16px;
       font-size: 0.9rem;
@@ -106,7 +113,7 @@
 <body>
 
   <h1>&#128013; Levi Snake</h1>
-  <p class="subtitle">Arrow keys / WASD / swipe &middot; P to pause</p>
+  <p class="subtitle">Arrow keys / WASD / swipe &middot; P to pause &middot; eat fast for combos</p>
 
   <canvas id="gameCanvas" width="480" height="480"></canvas>
 
@@ -115,6 +122,11 @@
     <div class="pill">LEN<span id="len">3</span></div>
     <div class="pill">BEST<span id="best">0</span></div>
     <button id="muteBtn" title="toggle sound">&#128266;</button>
+  </div>
+
+  <div id="opts">
+    <div class="optrow"><span class="optlabel">MODE</span><span id="modes"></span></div>
+    <div class="optrow"><span class="optlabel">SKIN</span><span id="skins"></span></div>
   </div>
 
   <div id="message">Press an arrow key to start</div>
@@ -173,6 +185,26 @@
   });
   refreshMute();
 
+  // ---- MODES & SKINS ----
+  const MODE_KEY = 'leviSnake.mode', SKIN_KEY = 'leviSnake.skin';
+  const MODES = [
+    { id: 'classic', name: 'CLASSIC', tip: 'Walls are deadly' },
+    { id: 'portal',  name: 'PORTAL',  tip: 'Walls wrap around to the other side' },
+    { id: 'maze',    name: 'MAZE',    tip: 'A rock appears every 3 apples' },
+  ];
+  const SKINS = [
+    { id: 'green',   name: 'GARDEN',  need: 0,    head: '#9bff5a', tail: '#2f8a3a' },
+    { id: 'ocean',   name: 'OCEAN',   need: 100,  head: '#6be0ff', tail: '#2a4fb0' },
+    { id: 'lava',    name: 'LAVA',    need: 250,  head: '#ffd24a', tail: '#d2301c' },
+    { id: 'candy',   name: 'CANDY',   need: 500,  head: '#ff9ae0', tail: '#8a4ad8' },
+    { id: 'rainbow', name: 'RAINBOW', need: 800,  head: '#ff5a5a', tail: '#5a8aff', rainbow: true },
+    { id: 'gold',    name: 'GOLD',    need: 1200, head: '#fff3a0', tail: '#c98a14' },
+  ];
+  let mode = localStorage.getItem(MODE_KEY) || 'classic';
+  if (!MODES.some(m => m.id === mode)) mode = 'classic';
+  let skinId = localStorage.getItem(SKIN_KEY) || 'green';
+  const modeBestKey = () => BEST_KEY + '.' + mode;
+
   const CELL = 24;
   const COLS = canvas.width / CELL;
   const ROWS = canvas.height / CELL;
@@ -193,9 +225,12 @@
   };
 
   let snake, prevSnake, dir, nextDir, food, bonus, bonusTimer;
+  let walls = [], power = null, fx = { ice: 0, ghost: 0 }, combo = 0, comboTicks = 0, apples = 0, floats = [], shake = 0;
+  const POWERS = { ice: { e: '\u2744\uFE0F', c: '#9ad8ff', name: 'SLOW-MO' }, ghost: { e: '\uD83D\uDC7B', c: '#d8c8ff', name: 'GHOST' }, cut: { e: '\u2702\uFE0F', c: '#ffb38a', name: 'SNIP!' } };
   let particles = [];
   let score = 0;
-  let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let allBest = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
+  let best = parseInt(localStorage.getItem(modeBestKey()) || (mode === 'classic' ? allBest : 0), 10) || 0;
   let state = 'idle';
   let tickMs = 120;
   let lastTick = 0;
@@ -224,6 +259,7 @@
     bonus = null;
     bonusTimer = 0;
     particles = [];
+    walls = []; power = null; fx = { ice: 0, ghost: 0 }; combo = 0; comboTicks = 0; apples = 0; floats = [];
     placeFood();
     scoreEl.textContent = score;
     lenEl.textContent = snake.length;
@@ -232,11 +268,31 @@
   function placeFood() {
     while (true) {
       const f = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
-      if (!snake.some(s => s.x === f.x && s.y === f.y)) {
+      if (isFree(f.x, f.y)) {
         food = f;
         return;
       }
     }
+  }
+  function isFree(x, y) {
+    return !snake.some(s => s.x === x && s.y === y) && !walls.some(w => w.x === x && w.y === y) &&
+      !(food && food.x === x && food.y === y) && !(bonus && bonus.x === x && bonus.y === y) && !(power && power.x === x && power.y === y);
+  }
+  function randomFree(avoidHead) {
+    for (let t = 0; t < 60; t++) {
+      const c = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+      if (!isFree(c.x, c.y)) continue;
+      if (avoidHead && Math.abs(c.x - snake[0].x) + Math.abs(c.y - snake[0].y) < 5) continue;
+      return c;
+    }
+    return null;
+  }
+  function addFloat(cx, cy, text, color) { floats.push({ x: cc(cx), y: cc(cy), text, color, life: 50 }); }
+  function maybePlacePower() {
+    if (power || apples < 3 || Math.random() > 0.16) return;
+    const c = randomFree(false); if (!c) return;
+    const types = snake.length > 8 ? ['ice', 'ghost', 'cut'] : ['ice', 'ghost'];
+    power = { x: c.x, y: c.y, type: types[Math.floor(Math.random() * types.length)], timer: 75 };
   }
 
   function maybePlaceBonus() {
@@ -244,8 +300,7 @@
     let tries = 30;
     while (tries-- > 0) {
       const b = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
-      if (!snake.some(s => s.x === b.x && s.y === b.y) &&
-          (b.x !== food.x || b.y !== food.y)) {
+      if (isFree(b.x, b.y)) {
         bonus = b;
         bonusTimer = 60; // ticks until disappears
         return;
@@ -265,15 +320,20 @@
     const head = snake[0];
     const nh = { x: head.x + dir.x, y: head.y + dir.y };
 
-    // Wall collision
-    if (nh.x < 0 || nh.x >= COLS || nh.y < 0 || nh.y >= ROWS) {
+    // Wall collision (portal mode wraps around instead)
+    if (mode === 'portal') { nh.x = (nh.x + COLS) % COLS; nh.y = (nh.y + ROWS) % ROWS; }
+    else if (nh.x < 0 || nh.x >= COLS || nh.y < 0 || nh.y >= ROWS) {
       die();
       return;
     }
+    if (walls.some(w => w.x === nh.x && w.y === nh.y)) { die(); return; }
+    if (fx.ice > 0) fx.ice--;
+    if (fx.ghost > 0) fx.ghost--;
+    if (comboTicks > 0 && --comboTicks === 0) combo = 0;
     // Self collision (ignore tail tip since it'll move — but only when not eating)
     const willEat = nh.x === food.x && nh.y === food.y;
     const body = willEat ? snake : snake.slice(0, -1);
-    if (body.some(s => s.x === nh.x && s.y === nh.y)) {
+    if (fx.ghost <= 0 && body.some(s => s.x === nh.x && s.y === nh.y)) {
       die();
       return;
     }
@@ -281,12 +341,27 @@
     snake.unshift(nh);
 
     if (willEat) {
-      score += 10;
-      burst(food.x, food.y, C.food, 12);
-      sfx.eat(snake.length);
+      combo = comboTicks > 0 ? Math.min(5, combo + 1) : 1;
+      comboTicks = 26;
+      score += 10 * combo;
+      apples++;
+      addFloat(food.x, food.y, combo > 1 ? `+${10 * combo}  x${combo}` : '+10', combo > 1 ? '#ffe36a' : '#fff');
+      burst(food.x, food.y, C.food, 12 + combo * 3);
+      sfx.eat(snake.length + combo * 3);
+      food = null;
       placeFood();
       maybePlaceBonus();
+      maybePlacePower();
+      if (mode === 'maze' && apples % 3 === 0) { const w = randomFree(true); if (w) { walls.push(w); burst(w.x, w.y, '#8a8aa8', 10); } }
       tickMs = Math.max(55, tickMs - 2);
+    } else if (power && nh.x === power.x && nh.y === power.y) {
+      const P = POWERS[power.type];
+      burst(power.x, power.y, P.c, 22); sfx.bonus(); addFloat(power.x, power.y, P.name, P.c);
+      if (power.type === 'ice') fx.ice = 45;
+      else if (power.type === 'ghost') fx.ghost = 45;
+      else { const n = Math.min(5, snake.length - 4); for (let i = 0; i < n; i++) { const t = snake.pop(); burst(t.x, t.y, C.bodyTail, 5); } score += 20; }
+      power = null;
+      snake.pop();
     } else if (bonus && nh.x === bonus.x && nh.y === bonus.y) {
       score += 50;
       burst(bonus.x, bonus.y, C.bonus, 20);
@@ -302,6 +377,7 @@
       bonusTimer--;
       if (bonusTimer <= 0) bonus = null;
     }
+    if (power && --power.timer <= 0) power = null;
 
     scoreEl.textContent = score;
     lenEl.textContent = snake.length;
@@ -310,10 +386,13 @@
   function die() {
     state = 'dead';
     sfx.die();
+    shake = 18;
+    for (const sg of snake) burst(sg.x, sg.y, C.bodyHead, 3);
+    if (score > allBest) { allBest = score; localStorage.setItem(BEST_KEY, allBest); buildOpts(); }
     if (score > best) {
       best = score;
       bestEl.textContent = best;
-      localStorage.setItem(BEST_KEY, best);
+      localStorage.setItem(modeBestKey(), best);
       msgEl.textContent = `NEW BEST: ${score}! Press SPACE to play again`;
       setTimeout(() => sfx.best(), 480);
     } else {
@@ -436,17 +515,63 @@
     for (let i = 0; i < snake.length; i++) {
       const cur = snake[i];
       const prev = prevSnake[i] || cur;
+      const jump = Math.abs(prev.x - cur.x) > 1 || Math.abs(prev.y - cur.y) > 1;
       pts.push({
-        x: cc(lerp(prev.x, cur.x, interp)),
-        y: cc(lerp(prev.y, cur.y, interp)),
+        x: cc(jump ? cur.x : lerp(prev.x, cur.x, interp)),
+        y: cc(jump ? cur.y : lerp(prev.y, cur.y, interp)),
       });
     }
     return pts;
   }
 
+  // Trace the body, lifting the pen where the snake jumps through a portal wall.
+  function trace(pts) {
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) {
+      if (Math.abs(pts[i].x - pts[i - 1].x) > CELL * 1.5 || Math.abs(pts[i].y - pts[i - 1].y) > CELL * 1.5) ctx.moveTo(pts[i].x, pts[i].y);
+      else ctx.lineTo(pts[i].x, pts[i].y);
+    }
+  }
+  function drawWalls() {
+    for (const w of walls) {
+      const x = w.x * CELL, y = w.y * CELL;
+      ctx.fillStyle = '#3a3a55'; roundRect(x + 2, y + 2, CELL - 4, CELL - 4, 5); ctx.fill();
+      ctx.fillStyle = '#5a5a7a'; roundRect(x + 4, y + 3, CELL - 9, CELL - 11, 4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillRect(x + 6, y + 5, 6, 2);
+    }
+  }
+  function drawPower() {
+    if (!power) return;
+    const P = POWERS[power.type], px = cc(power.x), py = cc(power.y);
+    ctx.save();
+    ctx.globalAlpha = power.timer < 20 ? (power.timer % 6 < 3 ? 1 : 0.35) : 1;
+    ctx.shadowColor = P.c; ctx.shadowBlur = 16;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.arc(px, py, CELL / 2 - 1 + Math.sin(pulse * 0.15) * 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0; ctx.font = '16px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(P.e, px, py + 1);
+    ctx.restore(); ctx.textBaseline = 'alphabetic';
+  }
+  function drawFx() {
+    ctx.textAlign = 'center'; ctx.font = 'bold 14px Courier New';
+    for (const f of floats) { ctx.globalAlpha = Math.min(1, f.life / 20); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y - (50 - f.life) * 0.6); }
+    ctx.globalAlpha = 1;
+    let y = 8;
+    for (const k of ['ice', 'ghost']) if (fx[k] > 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(8, y, 104, 12);
+      ctx.fillStyle = POWERS[k].c; ctx.fillRect(10, y + 2, 100 * fx[k] / 45, 8);
+      ctx.fillStyle = '#111'; ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'left'; ctx.fillText(POWERS[k].name, 13, y + 9.5);
+      y += 16;
+    }
+    if (combo > 1 && comboTicks > 0) { ctx.textAlign = 'right'; ctx.font = 'bold 16px Courier New'; ctx.fillStyle = '#ffe36a'; ctx.globalAlpha = 0.4 + 0.6 * comboTicks / 26; ctx.fillText('COMBO x' + combo, canvas.width - 10, 20); ctx.globalAlpha = 1; }
+    if (mode === 'portal') { ctx.strokeStyle = 'rgba(107,255,209,' + (0.35 + Math.sin(pulse * 0.08) * 0.2) + ')'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(1.5, 1.5, canvas.width - 3, canvas.height - 3); ctx.setLineDash([]); }
+  }
+
   function drawSnake(interp) {
     const pts = snakePoints(interp);
     if (pts.length === 0) return;
+    const skin = SKINS.find(k => k.id === skinId) || SKINS[0];
+    C.bodyHead = skin.head; C.bodyTail = skin.tail;
+    if (fx.ghost > 0) ctx.globalAlpha = fx.ghost < 10 && fx.ghost % 4 < 2 ? 0.9 : 0.5;
 
     // Body as a thick rounded stroke
     ctx.lineCap = 'round';
@@ -458,30 +583,24 @@
     ctx.shadowBlur = 8;
     ctx.strokeStyle = C.bodyTail;
     ctx.lineWidth = CELL - 6;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    trace(pts);
     ctx.stroke();
     ctx.restore();
 
     // Gradient body head->tail (approx along head-to-tail axis)
     const tail = pts[pts.length - 1];
     const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, tail.x, tail.y);
-    grad.addColorStop(0, C.bodyHead);
-    grad.addColorStop(1, C.bodyTail);
+    if (skin.rainbow) ['#ff5a5a', '#ffb347', '#ffe36a', '#7bd88f', '#6bd1ff', '#b07bff'].forEach((c, i) => grad.addColorStop(i / 5, c));
+    else { grad.addColorStop(0, C.bodyHead); grad.addColorStop(1, C.bodyTail); }
     ctx.strokeStyle = grad;
     ctx.lineWidth = CELL - 8;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    trace(pts);
     ctx.stroke();
 
     // Glossy spine highlight
     ctx.strokeStyle = 'rgba(255,255,255,0.18)';
     ctx.lineWidth = (CELL - 8) * 0.4;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    trace(pts);
     ctx.stroke();
 
     // Head
@@ -514,6 +633,7 @@
       ctx.lineTo(tx + ex * 6, ty + ey * 6);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
   }
 
   function drawParticles() {
@@ -534,13 +654,19 @@
 
   function draw(now) {
     let interp = 1;
-    if (state === 'playing') interp = Math.min(1, (now - lastTick) / tickMs);
+    if (state === 'playing') interp = Math.min(1, (now - lastTick) / (tickMs * (fx.ice > 0 ? 1.7 : 1)));
 
+    ctx.save();
+    if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= 0.85; if (shake < 0.5) shake = 0; }
     drawBackground();
-    drawFood();
+    drawWalls();
+    if (food) drawFood();
     drawBonus();
+    drawPower();
     drawSnake(interp);
     drawParticles();
+    drawFx();
+    ctx.restore();
 
     if (state === 'idle') {
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -560,7 +686,9 @@
   function loop(now) {
     requestAnimationFrame(loop);
     pulse++;
-    if (state === 'playing' && now - lastTick >= tickMs) {
+    for (const f of floats) f.life--;
+    floats = floats.filter(f => f.life > 0);
+    if (state === 'playing' && now - lastTick >= tickMs * (fx.ice > 0 ? 1.7 : 1)) {
       lastTick = now;
       tick();
     }
@@ -632,6 +760,32 @@
   }, { passive: false });
 
   canvas.addEventListener('touchend', () => { touchStart = null; });
+
+  // ---- mode & skin pickers ----
+  function buildOpts() {
+    const mEl = document.getElementById('modes'), sEl = document.getElementById('skins');
+    mEl.innerHTML = ''; sEl.innerHTML = '';
+    for (const m of MODES) {
+      const b = document.createElement('button'); b.className = 'optbtn' + (m.id === mode ? ' on' : ''); b.textContent = m.name; b.title = m.tip;
+      b.addEventListener('click', () => {
+        b.blur(); if (state === 'playing' || state === 'paused') return;
+        mode = m.id; localStorage.setItem(MODE_KEY, mode);
+        best = parseInt(localStorage.getItem(modeBestKey()) || (mode === 'classic' ? allBest : 0), 10) || 0; bestEl.textContent = best;
+        reset(); state = 'idle'; msgEl.textContent = m.tip + ' — press an arrow key to start'; buildOpts();
+      });
+      mEl.appendChild(b);
+    }
+    for (const k of SKINS) {
+      const open = allBest >= k.need, b = document.createElement('button');
+      b.className = 'optbtn' + (k.id === skinId ? ' on' : '') + (open ? '' : ' locked');
+      b.innerHTML = `<i style="background:linear-gradient(135deg,${k.head},${k.tail})"></i>${open ? k.name : '&#128274; ' + k.need}`;
+      b.title = open ? k.name : `Score ${k.need} in any mode to unlock`;
+      b.addEventListener('click', () => { b.blur(); if (!open) { msgEl.textContent = `Score ${k.need} in any mode to unlock the ${k.name} skin`; return; } skinId = k.id; localStorage.setItem(SKIN_KEY, skinId); buildOpts(); });
+      sEl.appendChild(b);
+    }
+  }
+  if (!SKINS.some(k => k.id === skinId && allBest >= k.need)) skinId = 'green';
+  buildOpts();
 
   reset();
   requestAnimationFrame(loop);

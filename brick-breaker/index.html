@@ -195,7 +195,7 @@
   let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
   let lives = 3;
   let level = 0;       // 0-based level index
-  let loopNum = 0;     // how many times the 6 levels were beaten (speeds up)
+  let loopNum = 0;     // how many times all the levels were beaten (speeds up)
   let bricks = [];
   let balls = [];
   let powerups = [];
@@ -205,6 +205,7 @@
   let wideTimer = 0;
   let slowTimer = 0;
   let shake = 0;
+  let laserTimer = 0, fireTimer = 0, shield = false, bullets = [];
   bestEl.textContent = best;
 
   const paddle = { x: W / 2, w: 96, baseW: 96, h: 14, y: H - 36 };
@@ -229,21 +230,30 @@
     { name: 'DIAMOND MINE', rows: 7, hp: (c, r) => Math.abs(c - 4.5) + Math.abs(r - 3) <= 4 ? (r === 3 ? 2 : 1) : 0 },
     { name: 'THE FORTRESS', rows: 7, hp: (c, r) => (r === 0 || c === 0 || c === 9) ? 2 : (r < 5 ? 1 : 0) },
     { name: 'FINAL BOSS',   rows: 8, hp: (c, r) => (r % 2 === 0 ? (c % 3 !== 1 ? 2 : 1) : 1) },
+    // Round two: TNT bricks (T) blow up their neighbours, steel bricks (S) never break, 3 takes three hits.
+    { name: 'TNT TOWN',      rows: 6, hp: pat(['1111111111', '1T111111T1', '1111TT1111', '2222222222', '1T111111T1', '1111111111']) },
+    { name: 'SPACE INVADER', rows: 8, hp: pat(['..1....1..', '...1..1...', '..111111..', '.11T11T11.', '1111111111', '1.111111.1', '1.1....1.1', '...11.11..']) },
+    { name: 'STEEL TUNNELS', rows: 7, hp: pat(['1111111111', 'SS.SSSS.SS', '2222222222', '1111T11111', 'S.SSSSSS.S', '1111111111', '11T1111T11']) },
+    { name: 'BIG HEART',     rows: 8, hp: pat(['.22....22.', '2222..2222', '2222222222', '2223333222', '.22233222.', '..222222..', '...2TT2...', '....22....']) },
+    { name: 'THE VAULT',     rows: 8, hp: pat(['SSSS..SSSS', 'S33333333S', 'S3TT33TT3S', 'S33333333S', 'S3T3333T3S', 'S33333333S', 'SS.SSSS.SS', '1111111111']) },
+    { name: 'GRAND FINALE',  rows: 8, hp: pat(['3333333333', '2T222222T2', '2222SS2222', '1111111111', 'T11111111T', '2222SS2222', '1111111111', '1T1T11T1T1']) },
   ];
+  function pat(rows) { return (c, r) => { const ch = (rows[r] || '')[c] || '.'; return ch === '.' ? 0 : ch === 'T' || ch === 'S' ? ch : +ch; }; }
 
   function buildLevel(idx) {
     bricks = [];
     const def = LEVELS[idx];
     for (let r = 0; r < def.rows; r++) {
       for (let c = 0; c < BRICK_COLS; c++) {
-        const hp = def.hp(c, r);
-        if (!hp) continue;
+        const v = def.hp(c, r);
+        if (!v) continue;
+        const hp = typeof v === 'number' ? v : 1;
         bricks.push({
           x: GRID_X + c * (BRICK_W + BRICK_GAP),
           y: GRID_Y + r * (BRICK_H + BRICK_GAP),
           w: BRICK_W, h: BRICK_H,
-          hp, maxHp: hp,
-          color: ROW_COLORS[r % ROW_COLORS.length],
+          hp, maxHp: hp, steel: v === 'S', tnt: v === 'T',
+          color: v === 'S' ? '#8a90a4' : v === 'T' ? '#ff7a2a' : ROW_COLORS[r % ROW_COLORS.length],
         });
       }
     }
@@ -273,7 +283,28 @@
     { kind: 'multi', label: 'x3',    color: '#ff6bdc' },
     { kind: 'slow',  label: 'SLOW',  color: '#6bffd1' },
     { kind: 'life',  label: '+1UP',  color: '#ff5b6b' },
+    { kind: 'laser', label: 'LASER', color: '#ff8a8a' },
+    { kind: 'fire',  label: 'FIRE',  color: '#ff9d4d' },
+    { kind: 'shield', label: 'SHIELD', color: '#b06bff' },
   ];
+  // Break (or damage) a brick. power: how many hits to take off. TNT chains to its neighbours.
+  function hitBrick(br, power) {
+    if (br.hp <= 0 || br.steel) return;
+    br.hp -= power;
+    if (br.hp > 0) { sfx.tough(); burst(br.x + br.w / 2, br.y + br.h / 2, '#ffffff', 4); return; }
+    brickStreak++;
+    score += br.tnt ? 30 : br.maxHp * 12 - 2;
+    burst(br.x + br.w / 2, br.y + br.h / 2, br.color, 10);
+    if (brickStreak > 1) spawnFloater(br.x + br.w / 2, br.y, 'x' + brickStreak, '#fff');
+    maybeDropPower(br.x + br.w / 2, br.y + br.h / 2);
+    sfx.brick(brickStreak);
+    if (br.tnt) {
+      shake = 10; beep(90, 0.3, 'sawtooth', 0.09, -40);
+      burst(br.x + br.w / 2, br.y + br.h / 2, '#ffd24a', 26);
+      spawnFloater(br.x + br.w / 2, br.y - 6, 'BOOM!', '#ffd24a');
+      for (const o of bricks) if (o !== br && o.hp > 0 && Math.abs(o.x - br.x) < (BRICK_W + BRICK_GAP) * 1.5 && Math.abs(o.y - br.y) < (BRICK_H + BRICK_GAP) * 1.5) hitBrick(o, 99);
+    }
+  }
 
   function maybeDropPower(x, y) {
     if (Math.random() > 0.13) return;
@@ -290,6 +321,9 @@
     if (p.kind === 'wide') wideTimer = 12 * 60;
     else if (p.kind === 'slow') slowTimer = 8 * 60;
     else if (p.kind === 'life') { if (lives < 5) lives++; updateHud(); }
+    else if (p.kind === 'laser') laserTimer = 8 * 60;
+    else if (p.kind === 'fire') fireTimer = 7 * 60;
+    else if (p.kind === 'shield') shield = true;
     else if (p.kind === 'multi') {
       const extra = [];
       for (const b of balls) {
@@ -343,7 +377,7 @@
     powerups = [];
     particles = [];
     floaters = [];
-    wideTimer = 0; slowTimer = 0;
+    wideTimer = 0; slowTimer = 0; laserTimer = 0; fireTimer = 0; shield = false; bullets = [];
     brickStreak = 0;
     paddle.w = paddle.baseW;
     updateHud();
@@ -367,6 +401,16 @@
 
     if (wideTimer > 0) wideTimer--;
     if (slowTimer > 0) slowTimer--;
+    if (fireTimer > 0) fireTimer--;
+    if (laserTimer > 0) {
+      laserTimer--;
+      if (laserTimer % 14 === 0) { bullets.push({ x: paddle.x - paddle.w / 2 + 6, y: paddle.y }, { x: paddle.x + paddle.w / 2 - 6, y: paddle.y }); beep(1400, 0.04, 'square', 0.02, -600); }
+    }
+    for (const bl of bullets) {
+      bl.y -= 10;
+      for (const br of bricks) if (br.hp > 0 && bl.x >= br.x && bl.x <= br.x + br.w && bl.y >= br.y && bl.y <= br.y + br.h) { bl.dead = true; hitBrick(br, 1); updateHud(); break; }
+    }
+    bullets = bullets.filter(bl => !bl.dead && bl.y > -10);
     const targetW = wideTimer > 0 ? 150 : paddle.baseW;
     paddle.w += (targetW - paddle.w) * 0.15;
 
@@ -414,28 +458,25 @@
         const dx = b.x - nx, dy = b.y - ny;
         if (dx * dx + dy * dy > BALL_R * BALL_R) continue;
 
-        // bounce along the shallower penetration axis
-        const penX = BALL_R - Math.abs(dx);
-        const penY = BALL_R - Math.abs(dy);
-        if (penX < penY) b.vx = dx >= 0 ? Math.abs(b.vx) : -Math.abs(b.vx);
-        else b.vy = dy >= 0 ? Math.abs(b.vy) : -Math.abs(b.vy);
-
-        br.hp--;
-        if (br.hp <= 0) {
-          brickStreak++;
-          score += br.maxHp === 2 ? 25 : 10;
-          burst(br.x + br.w / 2, br.y + br.h / 2, br.color, 10);
-          if (brickStreak > 1) spawnFloater(br.x + br.w / 2, br.y, 'x' + brickStreak, '#fff');
-          maybeDropPower(br.x + br.w / 2, br.y + br.h / 2);
-          sfx.brick(brickStreak);
-        } else {
-          sfx.tough();
-          burst(b.x, b.y, '#ffffff', 4);
+        // a fireball burns straight through anything but steel
+        const pierce = fireTimer > 0 && !br.steel;
+        if (!pierce) {
+          // bounce along the shallower penetration axis
+          const penX = BALL_R - Math.abs(dx);
+          const penY = BALL_R - Math.abs(dy);
+          if (penX < penY) b.vx = dx >= 0 ? Math.abs(b.vx) : -Math.abs(b.vx);
+          else b.vy = dy >= 0 ? Math.abs(b.vy) : -Math.abs(b.vy);
         }
+        if (br.steel) { sfx.wall(); burst(b.x, b.y, '#cfd4e0', 3); break; }
+        hitBrick(br, pierce ? 99 : 1);
         updateHud();
-        break;
+        if (!pierce) break;
       }
     }
+
+    // one-shot safety net
+    if (shield) for (const b of balls) if (b.vy > 0 && b.y > H - 14) { b.vy = -Math.abs(b.vy); b.y = H - 14; shield = false; sfx.paddle(); burst(b.x, H - 8, '#b06bff', 18); spawnFloater(b.x, H - 24, 'SAVED!', '#b06bff'); break; }
+    if (fireTimer > 0 && Math.random() < 0.6) for (const b of balls) if (!b.stuck) particles.push({ x: b.x, y: b.y, vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, life: 14, maxLife: 14, color: Math.random() < 0.5 ? '#ff9d4d' : '#ffe600' });
 
     // lost balls
     balls = balls.filter(b => b.y < H + BALL_R * 3);
@@ -455,7 +496,7 @@
     }
 
     // level clear
-    if (bricks.every(br => br.hp <= 0) && state === 'play') {
+    if (bricks.every(br => br.hp <= 0 || br.steel) && state === 'play') {
       score += 300;
       saveBest();
       state = 'clear';
@@ -508,7 +549,15 @@
     // bricks
     for (const br of bricks) {
       if (br.hp <= 0) continue;
-      const weak = br.maxHp === 2 && br.hp === 1;
+      if (br.steel || br.tnt) {
+        const g = ctx.createLinearGradient(0, br.y, 0, br.y + br.h);
+        if (br.steel) { g.addColorStop(0, '#c4c9d8'); g.addColorStop(1, '#6a7086'); } else { g.addColorStop(0, '#ff9a3a'); g.addColorStop(1, '#d2401c'); }
+        ctx.fillStyle = g; roundRect(br.x, br.y, br.w, br.h, 4); ctx.fill();
+        if (br.steel) { ctx.fillStyle = 'rgba(20,24,40,0.6)'; for (const [bx, by] of [[5, 5], [br.w - 5, 5], [5, br.h - 5], [br.w - 5, br.h - 5]]) { ctx.beginPath(); ctx.arc(br.x + bx, br.y + by, 1.6, 0, Math.PI * 2); ctx.fill(); } ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.moveTo(br.x + 14, br.y + 2); ctx.lineTo(br.x + 22, br.y + 2); ctx.lineTo(br.x + 12, br.y + br.h - 2); ctx.lineTo(br.x + 4, br.y + br.h - 2); ctx.closePath(); ctx.fill(); }
+        else { ctx.fillStyle = '#2a0c00'; ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('TNT', br.x + br.w / 2, br.y + br.h / 2 + 1); ctx.textBaseline = 'alphabetic'; ctx.fillStyle = 'rgba(255,255,255,' + (0.15 + Math.abs(Math.sin(Date.now() / 250)) * 0.25) + ')'; roundRect(br.x + 2, br.y + 2, br.w - 4, 4, 2); ctx.fill(); }
+        continue;
+      }
+      const weak = br.maxHp >= 2 && br.hp === 1;
       ctx.fillStyle = br.color;
       ctx.globalAlpha = weak ? 0.55 : 1;
       roundRect(br.x, br.y, br.w, br.h, 4);
@@ -518,12 +567,13 @@
       roundRect(br.x + 2, br.y + 2, br.w - 4, 5, 2);
       ctx.fill();
       // tough brick rivets
-      if (br.maxHp === 2 && br.hp === 2) {
+      if (br.maxHp >= 2 && br.hp >= 2) {
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
         ctx.beginPath();
         ctx.arc(br.x + 8, br.y + br.h / 2, 2.5, 0, Math.PI * 2);
         ctx.arc(br.x + br.w - 8, br.y + br.h / 2, 2.5, 0, Math.PI * 2);
         ctx.fill();
+        if (br.hp >= 3) { ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.strokeRect(br.x + 3, br.y + 3, br.w - 6, br.h - 6); ctx.beginPath(); ctx.arc(br.x + br.w / 2, br.y + br.h / 2, 2.5, 0, Math.PI * 2); ctx.fill(); }
       }
       if (weak) {
         // cracks
@@ -539,6 +589,11 @@
       }
       ctx.globalAlpha = 1;
     }
+
+    // lasers & shield
+    ctx.fillStyle = '#ff8a8a';
+    for (const bl of bullets) ctx.fillRect(bl.x - 1.5, bl.y - 8, 3, 12);
+    if (shield) { ctx.strokeStyle = 'rgba(176,107,255,' + (0.6 + Math.sin(Date.now() / 150) * 0.3) + ')'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, H - 6); ctx.lineTo(W, H - 6); ctx.stroke(); }
 
     // power-ups
     for (const p of powerups) {
@@ -609,7 +664,9 @@
     // power-up timers
     let ty = 8;
     if (wideTimer > 0) { drawTimerBar('WIDE', wideTimer / (12 * 60), '#6bd1ff', ty); ty += 16; }
-    if (slowTimer > 0) { drawTimerBar('SLOW', slowTimer / (8 * 60), '#6bffd1', ty); }
+    if (slowTimer > 0) { drawTimerBar('SLOW', slowTimer / (8 * 60), '#6bffd1', ty); ty += 16; }
+    if (laserTimer > 0) { drawTimerBar('LASER', laserTimer / (8 * 60), '#ff8a8a', ty); ty += 16; }
+    if (fireTimer > 0) { drawTimerBar('FIRE', fireTimer / (7 * 60), '#ff9d4d', ty); }
 
     drawScreens();
     ctx.setTransform(1, 0, 0, 1, 0, 0);

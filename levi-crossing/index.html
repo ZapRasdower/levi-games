@@ -334,6 +334,11 @@
   let unlocked = +(localStorage.getItem('leviCrossingUnlocked') || 1);
 
   // ---- Game state ----
+  // Stars: 1 for clearing a level, +1 for not losing a life in it, +1 for grabbing every coin and star.
+  let stars = []; try { stars = JSON.parse(localStorage.getItem('leviCrossingStars') || '[]') || []; } catch (e) { stars = []; }
+  let levelDeaths = 0, lastStars = 0, lastStarNote = '';
+  const starStr = n => '\u2605'.repeat(n) + '\u2606'.repeat(3 - n);
+  const totalStars = () => stars.reduce((a, b) => a + (b || 0), 0);
   let state = 'title'; // title | play | dead | leveldone | gameover | win
   let levelIdx = 0;
   let rows = [];       // runtime row objects
@@ -390,6 +395,8 @@
   function refreshLvlBtns() {
     for (let i = 0; i < 10; i++) {
       lvlBtns[i].disabled = i + 1 > unlocked;
+      lvlBtns[i].innerHTML = (i + 1) + (stars[i] ? `<small style="display:block;font-size:8px;letter-spacing:0;color:${stars[i] === 3 ? '#ffe600' : '#9a9ab0'}">${starStr(stars[i])}</small>` : '');
+      lvlBtns[i].title = LEVELS[i].name + (stars[i] ? ' — ' + starStr(stars[i]) : '');
       lvlBtns[i].classList.toggle('current', state !== 'title' && i === levelIdx);
     }
   }
@@ -459,6 +466,7 @@
 
   function startLevel(idx) {
     levelIdx = idx;
+    levelDeaths = 0;
     const def = LEVELS[idx];
     rows = buildRows(def);
     homesFilled = GOAL_COLS.map(() => false);
@@ -586,6 +594,11 @@
       burst(levi.x * TILE + TILE / 2, TILE / 2, '#6bffd1', 16);
       if (homesFilled.filter(Boolean).length >= LEVELS[levelIdx].homes) {
         score += 500;
+        const allPicks = pickups.every(p => p.taken);
+        lastStars = 1 + (levelDeaths === 0 ? 1 : 0) + (allPicks ? 1 : 0);
+        lastStarNote = lastStars === 3 ? 'PERFECT!' : [levelDeaths ? 'no lives lost' : '', allPicks ? '' : 'every coin & star'].filter(Boolean).map(x => '\u2606 ' + x).join('  ');
+        score += (lastStars - 1) * 250;
+        if (lastStars > (stars[levelIdx] || 0)) { stars[levelIdx] = lastStars; localStorage.setItem('leviCrossingStars', JSON.stringify(stars)); }
         state = 'leveldone';
         stateTimer = 0;
         sfx.clear();
@@ -643,6 +656,7 @@
       levi.x = Math.max(0, Math.min(COLS - 1, Math.round(levi.x)));
       return;
     }
+    levelDeaths++;
     deathKind = kind;
     state = 'dead';
     stateTimer = 0;
@@ -1336,6 +1350,7 @@
     ctx.font = 'bold 40px Courier New';
     ctx.textAlign = 'center';
     ctx.fillText('LEVI CROSSING', W / 2, H / 2 - 110);
+    if (totalStars()) { ctx.font = 'bold 15px Courier New'; ctx.fillText('\u2605 ' + totalStars() + ' / 30', W / 2, H / 2 - 86); ctx.font = 'bold 40px Courier New'; }
     if (imgLoaded) {
       const h = 120;
       const w = h * (leviImg.width / leviImg.height);
@@ -1358,7 +1373,7 @@
     const last = levelIdx === LEVELS.length - 1;
     drawCenterCard(
       last ? 'YOU BEAT THE GAME!' : `LEVEL ${levelIdx + 1} CLEAR!`,
-      `${def.name} — +500 pts`,
+      `${starStr(lastStars)}  ${lastStarNote}  +${500 + (lastStars - 1) * 250} pts`,
       last ? 'press any key for the victory lap' : 'press any key for the next level'
     );
   }

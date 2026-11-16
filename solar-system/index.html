@@ -2166,6 +2166,18 @@
     { id: 'pluto',   name: 'THE LONG SHOT', target: 'Pluto',   maxKmS: 46,
       brief: 'Reach Pluto, like New Horizons did after a 9-year flight.',
       tip: 'Pluto barely moves, but it\'s tiny and very far. Almost all your fuel, aimed dead straight — and if you overdo it, the probe leaves the solar system for good.' },
+    { id: 'uranus',  name: 'SIDEWAYS WORLD', target: 'Uranus', maxKmS: 44,
+      brief: 'Reach Uranus, the planet that rolls around the Sun on its side. Only Voyager 2 has ever visited.',
+      tip: 'Uranus takes 84 years to go around once, so it hardly moves while you fly. Aim almost straight at it with plenty of speed.' },
+    { id: 'neptune', name: 'THE BLUE EDGE',  target: 'Neptune', maxKmS: 46,
+      brief: 'Hit Neptune, the last giant planet — 30 times farther from the Sun than Earth.',
+      tip: 'Voyager 2 needed 12 years to get there. Use nearly all your fuel: too little and the Sun pulls the probe back before it arrives.' },
+    { id: 'boomerang', name: 'BOOMERANG',    type: 'return',    maxKmS: 40,
+      brief: 'Fly out past the orbit of Mars — then let gravity bring the probe home to hit Earth.',
+      tip: 'Apollo 13 got home on a "free-return" path, using gravity instead of engines. Earth keeps moving, so the probe must come back to where Earth WILL be: try a long loop that takes about one or two Earth years.' },
+    { id: 'escape',  name: 'INTERSTELLAR',   type: 'escape',    maxKmS: 50,
+      brief: 'Leave the solar system for good, like Voyager 1 did in 2012 — without hitting anything on the way out.',
+      tip: 'To break free you must beat the Sun\'s escape speed — about 46 km/s from Earth\'s orbit in this model (42 km/s in real life). Any slower and the Sun pulls the probe back one day, however far it gets.' },
   ];
   let missionMode = false;
   let mission = null;   // { def, attempts, busy }
@@ -2268,6 +2280,7 @@
   function checkMissionProgress(c, r) {
     if (!mission || mission.busy) return false;
     const t = mission.def.type;
+    if (r > (c.maxR || 0)) c.maxR = r;
     if (t === 'sundive' && c.minR < SUN.r * 3 && r > earthOrbitR() && c.leftHome) {
       impacts.push({ wx: c.x, wy: 0, wz: c.z, r: 4, life: 0 });
       missionWon(`Closest approach ${(c.minR / SUN.r).toFixed(1)}× the Sun's radius — and it survived!`);
@@ -2288,10 +2301,20 @@
     if (reason === 'hit') {
       const name = PLANETS[planetIndex].name;
       if (m.target === name) { missionWon(`Touchdown on ${name}!`); return; }
+      if (name === 'Earth' && m.type === 'return') {
+        if ((c.maxR || 0) > orbitRadius(PLANETS[3])) missionWon('Out past Mars and safely home again — a free-return trajectory!');
+        else missionLost('It came home, but it never got past the orbit of Mars.');
+        return;
+      }
       if (name === 'Earth') { missionLost('The probe came back and hit Earth!'); return; }
       missionLost(m.target ? `Oops — that was ${name}, not ${m.target}.` : `Crashed into ${name}!`);
     } else if (reason === 'sun') {
       missionLost(m.type === 'sundive' ? 'Too close! The probe fell into the Sun.' : 'The probe fell into the Sun!');
+    } else if (m.type === 'escape') {
+      // truly free only if it still has more speed than the Sun's pull can ever take away
+      const free = 0.5 * (c.vx * c.vx + c.vz * c.vz) - GM / Math.hypot(c.x, c.z) >= 0;
+      if (free) missionWon('Faster than escape speed — the probe is leaving the solar system for the stars!');
+      else missionLost('It got a long way out, but it was too slow: the Sun will pull it back one day. Launch faster than escape speed (about 46 km/s).');
     } else {
       missionLost(m.type === 'orbit' ? 'Too fast — it escaped the Sun\'s gravity.' : 'The probe flew off into deep space.');
     }

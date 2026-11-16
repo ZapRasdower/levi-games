@@ -82,6 +82,9 @@
 
     #muteBtn:hover { border-color: #ffe600; }
 
+    #shop { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 620px; }
+    .shopbtn { font-family: inherit; font-size: 0.66rem; letter-spacing: 1px; font-weight: bold; padding: 6px 9px; background: #1a1a30; color: #ccc; border: 2px solid #33334d; border-radius: 3px; cursor: pointer; text-align: left; line-height: 1.35; }
+    .shopbtn b { color: #ffe600; } .shopbtn.own { border-color: #6bffd1; color: #6bffd1; cursor: default; } .shopbtn.poor { opacity: 0.5; }
     #message {
       margin-top: 20px;
       font-size: 0.9rem;
@@ -105,7 +108,7 @@
 <body>
 
   <h1>&#129354; Levi Leap</h1>
-  <p class="subtitle">SPACE / TAP to jump &middot; double-jump &middot; P to pause</p>
+  <p class="subtitle">SPACE / TAP to jump &middot; double-jump &middot; run UNDER the birds &middot; spend coins on upgrades &middot; P to pause</p>
 
   <canvas id="gameCanvas" width="600" height="220"></canvas>
 
@@ -115,6 +118,8 @@
     <div class="pill">BEST<span id="best">0</span></div>
     <button id="muteBtn" title="toggle sound">&#128266;</button>
   </div>
+
+  <div id="shop"></div>
 
   <div id="message">Press SPACE or tap to start</div>
 
@@ -227,6 +232,18 @@
   let flash = 0;          // milestone screen flash
   let lastMilestone = 0;
   let streaks = [];       // wind streaks at high speed
+  // Power-ups picked up on the run, and upgrades bought with coins between runs
+  const UP_KEY = 'leviLeap.upgrades';
+  let ups = {}; try { ups = JSON.parse(localStorage.getItem(UP_KEY) || '{}') || {}; } catch (e) { ups = {}; }
+  const UPGRADES = [
+    { id: 'shield', name: 'BUBBLE START', cost: 30,  tip: 'Start every run inside a shield bubble' },
+    { id: 'magnet', name: 'BIG MAGNET',   cost: 60,  tip: 'Magnets last twice as long' },
+    { id: 'triple', name: 'TRIPLE JUMP',  cost: 120, tip: 'A third jump in mid-air' },
+    { id: 'double', name: 'COIN DOUBLER', cost: 200, tip: 'Every coin counts as two' },
+  ];
+  const maxJumps = () => ups.triple ? 3 : 2;
+  let pickups = [], nextPickup = 500, shieldOn = false, magnetT = 0, x2T = 0;
+  const PICK = { shield: { c: '#6bd1ff', t: 'S' }, magnet: { c: '#ff6b7a', t: 'M' }, x2: { c: '#ffe600', t: 'x2' } };
   bestEl.textContent = best;
   coinsEl.textContent = totalCoins;
 
@@ -311,7 +328,7 @@
       ctx.restore();
 
       // Double-jump-ready pip above the head while airborne
-      if (!this.onGround && this.jumpCount < 2 && state === 'playing') {
+      if (!this.onGround && this.jumpCount < maxJumps() && state === 'playing') {
         ctx.fillStyle = 'rgba(255,230,0,0.85)';
         ctx.beginPath();
         ctx.moveTo(px, py - SPRITE_H - 16);
@@ -322,12 +339,12 @@
       }
     },
     jump() {
-      if (this.jumpCount < 2) {
+      if (this.jumpCount < maxJumps()) {
         this.vy = -11;
         this.onGround = false;
         this.jumpCount++;
         this.squish = 0.85;
-        this.targetRot = this.jumpCount === 2 ? -Math.PI * 2 : -0.3;
+        this.targetRot = this.jumpCount >= 2 ? -Math.PI * 2 * (this.jumpCount - 1) : -0.3;
         spawnJumpParticles(this.x, this.y);
         sfx.jump();
       }
@@ -413,7 +430,33 @@
     }
   }
 
+  function spawnPickup() {
+    const kinds = ['shield', 'magnet', 'x2'].filter(k => !(k === 'shield' && shieldOn));
+    pickups.push({ x: W + 20, y: GROUND - 70 - Math.random() * 40, kind: kinds[Math.floor(Math.random() * kinds.length)], bob: Math.random() * 6 });
+  }
+  function drawPickup(pk) {
+    const P = PICK[pk.kind], y = pk.y + Math.sin(frame * 0.08 + pk.bob) * 4;
+    ctx.save(); ctx.shadowColor = P.c; ctx.shadowBlur = 12; ctx.fillStyle = P.c;
+    ctx.beginPath(); ctx.arc(pk.x, y, 11, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(pk.x - 3, y - 4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#10101e'; ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(P.t, pk.x, y + 1);
+    ctx.restore(); ctx.textBaseline = 'alphabetic';
+  }
+  function drawBird(o) {
+    const x = Math.floor(o.x), y = o.fly + Math.sin(frame * 0.1 + o.x * 0.01) * 3, flap = Math.sin(frame * 0.35) * 9;
+    ctx.fillStyle = '#b06bff';
+    ctx.beginPath(); ctx.ellipse(x + 13, y + 7, 11, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 8, y + 5); ctx.lineTo(x + 15, y - 4 - flap); ctx.lineTo(x + 20, y + 5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffe600'; ctx.beginPath(); ctx.moveTo(x + 2, y + 7); ctx.lineTo(x - 5, y + 9); ctx.lineTo(x + 3, y + 11); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(x + 5, y + 4, 3, 3); ctx.fillStyle = '#111'; ctx.fillRect(x + 5, y + 5, 2, 2);
+  }
+
   function spawnObstacle() {
+    // A swooping bird: stay on the ground and run underneath it
+    if (score > 60 && Math.random() < 0.2) {
+      obstacles.push({ x: W + 20, w: 26, h: 14, fly: GROUND - 140 - Math.floor(Math.random() * 12) });
+      return;
+    }
     // Occasionally spawn a tall thin spike pair, otherwise a block
     if (score > 30 && Math.random() < 0.25) {
       const h1 = 28 + Math.floor(Math.random() * 20);
@@ -557,6 +600,7 @@
   }
 
   function drawObstacle(obs) {
+    if (obs.fly) { drawBird(obs); return; }
     const x = Math.floor(obs.x);
     const py = GROUND - obs.h;
     const w = obs.w;
@@ -604,6 +648,7 @@
     player.jumpCount = 0; player.squish = 1;
     player.rot = 0; player.targetRot = 0;
     obstacles = []; particles = []; coins = []; floaters = [];
+    pickups = []; nextPickup = 420 + Math.floor(Math.random() * 200); shieldOn = !!ups.shield; magnetT = 0; x2T = 0;
     score = 0; frame = 0; speed = 4;
     runCoins = 0;
     coinsEl.textContent = totalCoins;
@@ -665,6 +710,12 @@
         nextObstacle = gap + Math.floor(Math.random() * 40);
       }
 
+      if (--nextPickup <= 0) { spawnPickup(); nextPickup = 600 + Math.floor(Math.random() * 500); }
+      for (const pk of pickups) pk.x -= speed;
+      pickups = pickups.filter(pk => pk.x > -20 && !pk.taken);
+      if (magnetT > 0) magnetT--;
+      if (x2T > 0) { x2T--; if (frame % 6 === 0) bonusScore++; }
+
       nextCoin--;
       if (nextCoin <= 0) {
         spawnCoin();
@@ -679,14 +730,26 @@
 
       const fb = player.getBox();
 
+      // Power-up pickup
+      for (const pk of pickups) {
+        if (pk.x > fb.x - 12 && pk.x < fb.x + fb.w + 12 && pk.y > fb.y - 12 && pk.y < fb.y + fb.h + 12) {
+          pk.taken = true;
+          if (pk.kind === 'shield') shieldOn = true; else if (pk.kind === 'magnet') magnetT = ups.magnet ? 960 : 480; else x2T = 480;
+          spawnFloater(pk.x, pk.y - 12, pk.kind === 'shield' ? 'SHIELD!' : pk.kind === 'magnet' ? 'MAGNET!' : 'DOUBLE SCORE!', PICK[pk.kind].c);
+          sfx.mile();
+        }
+      }
+      // A magnet pulls nearby coins in
+      if (magnetT > 0) for (const c of coins) { const dx = player.x - c.x, dy = (player.y - 50) - c.y, d = Math.hypot(dx, dy); if (d < 170 && d > 1) { c.x += dx / d * 7; c.y += dy / d * 7; } }
+
       // Coin pickup
       for (const c of coins) {
         if (c.taken) continue;
         if (c.x > fb.x - 8 && c.x < fb.x + fb.w + 8 &&
             c.y > fb.y - 8 && c.y < fb.y + fb.h + 8) {
           c.taken = true;
-          runCoins++;
-          totalCoins++;
+          runCoins += ups.double ? 2 : 1;
+          totalCoins += ups.double ? 2 : 1;
           localStorage.setItem(COINS_KEY, totalCoins);
           coinsEl.textContent = totalCoins;
           // Combo: coins grabbed in quick succession are worth more
@@ -700,8 +763,13 @@
       }
 
       for (const obs of obstacles) {
-        const ob = { x: obs.x + 2, y: GROUND - obs.h + 2, w: obs.w - 4, h: obs.h - 2 };
+        const ob = obs.fly ? { x: obs.x + 3, y: obs.fly + 2, w: obs.w - 6, h: obs.h - 2 } : { x: obs.x + 2, y: GROUND - obs.h + 2, w: obs.w - 4, h: obs.h - 2 };
         if (rectsOverlap(fb, ob)) {
+          if (shieldOn) { // the bubble pops instead of Levi
+            shieldOn = false; obs.x = -999; shake = 8;
+            spawnDeathParticles(ob.x, ob.y + ob.h / 2); spawnFloater(player.x + 30, player.y - 110, 'SAVED!', '#6bd1ff'); sfx.mile();
+            continue;
+          }
           state = 'dead';
           const isBest = score > best;
           if (isBest) {
@@ -714,6 +782,7 @@
           sfx.death();
           if (isBest) setTimeout(() => sfx.best(), 420);
           msgEl.textContent = '';
+          buildShop();
           break;
         }
       }
@@ -775,6 +844,13 @@
 
     for (const obs of obstacles) drawObstacle(obs);
     for (const c of coins) if (!c.taken) drawCoin(c);
+    for (const pk of pickups) drawPickup(pk);
+    if (shieldOn && state !== 'dead') { ctx.strokeStyle = 'rgba(107,209,255,' + (0.55 + Math.sin(frame * 0.12) * 0.2) + ')'; ctx.lineWidth = 2.5; ctx.fillStyle = 'rgba(107,209,255,0.10)'; ctx.beginPath(); ctx.ellipse(player.x, player.y - 50, 34, 58, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    let barY = 8;
+    for (const [tv, max, label, col] of [[magnetT, ups.magnet ? 960 : 480, 'MAGNET', '#ff6b7a'], [x2T, 480, 'x2 SCORE', '#ffe600']]) if (tv > 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(8, barY, 94, 11); ctx.fillStyle = col; ctx.fillRect(10, barY + 2, 90 * tv / max, 7);
+      ctx.fillStyle = '#10101e'; ctx.font = 'bold 8px Courier New'; ctx.textAlign = 'left'; ctx.fillText(label, 13, barY + 8.5); barY += 14;
+    }
 
     if (state !== 'dead') player.draw();
 
@@ -858,6 +934,27 @@
     }
     render();
   }
+
+  // ---- coin shop ----
+  function buildShop() {
+    const el = document.getElementById('shop'); el.innerHTML = '';
+    for (const u of UPGRADES) {
+      const own = !!ups[u.id], b = document.createElement('button');
+      b.className = 'shopbtn' + (own ? ' own' : totalCoins < u.cost ? ' poor' : ''); b.title = u.tip;
+      b.innerHTML = `${u.name}<br>${own ? '&#10004; OWNED' : '<b>' + u.cost + '</b> COINS'}`;
+      b.addEventListener('click', () => {
+        b.blur(); if (own) return;
+        if (state === 'playing' || state === 'paused') { msgEl.textContent = 'Finish your run first!'; return; }
+        if (totalCoins < u.cost) { msgEl.textContent = `${u.tip} — you need ${u.cost - totalCoins} more coins`; return; }
+        totalCoins -= u.cost; ups[u.id] = 1;
+        localStorage.setItem(COINS_KEY, totalCoins); localStorage.setItem(UP_KEY, JSON.stringify(ups));
+        coinsEl.textContent = totalCoins; msgEl.textContent = `${u.name} unlocked! ${u.tip}.`; sfx.best(); buildShop();
+        if (state === 'idle') shieldOn = !!ups.shield;
+      });
+      el.appendChild(b);
+    }
+  }
+  buildShop(); shieldOn = !!ups.shield;
 
   function handleJump() {
     if (state === 'idle') {

@@ -206,6 +206,9 @@
 
     .badge .z { font-size: 0.55rem; color: #333; }
 
+    .badges.famous { grid-template-columns: repeat(8, 1fr); }
+    .badges.famous .badge { font-size: 0.72rem; }
+    @media (max-width: 560px) { .badges.famous { grid-template-columns: repeat(4, 1fr); } }
     .badge.found {
       border-color: #6bffd1;
       background: #14302a;
@@ -400,7 +403,7 @@
 <body>
 
   <h1>&#9883; Atom Builder</h1>
-  <p class="subtitle">Build atoms in 3D &middot; drag to spin, scroll to zoom &middot; discover all 20 elements</p>
+  <p class="subtitle">Build atoms in 3D &middot; drag to spin, scroll to zoom &middot; discover all 20 elements and 16 famous atoms</p>
 
   <canvas id="gameCanvas" width="720" height="480"></canvas>
 
@@ -465,6 +468,14 @@
       <span class="got"><span id="foundCount">0</span>/20 discovered</span>
     </div>
     <div class="badges" id="badges"></div>
+  </div>
+
+  <div class="collection">
+    <div class="head">
+      <span>FAMOUS ATOMS &mdash; isotopes &amp; ions</span>
+      <span class="got"><span id="famousCount">0</span>/<span id="famousTotal">16</span> found</span>
+    </div>
+    <div class="badges famous" id="famous"></div>
   </div>
 
   <div class="legend">
@@ -785,6 +796,64 @@
     sfx.build();
   });
 
+  // ---- Famous atoms: special isotopes and ions with a story ----
+  const FAMOUS = [
+    { id: 'proton', sym: 'H⁺', name: 'A bare proton', p: 1, n: 0, e: 0, fact: 'Take the electron off hydrogen and one lonely proton is left. Loose protons like this are what make lemon juice and vinegar sour!' },
+    { id: 'neutron', sym: 'n', name: 'A free neutron', p: 0, n: 1, e: 0, fact: 'A neutron on its own is not stable: after about 15 minutes it turns into a proton, an electron and a tiny neutrino.' },
+    { id: 'deuterium', sym: '²H', name: 'Deuterium (heavy hydrogen)', p: 1, n: 1, e: 1, fact: 'Hydrogen with a neutron added. Water made with it is "heavy water" — an ice cube of it sinks in a glass of normal water.' },
+    { id: 'tritium', sym: '³H', name: 'Tritium', p: 1, n: 2, e: 1, fact: 'Radioactive hydrogen. It makes glow-in-the-dark exit signs and watch hands shine for years with no battery.' },
+    { id: 'he3', sym: '³He', name: 'Helium-3', p: 2, n: 1, e: 2, fact: 'Very rare on Earth but sprinkled over the Moon by the solar wind. It could one day be fuel for fusion power.' },
+    { id: 'alpha', sym: 'α', name: 'Alpha particle', p: 2, n: 2, e: 0, fact: 'A helium nucleus with no electrons. Rutherford fired these at gold foil in 1909 — and discovered that atoms have a nucleus.' },
+    { id: 'li', sym: 'Li⁺', name: 'Lithium ion', p: 3, n: 4, e: 2, fact: 'These ions shuttle back and forth inside the battery of every phone, tablet and electric car.' },
+    { id: 'c14', sym: '¹⁴C', name: 'Carbon-14', p: 6, n: 8, e: 6, fact: 'Radioactive carbon that slowly ticks away like a clock. Scientists use it to find the age of mummies and mammoths.' },
+    { id: 'o18', sym: '¹⁸O', name: 'Oxygen-18', p: 8, n: 10, e: 8, fact: 'Heavy oxygen. Measuring it in ancient ice tells scientists how warm the Earth was hundreds of thousands of years ago.' },
+    { id: 'oxide', sym: 'O²⁻', name: 'Oxide ion', p: 8, n: 8, e: 10, fact: 'Oxygen that has grabbed two extra electrons. It is locked inside rust, sand and most of the rocks under your feet.' },
+    { id: 'fluoride', sym: 'F⁻', name: 'Fluoride ion', p: 9, n: 10, e: 10, fact: 'The fluoride in toothpaste. It swaps into your tooth enamel and makes it tougher against acid.' },
+    { id: 'na', sym: 'Na⁺', name: 'Sodium ion', p: 11, n: 12, e: 10, fact: 'Half of table salt. Your nerves send every single message by letting sodium ions rush in and out.' },
+    { id: 'mg', sym: 'Mg²⁺', name: 'Magnesium ion', p: 12, n: 12, e: 10, fact: 'One of these sits at the centre of every chlorophyll molecule — the reason leaves are green.' },
+    { id: 'cl', sym: 'Cl⁻', name: 'Chloride ion', p: 17, n: 18, e: 18, fact: 'The other half of table salt. Poisonous chlorine gas becomes harmless once it grabs one extra electron.' },
+    { id: 'k40', sym: '⁴⁰K', name: 'Potassium-40', p: 19, n: 21, e: 19, fact: 'A naturally radioactive kind of potassium. It makes bananas — and you — very slightly radioactive. Totally harmless!' },
+    { id: 'ca', sym: 'Ca²⁺', name: 'Calcium ion', p: 20, n: 20, e: 18, fact: 'Calcium that has lost two electrons. It builds bones and teeth and tells your muscles when to squeeze.' },
+  ];
+  const FAMOUS_KEY = 'atomBuilderFamous';
+  let famousFound = new Set(); try { famousFound = new Set(JSON.parse(localStorage.getItem(FAMOUS_KEY) || '[]')); } catch (e) {}
+  const famousEl = document.getElementById('famous'), famousBadges = {};
+  document.getElementById('famousTotal').textContent = FAMOUS.length;
+  for (const f of FAMOUS) {
+    const b = document.createElement('div'); b.className = 'badge'; b.dataset.f = f.id; b.innerHTML = `<span>?</span>`;
+    famousEl.appendChild(b); famousBadges[f.id] = b;
+  }
+  function refreshFamous() {
+    for (const f of FAMOUS) { const got = famousFound.has(f.id); famousBadges[f.id].classList.toggle('found', got); famousBadges[f.id].innerHTML = `<span>${got ? f.sym : '?'}</span>`; }
+    document.getElementById('famousCount').textContent = famousFound.size;
+  }
+  refreshFamous();
+  famousEl.addEventListener('mousemove', e => {
+    const b = e.target.closest('.badge'); if (!b) { hideTip(); return; }
+    const f = FAMOUS.find(x => x.id === b.dataset.f), key = '_fam' + f.id;
+    TIPS[key] = famousFound.has(f.id) ? `<strong>${f.name}</strong><br>${f.fact}<br><em>Click to build it!</em>`
+      : `<strong>???</strong><br>Hint: ${f.p} proton${f.p === 1 ? '' : 's'}, ${f.n} neutron${f.n === 1 ? '' : 's'}, ${f.e} electron${f.e === 1 ? '' : 's'}.`;
+    showTip(key, e.clientX, e.clientY);
+  });
+  famousEl.addEventListener('mouseleave', hideTip);
+  famousEl.addEventListener('click', e => {
+    const b = e.target.closest('.badge'); if (!b) return;
+    const f = FAMOUS.find(x => x.id === b.dataset.f);
+    if (!famousFound.has(f.id)) { showToast(`<strong>A mystery atom!</strong><br>Hint: ${f.p} proton${f.p === 1 ? '' : 's'}, ${f.n} neutron${f.n === 1 ? '' : 's'}, ${f.e} electron${f.e === 1 ? '' : 's'}.`); return; }
+    setAtom(f.p, f.n, f.e); spawnPulse('p'); spawnPulse('e'); sfx.build(); showToast(`<strong>${f.name}</strong><br>${f.fact}`);
+  });
+  function checkFamous() {
+    const f = FAMOUS.find(x => x.p === protons && x.n === neutrons && x.e === electrons);
+    if (!f || famousFound.has(f.id)) return;
+    famousFound.add(f.id);
+    try { localStorage.setItem(FAMOUS_KEY, JSON.stringify([...famousFound])); } catch (e) {}
+    refreshFamous();
+    famousBadges[f.id].classList.remove('flash'); void famousBadges[f.id].offsetWidth; famousBadges[f.id].classList.add('flash');
+    sfx.discover();
+    const left = FAMOUS.length - famousFound.size;
+    showToast(`&#11088; <strong>Famous atom found: ${f.name}!</strong><br>${f.fact}` + (left ? `<br><em>${left} famous atom${left === 1 ? '' : 's'} still hiding.</em>` : '<br><em>You found every famous atom!</em>'));
+  }
+
   const toast = document.getElementById('toast');
   let toastTimer = null;
 
@@ -880,6 +949,7 @@
     }
 
     checkDiscovery();
+    checkFamous();
     checkChallenge();
   }
 
