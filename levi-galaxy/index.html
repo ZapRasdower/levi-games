@@ -88,6 +88,9 @@
     #bombBtn { color: #ffb347; }
     #bombBtn:hover { border-color: #ffb347; }
 
+    #startRow { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; font-size: 0.66rem; letter-spacing: 2px; color: #777; min-height: 30px; }
+    .startbtn { font-family: inherit; font-size: 0.68rem; letter-spacing: 1px; font-weight: bold; padding: 5px 10px; background: #1a1a30; color: #bbb; border: 2px solid #33334d; border-radius: 3px; cursor: pointer; }
+    .startbtn.on { border-color: #ffe600; color: #ffe600; }
     #message {
       margin-top: 16px;
       font-size: 0.85rem;
@@ -123,6 +126,8 @@
     <button id="bombBtn" title="drop a bomb (B)">&#128165; <span id="bombs">2</span></button>
     <button id="muteBtn" title="toggle sound">&#128266;</button>
   </div>
+
+  <div id="startRow"></div>
 
   <div id="message">Click, tap or press SPACE to launch</div>
 
@@ -239,7 +244,13 @@
     shield: { color: '#5d8bff', label: '●', name: 'SHIELD' },
     bomb:   { color: '#ffb347', label: 'B', name: '+1 BOMB' },
     life:   { color: '#ff6b9d', label: '♥', name: 'EXTRA LIFE' },
+    wing:   { color: '#7dffb0', label: 'W', name: 'WINGMEN' },
+    missile:{ color: '#ff8a4d', label: 'M', name: 'HOMING MISSILES' },
   };
+  // Beat a Mothership and you may start later runs from the wave after it.
+  const CP_KEY = 'leviGalaxy.checkpoint';
+  let checkpoint = parseInt(localStorage.getItem(CP_KEY) || '0', 10) || 0;
+  let startWave = 1;
 
   // ---- State ----
   let state = 'title'; // title | play | banner | over | paused
@@ -262,7 +273,7 @@
 
   const player = {
     x: W / 2, y: H - 72, targetX: W / 2, alive: true,
-    invuln: 0, shield: false, spread: 0, rapid: 0, fireCd: 0, respawnT: 0, tilt: 0,
+    invuln: 0, shield: false, spread: 0, rapid: 0, wing: 0, missile: 0, missileCd: 0, fireCd: 0, respawnT: 0, tilt: 0,
   };
 
   let enemies = [], pBullets = [], eBullets = [], particles = [], powerups = [], asteroids = [], popups = [];
@@ -343,16 +354,20 @@
 
   // ---- Game flow ----
   function startGame() {
-    score = 0; lives = 3; bombs = 2; wave = 0; streak = 0; newBest = false;
+    score = 0; lives = 3; bombs = 2; wave = startWave - 1; streak = 0; newBest = false;
+    if (startWave > 1) { bombs = 3; player.spread = 10; }
+    player.wing = 0; player.missile = 0;
     enemies = []; pBullets = []; eBullets = []; particles = []; powerups = []; asteroids = []; popups = [];
     boss = null; shake = 0; flash = 0;
     player.x = W / 2; player.targetX = W / 2; player.alive = true; player.invuln = 2;
-    player.shield = false; player.spread = 0; player.rapid = 0; player.fireCd = 0;
+    player.shield = false; if (startWave === 1) player.spread = 0; player.rapid = 0; player.fireCd = 0;
     msgEl.textContent = '';
+    buildStartRow();
     nextWave();
   }
 
   function nextWave() {
+    if (wave > 0 && wave % 5 === 0 && wave > checkpoint) { checkpoint = wave; localStorage.setItem(CP_KEY, String(checkpoint)); popups.push({ x: W / 2, y: H / 2 + 60, text: 'CHECKPOINT SAVED', life: 2, color: '#7dffb0' }); }
     wave++;
     killsThisWave = 0;
     updateHud();
@@ -427,7 +442,11 @@
     } else {
       pBullets.push({ x: player.x, y: player.y - 30, vx: 0, vy: -speed });
     }
+    if (player.wing > 0) for (const sx of [-34, 34]) pBullets.push({ x: player.x + sx, y: player.y - 14, vx: 0, vy: -speed });
     sfx.shoot();
+  }
+  function fireMissile() {
+    pBullets.push({ x: player.x, y: player.y - 26, vx: (Math.random() - 0.5) * 240, vy: -260, homing: true, life: 2.4 });
   }
 
   function useBomb() {
@@ -507,10 +526,12 @@
     if (Math.random() > 0.13) return;
     const roll = Math.random();
     let kind = 'spread';
-    if (roll < 0.30) kind = 'spread';
-    else if (roll < 0.58) kind = 'rapid';
-    else if (roll < 0.80) kind = 'shield';
-    else if (roll < 0.94) kind = 'bomb';
+    if (roll < 0.22) kind = 'spread';
+    else if (roll < 0.42) kind = 'rapid';
+    else if (roll < 0.56) kind = 'wing';
+    else if (roll < 0.70) kind = 'missile';
+    else if (roll < 0.84) kind = 'shield';
+    else if (roll < 0.95) kind = 'bomb';
     else kind = 'life';
     powerups.push({ x, y, kind, vy: 85 });
   }
@@ -521,6 +542,8 @@
     if (p.kind === 'spread') player.spread = 12;
     else if (p.kind === 'rapid') player.rapid = 12;
     else if (p.kind === 'shield') player.shield = true;
+    else if (p.kind === 'wing') player.wing = 14;
+    else if (p.kind === 'missile') player.missile = 12;
     else if (p.kind === 'bomb') { bombs = Math.min(5, bombs + 1); updateHud(); }
     else if (p.kind === 'life') { lives = Math.min(5, lives + 1); updateHud(); sfx.life(); }
     popups.push({ x: player.x, y: player.y - 50, text, life: 1.2, color: POWERS[p.kind].color });
@@ -652,6 +675,8 @@
     if (player.invuln > 0) player.invuln -= dt;
     if (player.spread > 0) player.spread -= dt;
     if (player.rapid > 0) player.rapid -= dt;
+    if (player.wing > 0) player.wing -= dt;
+    if (player.missile > 0) { player.missile -= dt; player.missileCd -= dt; if (canFire && player.missileCd <= 0) { fireMissile(); player.missileCd = 0.45; } }
 
     let vx = 0;
     if (keys.left) vx -= 380;
@@ -679,8 +704,17 @@
   function updateBullets(dt) {
     for (let i = pBullets.length - 1; i >= 0; i--) {
       const b = pBullets[i];
+      if (b.homing) { // steer towards the nearest alien (or the boss)
+        let tx = b.x, ty = b.y - 200, bd = 1e9;
+        for (const e of enemies) if (e.alive && e.y > 0) { const d = dist2(b.x, b.y, e.x, e.y); if (d < bd) { bd = d; tx = e.x; ty = e.y; } }
+        if (boss && boss.alive && boss.y > 0 && bd === 1e9) { tx = boss.x; ty = boss.y; }
+        const a = Math.atan2(ty - b.y, tx - b.x), sp = 520;
+        b.vx += (Math.cos(a) * sp - b.vx) * Math.min(1, dt * 7); b.vy += (Math.sin(a) * sp - b.vy) * Math.min(1, dt * 7);
+        b.life -= dt; if (Math.random() < 0.6) particles.push({ x: b.x, y: b.y, vx: 0, vy: 40, life: 0.25, max: 0.25, color: '#ff8a4d', size: 3 });
+        if (b.life <= 0) { pBullets.splice(i, 1); continue; }
+      }
       b.x += b.vx * dt; b.y += b.vy * dt;
-      if (b.y < -20 || b.x < -10 || b.x > W + 10) pBullets.splice(i, 1);
+      if (b.y < -20 || b.x < -10 || b.x > W + 10 || b.y > H + 20) pBullets.splice(i, 1);
     }
     for (let i = eBullets.length - 1; i >= 0; i--) {
       const b = eBullets[i];
@@ -990,7 +1024,10 @@
     // power-up timers
     let ty = player.y + 48;
     if (player.spread > 0) { drawTimerBar(player.x, ty, player.spread / 12, POWERS.spread.color); ty += 7; }
-    if (player.rapid > 0) { drawTimerBar(player.x, ty, player.rapid / 12, POWERS.rapid.color); }
+    if (player.rapid > 0) { drawTimerBar(player.x, ty, player.rapid / 12, POWERS.rapid.color); ty += 7; }
+    if (player.wing > 0) { drawTimerBar(player.x, ty, player.wing / 14, POWERS.wing.color); ty += 7; }
+    if (player.missile > 0) { drawTimerBar(player.x, ty, player.missile / 12, POWERS.missile.color); }
+    if (player.wing > 0) for (const sx of [-34, 34]) { const wx = player.x + sx, wy = player.y + 4 + Math.sin(time * 6 + sx) * 2; ctx.fillStyle = '#7dffb0'; ctx.beginPath(); ctx.moveTo(wx, wy - 12); ctx.lineTo(wx + 8, wy + 8); ctx.lineTo(wx, wy + 4); ctx.lineTo(wx - 8, wy + 8); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#10301c'; ctx.fillRect(wx - 1.5, wy - 4, 3, 5); ctx.fillStyle = '#ffb347'; ctx.fillRect(wx - 2, wy + 7, 4, 3 + Math.random() * 4); }
   }
 
   function drawTimerBar(x, y, f, color) {
@@ -1002,6 +1039,7 @@
 
   function drawBullets() {
     pBullets.forEach(b => {
+      if (b.homing) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2); ctx.fillStyle = '#ff8a4d'; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(4, 5); ctx.lineTo(-4, 5); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(-1, -4, 2, 6); ctx.restore(); return; }
       ctx.fillStyle = '#ffe600';
       ctx.fillRect(b.x - 2, b.y - 8, 4, 14);
       ctx.fillStyle = '#fff';
@@ -1298,6 +1336,19 @@
   }
 
   // ---- Loop ----
+  // ---- start-wave picker (checkpoints) ----
+  function buildStartRow() {
+    const el = document.getElementById('startRow'); el.innerHTML = '';
+    if (checkpoint < 5) { el.textContent = 'BEAT A MOTHERSHIP TO UNLOCK A CHECKPOINT'; return; }
+    el.appendChild(document.createTextNode('START AT '));
+    for (let w = 1; w <= checkpoint + 1; w += 5) {
+      const b = document.createElement('button'); b.className = 'startbtn' + (w === startWave ? ' on' : ''); b.textContent = 'WAVE ' + w;
+      b.addEventListener('click', () => { b.blur(); startWave = w; buildStartRow(); if (state === 'title' || state === 'over') msgEl.textContent = w > 1 ? `Next run starts at wave ${w} with a spread shot and 3 bombs` : 'Next run starts at wave 1'; });
+      el.appendChild(b);
+    }
+  }
+  buildStartRow();
+
   let last = 0;
   function loop(ts) {
     const dt = Math.min(0.033, (ts - last) / 1000 || 0);
