@@ -159,6 +159,7 @@ button.b:disabled { opacity: 0.4; cursor: default; }
     <div class="card">
       <h2>BASE CAMP</h2>
       <div class="sold" id="camp-sold"></div>
+      <div id="camp-crate" style="margin:8px 0;font-size:0.8rem;line-height:1.5"></div>
       <div id="jobs"></div>
       <div class="stats" id="camp-stats"></div>
       <div id="badges"></div>
@@ -1721,6 +1722,28 @@ function openCamp(arrived, note) {
   show('ov-camp');
 }
 
+// ─── DAILY SUPPLY CRATE ─── one a day at camp; coming back on consecutive days makes it bigger
+const todayKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+function renderCrate() {
+  const el = $('camp-crate'); if (!el) return;
+  const D = S.daily || { last: '', streak: 0 };
+  if (D.last === todayKey()) { el.innerHTML = `<span style="color:#8a8aa8">&#128230; Supply crate opened today &middot; streak <b style="color:#ffe600">${D.streak} day${D.streak === 1 ? '' : 's'}</b> &middot; come back tomorrow for a bigger one</span>`; return; }
+  el.innerHTML = `<button class="b big" id="crateBtn">&#128230; OPEN TODAY&#39;S SUPPLY CRATE</button>`;
+  $('crateBtn').addEventListener('click', openCrate);
+}
+function openCrate() {
+  const D = S.daily || (S.daily = { last: '', streak: 0 });
+  if (D.last === todayKey()) return;
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const yk = y.getFullYear() + '-' + (y.getMonth() + 1) + '-' + y.getDate();
+  D.streak = D.last === yk ? D.streak + 1 : 1; D.last = todayKey();
+  const k = Math.min(7, D.streak), cash = 15 + k * 10 + Math.round(S.best * 0.4), lad = 4 + k, sn = 1 + (k >= 3 ? 1 : 0), dy = k >= 2 ? 1 + (k >= 6 ? 1 : 0) : 0;
+  S.money += cash; S.ladders += lad; S.snack = Math.min(9, S.snack + sn); S.dyn = Math.min(9, S.dyn + dy);
+  sfx.cash();
+  renderShop(); hud(); save();
+  $('camp-crate').innerHTML = `<span style="color:#6bffd1">&#128230; Day ${D.streak} crate: <b>+$${cash}</b>, ${lad} ladders, ${sn} snack${sn > 1 ? 's' : ''}${dy ? ', ' + dy + ' dynamite' : ''}! ${k < 7 ? 'Tomorrow brings a bigger one.' : 'Maximum crate!'}</span>`;
+}
+
 function renderShop() {
   const found = Object.keys(S.museum).length;
   $('camp-stats').innerHTML = `$<b>${S.money}</b> &middot; deepest <b>${S.best} m</b> &middot; museum <b>${found}/${ARTS.length}</b> &middot; landmarks <b>${Object.keys(S.lmFound).length}/${LANDMARKS.length}</b>${S.won ? ' &middot; <b>&#128142; crystal cave reached</b>' : ''}`;
@@ -1747,6 +1770,7 @@ function renderShop() {
   });
   renderJobs();
   renderBadges();
+  renderCrate();
   const ropeOk = S.rope && open(tileAt(S.rope.c, S.rope.r));
   $('btn-dive').textContent = ropeOk ? `DIVE TO ${depthOf(S.rope.r)} m` : 'START DIGGING';
 }
