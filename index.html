@@ -415,7 +415,7 @@
     { id: 'atom-builder',   name: 'Atom Builder',   emoji: '&#9883;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#6bd1ff44',
       desc: 'Build atoms in 3D, discover all 20 elements & zoom in to see quarks!' },
     { id: 'solar-system',   name: 'Solar System',   emoji: '&#128640;', tag: 'SCIENCE',        cat: 'science', tint: '#ffb04744',
-      desc: 'Fly 8 probe missions from Earth, spin the planets in 3D, launch comets, and take the quiz.' },
+      desc: 'Fly 12 probe missions from Earth, spin the planets in 3D, launch comets, and take the quiz.' },
     { id: 'periodic-table', name: 'Periodic Table', emoji: '&#9879;&#65039;', tag: 'SCIENCE',        cat: 'science', tint: '#c07bff44',
       desc: 'Click any of the 118 elements to see facts, mass, group and electron config.' },
     { id: 'squishy-pets',   name: 'Squishy Pets',   emoji: '&#129382;', tag: 'IDLE / COLLECT', cat: 'build',   tint: '#ff9fd044',
@@ -446,7 +446,7 @@
     'snake':          () => { const b = num('leviSnake.best'); return b ? `BEST ${fmt(b)}` : null; },
     'atom-builder':   () => { const d = lsJSON('atomBuilderDiscovered', []); return d.length ? `${d.length}/20 ELEMENTS FOUND` : null; },
     'solar-system':   () => { const q = num('solarSystem.quizBest'); const m = lsJSON('solarSystem.missions', {}); const st = Object.values(m).reduce((a, b) => a + b, 0);
-                              const parts = []; if (st) parts.push(`${st}/24 &#9733;`); if (q) parts.push(`QUIZ BEST ${q}`); return parts.length ? parts.join(' · ') : null; },
+                              const parts = []; if (st) parts.push(`${st}/36 &#9733;`); if (q) parts.push(`QUIZ BEST ${q}`); return parts.length ? parts.join(' · ') : null; },
     'periodic-table': () => { const q = num('ptable.quizBest'); return q ? `QUIZ BEST ${q}` : null; },
     'squishy-pets':   () => { const s = lsJSON('squishy_pets_v2', null); const k = s && s.k ? s.k.length : 0; return k ? `${k}/40 PETS` : null; },
     'brick-breaker':  () => { const b = num('brickBreaker.best'); return b ? `BEST ${fmt(b)}` : null; },
