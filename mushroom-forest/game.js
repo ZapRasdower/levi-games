@@ -252,7 +252,7 @@ cv.addEventListener('pointerdown', e => {
   const [wx, wy] = toWorld(e.clientX, e.clientY);
   let best = null, bd = 34;
   for (const m of G.shrooms) { if (m.buried && !m.revealed) continue; const d = dist(wx, wy, m.x, m.y - m.lift - 12 * m.s); if (d < bd) { bd = d; best = m; } }
-  ptr.down = true; ptr.x = e.clientX; ptr.y = e.clientY;
+  ptr.down = true; ptr.x = e.clientX; ptr.y = e.clientY; G.p.nudges = 0; G.p.sideT = 0;
   if (best) { G.autoPick = best; G.target = pickSpot(best); ptr.down = false; }
   else { G.autoPick = null; G.target = { x: wx, y: wy }; }
   try { cv.setPointerCapture(e.pointerId); } catch (er) {}
@@ -353,7 +353,8 @@ function update(dt) {
   if (ix || iy) { G.target = null; G.autoPick = null; }
   else if (!G.pick) {
     if (ptr.down) { const [wx, wy] = toWorld(ptr.x, ptr.y); G.target = { x: wx, y: wy }; }
-    if (G.target) { const dx = G.target.x - p.x, dy = G.target.y - p.y, d = Math.hypot(dx, dy); if (d > 7) { ix = dx / d; iy = dy / d; } else if (!ptr.down) G.target = null; }
+    if (G.target) { const dx = G.target.x - p.x, dy = G.target.y - p.y, d = Math.hypot(dx, dy); if (d > 7) { ix = dx / d; iy = dy / d; } else if (!ptr.down) G.target = null;
+      if (p.sideT > 0 && (ix || iy)) { p.sideT -= dt; const a = p.side * 1.25, c = Math.cos(a), sn = Math.sin(a), nx = ix * c - iy * sn, ny = ix * sn + iy * c; ix = nx; iy = ny; } }
   }
   if (G.pick || p.stun > 0) { ix = iy = 0; }
   p.stun = Math.max(0, p.stun - dt);
@@ -362,7 +363,9 @@ function update(dt) {
   p.vx += (tvx - p.vx) * k; p.vy += (tvy - p.vy) * k;
   const ox = p.x, oy = p.y; p.x += p.vx * dt; p.y += p.vy * dt; resolveCols(p, 10);
   const mv = dist(ox, oy, p.x, p.y); p.moving = mv > 20 * dt; G.moved += mv;
-  if (G.target && mv < 12 * dt && !ptr.down && (ix || iy)) { p.stuck = (p.stuck || 0) + dt; if (p.stuck > 0.5) { G.target = null; p.stuck = 0; } } else p.stuck = 0;
+  // blocked by a trunk, log or the pond? sidestep one way, then the other, before giving up
+  if (G.target && (ix || iy) && mv < speed * dt * 0.4) { p.stuck = (p.stuck || 0) + dt; if (p.stuck > 0.2) { p.stuck = 0; p.nudges = (p.nudges || 0) + 1; p.side = -(p.side || 1); p.sideT = 0.45 + p.nudges * 0.18; if (p.nudges > 6 && !ptr.down) { G.target = null; G.autoPick = null; p.nudges = 0; p.sideT = 0; } } }
+  else if (mv > speed * dt * 0.8) { p.stuck = 0; if (p.sideT <= 0) p.nudges = 0; }
   if (p.moving) { p.walk += dt * 9; if (Math.abs(p.vx) > 12) p.dir = p.vx < 0 ? -1 : 1; p.step -= dt; if (p.step <= 0) { p.step = 0.3; sfx.step(); if (G.season === 3 || G.weather === 'rain') G.parts.push({ k: 'dot', x: p.x, y: p.y, vx: rnd(-10, 10), vy: -20, life: 0, max: 0.4, c: G.season === 3 ? '#fff' : '#bfe6ff', s: 2, g: 80 }); } }
   p.squash = Math.max(0, (p.squash || 0) - dt);
   if (S.tut < 1 && G.moved > 160) UI.tut(1);

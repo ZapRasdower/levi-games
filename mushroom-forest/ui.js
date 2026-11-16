@@ -84,7 +84,7 @@ const UI = {
 
   // ───── cabin ─────
   goCabin() {
-    mode = 'cabin'; document.body.className = 'cabin'; UI.open = null; $('modal').className = ''; paused = false; G = null; $('tut').className = '';
+    mode = 'cabin'; document.body.className = 'cabin'; UI.open = null; $('modal').className = ''; paused = false; G = null; $('tut').className = ''; $('banner').className = '';
     ensureOrders(); const newDay = rollDaily(); UI.cabin();
     if (!S.stats.runs) UI.welcome(); else if (newDay || !S.daily.claimed) UI.dailyGift();
   },
